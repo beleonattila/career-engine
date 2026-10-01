@@ -18,31 +18,42 @@ that earlier run missed it**, and the telemetry says why. Late discoveries are t
   reasoning pass and skill recommendations. The **cause histogram** is the deliverable —
   "62% GEO_GAP" is an instruction, "we missed 8 things" is not.
 
-**Current attribution — 16 runs, 94 miss-events, measured 2026-08-09.** Median lag **10 days**,
-max 113 (n=23). `SOURCE_INCOMPLETE` 35.1% · `CHANNEL_SKIPPED` 23.4% · `QUERY_GAP` 13.8% ·
-`AGE_EXCLUDED` 12.8% · `GEO_GAP` 12.8% · `GATED_OUT` 2.1%.
+**Current attribution — 48 runs, 573 miss-events, measured 2026-10-01.** Median lag **13 days**,
+max 215 (n=66). `SOURCE_INCOMPLETE` 29.3% · `AGE_EXCLUDED` 21.6% · `QUERY_GAP` 21.6% ·
+`CHANNEL_SKIPPED` 12.9% · `CHANNEL_NOT_RUN` 5.6% · `GATED_OUT` 4.5% · `GEO_GAP` 4.4%.
+6 redundant collections excluded (a lead re-collected under a different slug is a dedup failure,
+not a miss; they are reported separately).
 
-This supersedes the reconstructed 2026-07-29/30 baseline (`CHANNEL_SKIPPED` 46% · `AGE_EXCLUDED`
-29% · `SOURCE_INCOMPLETE` 11%). Two things changed materially: `SOURCE_INCOMPLETE` is now the top
-cause, and `CHANNEL_SKIPPED` has halved. `SOURCE_INCOMPLETE + QUERY_GAP + GEO_GAP` = **62%** of
-misses — all three are fixed by which sources a run opens and which queries it issues, not by
-model choice. `AGE_EXCLUDED` at 12.8% is attributable to runs predating the 2026-07-29 filter
-removal; **any new one means an age filter has crept back in.**
+Against 2026-08-09 (16 runs, 94 miss-events: `SOURCE_INCOMPLETE` 35.1% · `CHANNEL_SKIPPED` 23.4% ·
+`QUERY_GAP` 13.8% · `AGE_EXCLUDED` 12.8% · `GEO_GAP` 12.8% · `GATED_OUT` 2.1%), and the reconstructed
+2026-07-29/30 baseline before it (`CHANNEL_SKIPPED` 46% · `AGE_EXCLUDED` 29% · `SOURCE_INCOMPLETE` 11%):
+- **Coverage is fixed.** `CHANNEL_SKIPPED` has roughly halved again and `GEO_GAP` fell to a third.
+- **`AGE_EXCLUDED` rose, and it is by design, not a filter creeping back.** Every miss since
+  August carries the detail *"22–58d old vs 21d window"*: the fast pass's LinkedIn search uses
+  `f_TPR=r1814400` (21 days, `search-positions-common.md`), and the deep pass drops it to sweep up
+  exactly these. A miss detail citing any *other* window would be a regression.
+- **`QUERY_GAP` rose, but on low-value roles.** All 124 events are LinkedIn, *"no logged query
+  matched the role wording"*, and 21 of the 23 leads behind them are skill-track data-engineering
+  and bioinformatics titles (EMBL-EBI, SandboxAQ, ZS, Our Future Health) that the skill track only
+  began finding in September. The on-direction ones (TU Eindhoven de novo PhD, Cranfield enzyme,
+  DTU enzyme PhD) are 2–4 events each. More design queries would not move this much.
+- **`SOURCE_INCOMPLETE` is the remaining lever.** Detail *"was reached and covered, yet did not
+  return it"*: `ats_sweep` 66 and `linkedin` 48 of the post-August events. Neither listing is an
+  exhaustive enumeration.
 
-Standing state as of 2026-08-09 (`python engine/tools/log_run.py --stats`):
-- **Deep pass never run** — 0 of 16. The overdue flag is firing; the next run should be `mode: deep`.
-- **Starved channels** (not reached in the last 3 runs): `euraxess` · `nordic_boards` ·
-  `phd_portals`. The last is the costly one: PhD roles carry the highest median fit in the vault
-  (70 vs 52–63) and hold 12 of its 23 strong leads.
-- **10 of 27 rotation queries have never run** — `protein optimization`, `ML-guided design MLDE`,
-  `biocatalysis engineering`, `protein structure prediction`, `BindCraft`, `ProteinMPNN` among them,
-  while `protein design` ran in 15 of 16.
-- **Model/effort is unmeasured, and `coll/run` cannot currently settle it.** `sonnet/medium` has 0
-  runs and `opus/high` has 1, but the deeper problem is noise: within `sonnet/?` alone the per-run
-  collections were `0,0,1,1,1,3,3,3,8`, a spread larger than any gap between configs. What *is*
-  separable is that **screening volume tracks channel breadth** (8.3/run at ≤2 channels vs 30.2 at
-  5–6) while **collections stay flat at ~2.0/run at every breadth** — 3.6× more looking, no more
-  finding. See *Model and effort* in `engine/skills/search-positions-common.md` (the data: `engine/docs/decisions.md`).
-- **Redundant collections are excluded from the miss counts** and reported separately —
-  a lead re-collected under a different slug is a dedup failure, not a miss. Three were produced in
-  one run on 2026-08-08; counting them as late discoveries had inflated the statistics.
+Standing state as of 2026-10-01 (`python engine/tools/log_run.py --stats`):
+- **Deep passes are running** — 10 of 48, the last 7 days ago (was 0 of 16).
+- **Starved channels** (not reached in the last 3 runs): `nordic_boards` only (was `euraxess`,
+  `nordic_boards`, `phd_portals`). But `phd_portals` is still skipped or failed in 22 of 48 runs
+  while it yields the best strong-lead rate of any channel (3 strong of 6 new).
+- **Yield by config** (new / strong / screened per run): `sonnet/medium/fast` 22 runs
+  2.0 / 0.4 / 16.8 · `sonnet/medium/deep` 9 runs 3.4 / 1.2 / 37.1 · `opus/high/fast` 1 run
+  3.0 / 1.0 / 30.0. **A deep pass finds ~3× the strong leads of a fast one**; Opus still has too
+  few runs to judge model choice (see *Model and effort* in `engine/skills/search-positions-common.md`,
+  the data: `engine/docs/decisions.md`).
+- **Channels → outcomes** (net-new / strong): `linkedin` 62 / 19 · `ats_sweep` 21 / 5 (the only
+  channel with a sent application) · `research_groups` 8 / 2 · `phd_portals` 6 / 3 ·
+  `danish_boards` 4 / 2 · `company_rotation` 3 / 2 · `nordic_boards` 1 / 0. LinkedIn funnel:
+  12,783 hits → 358 shortlisted (2.8%) over 32 runs.
+- **Screening rejections** (981): `dedup` 29.6% · `expired` 14.5% · `unverifiable` 11.3% ·
+  `gate1` 10.1% · `geo` 5.7% — dedup doing its job is the single largest filter.
