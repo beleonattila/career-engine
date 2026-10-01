@@ -37,6 +37,7 @@ embl-heidelberg = { tenant = "embl", site = "EMBL", wd = 103 }
 # Format: vault_slug -> workable account slug.
 [workable]
 ascendis-pharma = "ascendis-pharma"
+ordaos-bio = "ordaosbio"            # apply.workable.com/ordaosbio — registered 2026-10-01
 
 # Oracle Recruiting Cloud (ORC): "{tenant}.fa.{pod}.oraclecloud.com" + a siteNumber. The tenant
 # prefix is an opaque 4-char pod id, so unlike Greenhouse/Ashby slugs it can never be guessed

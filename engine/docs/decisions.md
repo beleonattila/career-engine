@@ -497,3 +497,34 @@ are permanent. Until then the dashboard's career column mixes two scales and war
 doing so. (The same skill earlier ran the v1 → v2 two-score migration, complete 2026-08.)
 
 **Complete 2026-10-01:** 382/382 records on v3 with `method_fit`, `--verify` clean. The rescore skill, the `rescore_status` tool and the `/rescore` command were deleted the same day; the per-record History lines are the record of what each batch decided.
+
+### Recall on strong leads (2026-10-01)
+
+*Rule: search-positions-common.md §Task step 2 (deep pass), step 8 (budget), §Group 1 (LinkedIn);
+`linkedin_loop` / `linkedin_required` in user/settings.toml; `recruiter_queries` in
+user/profile/search_terms.toml.*
+
+The headline miss histogram (48 runs, 573 miss-events) was dominated by low-value leads: its top
+causes, AGE_EXCLUDED and QUERY_GAP, were mostly skill-track data-engineering roles. Joined to the
+records' `career_fit` (now built into `analyze_misses.py`), the 24 leads scoring 75+ carry 93
+miss-events with a different shape: SOURCE_INCOMPLETE 30% (LinkedIn 17 of them) · CHANNEL_SKIPPED
+18% · QUERY_GAP 18% · CHANNEL_NOT_RUN 12% · GEO_GAP 12% (vs 4% overall, 10 of 11 from July runs) ·
+AGE_EXCLUDED 8%. PhD portals skipped or never run account for 15 of the 93.
+
+What changed:
+- **Deep pass weekly, not monthly**, with `phd_portals` mandatory on it. Deep passes yield 1.2 strong
+  leads per run against 0.4 for a fast pass (sonnet/medium, 9 vs 22 runs).
+- **Five required LinkedIn countries on both tracks** — UK, Denmark, Germany, Netherlands,
+  Switzerland — with Germany and the Netherlands given their own tokens, because the EU token
+  under-samples single countries. `log_run.py` warns when a run skips one.
+- **Three pages per LinkedIn query** via the guest endpoint (`start=0/10/20`). `sortBy=DD` was tested
+  and has no effect there, so the rule is to page, not to sort.
+- **One recruiter query per pass**, rotated by `log_run.py --next-queries`: agencies posted two
+  strong roles under titles the design queries did not return.
+- **`ats_sweep.py --uncovered`** lists band-A employers with no working board (24 of them on the
+  day); five are checked by hand each run and any ATS host found is registered. Ordaos Bio's
+  Workable board was registered the same day.
+
+The job-board misses that first suggested "sweep band A every run" (Adaptyv, Latent Labs) all
+predate the sweep itself; since it exists it has been skipped in 3 of 48 runs. The lever there is
+coverage, not frequency.

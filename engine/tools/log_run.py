@@ -10,7 +10,7 @@ Usage:
     python engine/tools/log_run.py run.json --check  # validate only, append nothing
     python engine/tools/log_run.py --stats           # summarise the existing log
     python engine/tools/log_run.py --starved         # channels not reached in the last 3 runs
-    python engine/tools/log_run.py --next-queries N  # the N least-used LinkedIn queries
+    python engine/tools/log_run.py --next-queries N  # the N least-used LinkedIn queries + 1 recruiter query
 """
 
 import json
@@ -58,12 +58,22 @@ CHANNELS = {"ats_sweep", "linkedin", "danish_boards", "nordic_boards", "euraxess
 #   mixed           -- a blended entry that cannot be attributed. Legacy only; never write it.
 TRACKS = {"career", "skill", "mixed"}
 STARVED_WINDOW = 3
-DEEP_PASS_MAX_AGE_DAYS = 30
+# Was 30. Measured 2026-10-01: a deep pass yields 1.2 strong leads per run against 0.4 for a fast
+# one (sonnet/medium, 9 vs 22 runs), so it is now flagged OVERDUE after a week rather than a month.
+DEEP_PASS_MAX_AGE_DAYS = 7
 
 # The LinkedIn keyword rotation is the user's: [linkedin] query_pool in
 # user/profile/search_terms.toml. Read here so "which term is overdue" is a lookup rather
 # than a judgement (the measurement behind that is in the file).
 QUERY_POOL = user_toml("profile/search_terms.toml")["linkedin"]["query_pool"]
+# One recruiter query per run, rotated separately so it never crowds the design terms out of
+# --next-queries. Optional: a terms file without the key simply prints none.
+RECRUITER_POOL = user_toml("profile/search_terms.toml")["linkedin"].get("recruiter_queries", [])
+
+# The LinkedIn countries no run may skip: the first `linkedin_required` of the loop in
+# user/settings.toml [geography]. A run that leaves one out is warned at log time and counted in
+# --stats, because country gaps were 12% of the misses on strong leads vs 4% overall (2026-10-01).
+REQUIRED_GEOS = setting("geography.linkedin_loop")[:setting("geography.linkedin_required")]
 
 
 def parse_stamp(s):
@@ -169,6 +179,38 @@ def problems(rec):
     return p
 
 
+def linkedin_channel(rec):
+    return next((c for c in rec.get("channels", []) if c.get("key") == "linkedin"
+                 and c.get("status") in ("reached", "partial")), None)
+
+
+def missing_required_geos(rec):
+    li = linkedin_channel(rec)
+    return [] if li is None else [g for g in REQUIRED_GEOS if g not in (li.get("geos") or [])]
+
+
+def phd_reached(rec):
+    return any(c.get("key") == "phd_portals" and c.get("status") in ("reached", "partial")
+               for c in rec.get("channels", []))
+
+
+def warnings(rec):
+    """Coverage shortfalls that do not invalidate a record but must be seen at log time.
+
+    Not validation errors: a time-boxed run must still be logged honestly, and rejecting it would
+    only push the shortfall out of the telemetry. The same two counts appear in --stats.
+    """
+    w = []
+    missing = missing_required_geos(rec)
+    if missing:
+        w.append(f"linkedin skipped required countries {missing} -- every run covers "
+                 f"{REQUIRED_GEOS} (user/settings.toml [geography])")
+    if rec.get("mode") == "deep" and not phd_reached(rec):
+        w.append("deep pass without phd_portals reached -- PhD portals are mandatory on a deep "
+                 "pass (best strong-lead rate of any channel, 3 of 6)")
+    return w
+
+
 def load():
     if not LOG.exists():
         return []
@@ -194,18 +236,19 @@ def _toks(s):
     return {t for t in re.split(r"[^a-z0-9]+", str(s).lower()) if t and t != "or"}
 
 
-def query_usage(runs):
+def query_usage(runs, pool=None):
     """QUERY_POOL entry -> number of runs whose logged LinkedIn queries covered it.
 
     A pool entry counts as used by a logged query when the logged query contains all of the
     entry's tokens, so `nanobody OR minibinder OR antibody engineering` credits `nanobody` and
     `minibinder` but not the unrelated `peptide design`.
     """
-    used = {q: 0 for q in QUERY_POOL}
+    pool = QUERY_POOL if pool is None else pool
+    used = {q: 0 for q in pool}
     for r in runs:
         issued = [_toks(q) for c in r.get("channels", []) if c.get("key") == "linkedin"
                   for q in (c.get("queries") or [])]
-        for q in QUERY_POOL:
+        for q in pool:
             qt = _toks(q)
             if qt and any(qt <= i for i in issued):
                 used[q] += 1
@@ -472,6 +515,15 @@ def stats():
         print(f"\n  deep passes: {n_deep} of {len(runs)} runs"
               + (f" — last one {age}d ago" if age is not None else ""))
 
+    recent = runs[-10:]
+    geo_short = sum(1 for r in recent if missing_required_geos(r))
+    print(f"  required LinkedIn countries {REQUIRED_GEOS}: skipped in {geo_short} of the last "
+          f"{len(recent)} runs")
+    deep = [r for r in runs if r.get("mode") == "deep"]
+    if deep:
+        print(f"  deep passes without phd_portals reached: "
+              f"{sum(1 for r in deep if not phd_reached(r))} of {len(deep)}")
+
     st = starved(runs)
     print(f"  starved channels (not reached in the last {STARVED_WINDOW} runs): "
           + (", ".join(st) if st else "none — full coverage"))
@@ -510,6 +562,10 @@ def main():
         order = sorted(QUERY_POOL, key=lambda q: (used[q], QUERY_POOL.index(q)))
         for q in order[:n]:
             print(f"{q}\t({used[q]} run(s))")
+        if RECRUITER_POOL:
+            r_used = query_usage(load(), RECRUITER_POOL)
+            q = min(RECRUITER_POOL, key=lambda x: (r_used[x], RECRUITER_POOL.index(x)))
+            print(f"{q}\t({r_used[q]} run(s))  <- recruiter query")
         return
     if not argv:
         sys.exit(__doc__)
@@ -539,6 +595,8 @@ def main():
     if n_no_date:
         print(f"  warning: {n_no_date} collected item(s) have no posting date and cannot "
               f"contribute to recall measurement")
+    for w in warnings(rec):
+        print(f"  warning: {w}")
 
     if "--check" in argv:
         print("(--check: nothing written)")

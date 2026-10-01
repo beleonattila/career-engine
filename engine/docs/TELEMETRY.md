@@ -17,6 +17,10 @@ that earlier run missed it**, and the telemetry says why. Late discoveries are t
 - `python engine/tools/analyze_misses.py` does the deterministic attribution; feed `--json` to Opus for the
   reasoning pass and skill recommendations. The **cause histogram** is the deliverable —
   "62% GEO_GAP" is an instruction, "we missed 8 things" is not.
+- **Act on the strong-lead histogram, not the headline one.** Since 2026-10-01 the script joins each
+  lead to its record's `career_fit` and prints a second histogram over leads at 75+ (`--min-fit N`
+  restricts the whole report). The two disagree: the headline is dominated by low-value roles
+  (`engine/docs/decisions.md` §Recall on strong leads).
 
 **Current attribution — 48 runs, 573 miss-events, measured 2026-10-01.** Median lag **13 days**,
 max 215 (n=66). `SOURCE_INCOMPLETE` 29.3% · `AGE_EXCLUDED` 21.6% · `QUERY_GAP` 21.6% ·

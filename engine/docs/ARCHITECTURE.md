@@ -83,11 +83,11 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `dashboard.py` | → `user/workspace/artifacts/dashboard.html` |
 | `expire_sweep.py` | Retires past-deadline and stale leads `open/` → `closed/` (step 1 of /dashboard). **Applies by default**; `--dry-run` to preview |
 | `ats_discover.py` | → `cache/ats_slugs.tsv` (one-off/occasional ATS slug discovery; no `--help`, it runs) |
-| `ats_sweep.py` | → `logs/ats_sweep_latest.tsv` (bulk employer-board sweep, ~0 tokens; no `--help`, it runs) |
+| `ats_sweep.py` | → `logs/ats_sweep_latest.tsv` (bulk employer-board sweep, ~0 tokens; no `--help`, it runs). `--uncovered` lists band-A employers with no board |
 | `dedup_check.py` | Duplicate guard, mandatory before writing to the inbox |
 | `link_check.py` | Verifies open leads still point at a live posting; report-only by default, `--apply` stamps `url_status` and retires dead leads (see LINK_HEALTH.md) |
 | `log_run.py` | Validate + append a run record to `logs/search_runs.jsonl` |
-| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`) |
+| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `career_fit`, prints a strong-lead histogram, `--min-fit N` |
 | `reconcile_staging.py` | Merge the two search tracks' staging folders into `inbox/`; career wins a collision, stamps `TRACK:`, `--apply` to write |
 | `org_match.py` | Which company/group profile a position belongs to (shared by `dashboard.py` and `org_floor.py`) |
 | `org_floor.py` | An org never scores below its best linked position; report-only by default, `--apply` writes the floor (run by /inbox) |

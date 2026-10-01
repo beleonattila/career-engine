@@ -32,9 +32,13 @@ live there and are identical for both tracks.
    - **Fast pass** — the default; run 2–3× / week. Apply each source's own recency filter at
      **~21 days** where one exists. Cheap, catches new postings quickly. Treat the result as a
      *sample*, never as a complete sweep.
-   - **Deep pass** — run **~monthly**, or whenever the user says "deep". **No age filter at all.**
-     Collect anything still open, however old the posting. This is the run that recovers what the
-     fast passes dropped; without it, misses are permanent.
+   - **Deep pass** — run **~weekly** (`log_run.py --stats` flags it OVERDUE after 7 days), or
+     whenever the user says "deep". **No age filter at all.** Collect anything still open, however
+     old the posting. This is the run that recovers what the fast passes dropped; without it,
+     misses are permanent. **`phd_portals` is mandatory on every deep pass.** Measured 2026-10-01:
+     a deep pass finds 1.2 strong leads per run against 0.4 for a fast one, and PhD portals have
+     the best strong-lead rate of any channel (3 of 6) while being skipped in 22 of 48 runs
+     (`engine/docs/decisions.md` §Recall on strong leads).
 
    State which mode you ran in the closing report.
 3. **Never skip on age alone.** A lead is stale only when its **deadline has passed** or the
@@ -203,7 +207,13 @@ live there and are identical for both tracks.
 
    Rough split for what remains:
    - `ats_sweep.py` — ~2 min, near-zero tokens. **Always run it**; it costs almost nothing.
-   - LinkedIn country loop — ~40% of the remaining budget, the `linkedin_required` countries mandatory.
+     Then `ats_sweep.py --uncovered` lists the band-A employers the sweep cannot see: check the
+     top **5** by hand (careers page, or `WebSearch` if it blocks), and register any ATS host you
+     find (Group 0) — a registered board leaves the list for good, so the list rotates by
+     shrinking. Log those checks under `company_rotation`.
+   - LinkedIn country loop — ~40% of the remaining budget. The `linkedin_required` countries are
+     mandatory **on both tracks, every run** — drop query variants before you drop one of them;
+     `log_run.py` warns when a run skips one.
    - Company / research-group rotation — ~30%, oldest-`last_evaluated` first, no-tracked-lead first.
    - Regional + academic boards (the pack's `boards.md`) — ~30%.
 
@@ -211,7 +221,8 @@ live there and are identical for both tracks.
    next run, which is what makes the rotation real rather than aspirational.
 
    > ⚠️ **`phd_portals` is the highest-value starved channel for this profile** (measured 2026-08-09:
-   > `engine/docs/decisions.md` §Budget). When `--starved` names it, it outranks the company rotation.
+   > `engine/docs/decisions.md` §Budget). When `--starved` names it, it outranks the company rotation,
+   > and on a deep pass it is never optional.
 9. Report progress: "X added this session, # of new entries found", **plus the run mode
    (fast/deep)** and which sources were checked vs. skipped. A source you did not reach is not
    a source that had nothing — say so explicitly.
@@ -525,6 +536,19 @@ build the URL with LinkedIn's own recency filter and `WebFetch` it directly:
 `https://www.linkedin.com/jobs/search/?keywords=<terms>&location=<COUNTRY>&f_TPR=r1814400`
 
 - `f_TPR=r1814400` = 21 days in seconds (fast pass). Drop `f_TPR` entirely on a deep pass.
+- **Read three pages, one country at a time.** A single fetch is one ranked page, and LinkedIn
+  "reached but not returned" is the largest single miss on strong leads (17 of 93 miss-events,
+  2026-10-01, `analyze_misses.py`). The guest
+  endpoint pages cleanly, 10 cards per page:
+  `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=<terms>&location=<COUNTRY>&f_TPR=r1814400&start=0`
+  then `start=10` and `start=20`. Stop early once a page is off-topic — relevance falls off fast
+  (page 3 of `protein design` / UK on 2026-10-01 was macroalgae and metabolomics). `sortBy=DD`
+  has **no effect** on this endpoint (measured 2026-10-01: identical order with and without it), so
+  page, don't sort. Log every page fetched in `hits`.
+- **One recruiter query per pass.** `log_run.py --next-queries` prints it last, marked
+  `<- recruiter query` (`recruiter_queries` in `user/profile/search_terms.toml`). Agencies post
+  strong roles under generic titles, so the agency name in the keywords is what surfaces them.
+  Run it in the required countries like any other query.
 - **`location` MUST be looped over countries, in the configured order.** The loop is ordered by
   measured yield, and **the first `linkedin_required` entries are not optional** — if the run is
   time-boxed, drop keyword variants, not countries. On 2026-07-29 three consecutive runs ended with

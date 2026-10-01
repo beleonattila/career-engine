@@ -21,6 +21,7 @@ Usage:
     python engine/tools/ats_sweep.py --all-roles     # skip the relevance prefilter (very noisy)
     python engine/tools/ats_sweep.py --max-age 60    # only roles published within N days (opt-in)
     python engine/tools/ats_sweep.py --no-body       # title-only tiering (skips description fetching)
+    python engine/tools/ats_sweep.py --uncovered     # band-A employers with no working board (no sweep)
 """
 
 import concurrent.futures as cf
@@ -479,6 +480,35 @@ def org_fit_scores():
     return out
 
 
+def uncovered(boards):
+    """Band-A companies the sweep cannot see: no `ok` row in ats_slugs.tsv.
+
+    Every other channel samples; the sweep is the only one that enumerates, so a band-A employer
+    without a board is the most expensive blind spot there is. Measured 2026-10-01: after the v3
+    rescore 128 records sat in band A, while the sweep covered 36 of 96 boards. Highest
+    career_fit first; registering the employer's ATS host (search-positions-common.md, Group 0)
+    removes it from this list for good.
+    """
+    covered = {vs for vs, _, _ in boards}
+    rows = []
+    for p in (ROOT / "organizations" / "companies").glob("*.md"):
+        t = p.read_text(encoding="utf-8", errors="replace")
+        band = re.search(r"^career_band:\s*(\S+)", t, re.M)
+        if not band or band.group(1) != "A" or p.stem in covered:
+            continue
+        fit = re.search(r"^career_fit:\s*(\d+)", t, re.M)
+        mf = re.search(r"^method_fit:\s*(\d+)", t, re.M)
+        url = re.search(r"^url:\s*\"?([^\"\n]*)", t, re.M)
+        rows.append((int(fit.group(1)) if fit else 0, int(mf.group(1)) if mf else 0, p.stem,
+                     (url.group(1).strip() if url else "") or "-"))
+    rows.sort(key=lambda r: (-r[0], -r[1], r[2]))
+    print(f"{len(rows)} band-A compan{'y' if len(rows) == 1 else 'ies'} with no working ATS board "
+          f"(the sweep enumerates {len(covered)} boards):")
+    print("career\tmethod\torg\tcareers url")
+    for fit, mf, slug, url in rows:
+        print(f"{fit}\t{mf}\t{slug}\t{url}")
+
+
 def main():
     argv = sys.argv[1:]
     all_geo = "--all-geo" in argv
@@ -498,6 +528,9 @@ def main():
         p = line.rstrip("\n").split("\t")
         if len(p) >= 5 and p[1] and p[4] == "ok":
             boards.append((p[0], p[1], p[2]))
+    if "--uncovered" in argv:
+        uncovered(boards)
+        return
 
     known = tracked_index()
     fits = org_fit_scores()

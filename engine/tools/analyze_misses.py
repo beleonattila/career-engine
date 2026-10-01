@@ -14,6 +14,13 @@ Usage:
     python engine/tools/analyze_misses.py                 # report to stdout + logs/analysis/
     python engine/tools/analyze_misses.py --since 2026-07-01
     python engine/tools/analyze_misses.py --json          # machine-readable, for an LLM pass
+    python engine/tools/analyze_misses.py --min-fit 75    # only leads that became a record at career_fit >= 75
+
+Every lead is joined to the vault record it became (log_run.match_outcome), so each carries its
+career_fit, and the report always prints a second histogram over strong leads alone. Added
+2026-10-01: over all leads the top causes were AGE_EXCLUDED and QUERY_GAP; over leads scoring 75+
+they were SOURCE_INCOMPLETE and GEO_GAP. Counting a missed data-analyst role the same as a missed
+band-A design role had pointed the fixes the wrong way.
 """
 
 import datetime as dt
@@ -23,7 +30,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from paths import REPO, WORKSPACE as ROOT  # noqa: E402 — records are relative to user/workspace/
+from paths import REPO, WORKSPACE as ROOT, setting  # noqa: E402 — records are relative to user/workspace/
+STRONG_FIT = setting("thresholds.on_direction")
 LOG = ROOT / "logs" / "search_runs.jsonl"
 
 # Shared with the dedup guard on purpose: "the same lead" must mean the same thing to the thing
@@ -52,7 +60,9 @@ for _s in (sys.stdout, sys.stderr):
 EU = {"AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT",
       "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"}
 GEO_TOKEN = {"GB": "United Kingdom", "CH": "Switzerland", "NO": "Norway", "IS": "Iceland",
-             "DK": "Denmark", "SE": "Sweden"}
+             "DK": "Denmark", "SE": "Sweden", "DE": "Germany", "NL": "Netherlands",
+             "FR": "France", "BE": "Belgium", "AT": "Austria", "ES": "Spain", "IT": "Italy",
+             "FI": "Finland", "IE": "Ireland", "PL": "Poland"}
 
 
 def d(s):
@@ -84,7 +94,7 @@ def geo_covered(chan, country):
     if country in EU and "European Union" in geos:
         return True
     tok = GEO_TOKEN.get(country)
-    return bool(tok and tok in geos)
+    return bool(tok and (tok in geos or country in geos))
 
 
 def query_covered(chan, role, org):
@@ -142,12 +152,33 @@ def attribute(find, run):
     return ("SOURCE_INCOMPLETE", f"{ch_key} was reached and covered, yet did not return it")
 
 
+def fit_index():
+    """find -> career_fit of the vault record it became, via log_run's matcher (None if none)."""
+    try:
+        from log_run import vault_outcomes, match_outcome
+    except Exception:                                         # analysed outside the vault
+        return lambda find: None
+    idx = vault_outcomes()
+
+    def fit(find):
+        info = match_outcome(find, idx)
+        return info["fit"] if info else None
+    return fit
+
+
+def histogram(leads):
+    c = Counter(m["cause"] for x in leads for m in x["misses"])
+    return c, sum(c.values())
+
+
 def main():
     argv = sys.argv[1:]
     since = None
     if "--since" in argv:
         since = d(argv[argv.index("--since") + 1])
     as_json = "--json" in argv
+    min_fit = int(argv[argv.index("--min-fit") + 1]) if "--min-fit" in argv else None
+    fit_of = fit_index()
 
     runs = load()
     causes = Counter()
@@ -158,6 +189,7 @@ def main():
     # reported as a 68-day-lag lead "missed by 13 runs" while sitting in the vault the whole
     # time. Keep only the FIRST collection of each lead; report the rest separately.
     first_seen, redundant = {}, []
+    n_first = n_dated = 0
 
     for i, run in enumerate(runs):
         for find in run.get("collected", []):
@@ -170,8 +202,13 @@ def main():
                                   first_seen[key]))
                 continue
             first_seen[key] = run.get("run_id")
+            n_first += 1
             posted, found = d(find.get("posted")), d(run.get("started"))
             if not posted or not found:
+                continue
+            n_dated += 1
+            fit = fit_of(find)
+            if min_fit is not None and (fit is None or fit < min_fit):
                 continue
             if since and found < since:
                 continue
@@ -188,15 +225,22 @@ def main():
             per_lead.append({
                 "org": find["org"], "role": find["role"], "posted": str(posted),
                 "found": str(found), "lag_days": lag, "channel": find.get("channel"),
-                "country": find.get("country"), "missed_by_n_runs": len(misses),
+                "country": find.get("country"), "career_fit": fit,
+                "missed_by_n_runs": len(misses),
                 "misses": misses,
             })
 
     per_lead.sort(key=lambda x: -x["missed_by_n_runs"])
     total = sum(causes.values())
+    strong = [x for x in per_lead if x["career_fit"] is not None and x["career_fit"] >= STRONG_FIT]
+    s_causes, s_total = histogram(strong)
     report = {"runs_logged": len(runs), "leads_analysed": len(per_lead),
               "total_attributed_misses": total,
+              "min_fit": min_fit,
+              "dated_first_collections": [n_dated, n_first],
               "cause_histogram": dict(causes.most_common()),
+              "strong_leads": len(strong), "strong_threshold": STRONG_FIT,
+              "strong_cause_histogram": dict(s_causes.most_common()),
               "by_channel": {k: dict(v) for k, v in by_channel.items()},
               "redundant_collections": [
                   {"run_id": r, "org": o, "role": ro, "first_collected_in": f}
@@ -212,7 +256,10 @@ def main():
         print(json.dumps(report, indent=1, ensure_ascii=False))
         return
 
-    print(f"=== miss attribution over {len(runs)} logged run(s) ===")
+    print(f"=== miss attribution over {len(runs)} logged run(s)"
+          + (f", leads at career_fit >= {min_fit}" if min_fit is not None else "") + " ===")
+    print(f"posting dates: {n_dated} of {n_first} first collections are dated -- "
+          f"only those can be measured")
     if redundant:
         print(f"{len(redundant)} redundant collection(s) excluded — a lead already in the vault, "
               f"re-collected under a different slug. These are dedup failures, not misses:")
@@ -231,6 +278,11 @@ def main():
         print(f"\n{total} attributed miss-events (one lead can be missed by several runs):")
         for c, n in causes.most_common():
             print(f"  {c:<20} {n:>4}  {100 * n / total:>5.1f}%")
+        if s_total and min_fit is None:
+            print(f"\non strong leads only (career_fit >= {STRONG_FIT}: {len(strong)} leads, "
+                  f"{s_total} miss-events) -- the histogram to act on:")
+            for c, n in s_causes.most_common():
+                print(f"  {c:<20} {n:>4}  {100 * n / s_total:>5.1f}%")
         print("\nworst leads:")
         for x in per_lead[:8]:
             if not x["missed_by_n_runs"]:
