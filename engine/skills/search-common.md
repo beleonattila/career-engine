@@ -40,10 +40,16 @@ every record, so how off-direction a lead is stays visible without suppressing i
 > **`method_fit`** — *does the seat build methods, tools and systems, or only operate them?*
 > (rubric: [[inbox-eval]] §`method_fit`; rationale: `user/workspace/notes/rebrand_plan.md`). The user has said yes to
 > methods-building roles in genomics, pharma/clinical data and non-bio fields, and those reach the
-> vault through **this** track: its pipeline-engineering and scientific-software
-> competency triggers are exactly what such ads name. This is one more reason the skill track
+> vault through **this** track. This is one more reason the skill track
 > must keep its lack of a direction floor — it is now the only route by which a `career_fit` 30 ·
 > `method_fit` 90 role gets collected at all.
+>
+> **Since 2026-10-01 the skill track looks for them on purpose** — the *method lane*: the ATS
+> sweep's `M`/`Mb` rows (build wording in the ad text, not method titles), a second Gate 3 route
+> (one method competency + a build signal), a sightings log of employers that post such seats,
+> and an org rotation that puts those employers first. Positions: [[search-positions-skill]]
+> §Method lane. Companies and groups: their skill tracks log any build seat seen on a careers page
+> the same way.
 >
 > ⚠️ **The career track is unchanged and stays direction-only.** Never collect on the career track
 > because a role "builds methods" — that is `method_fit`'s job, not `career_fit`'s, and the two

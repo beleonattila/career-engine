@@ -86,19 +86,6 @@ Set the model before running (capability buys judgment; effort buys care):
 /dashboard          Retire past-deadline leads (expire_sweep.py), then rebuild
                     user/workspace/artifacts/dashboard.html (tiles, funnel, ranked tabs).           [Haiku low]
 
-/rescore            TEMPORARY. Re-judge career_fit under scoring v3 (2026-09-10: band +
-                    checks, org floor) AND write the new method_fit
-                    (2026-09-29) on every record, one batch per run.      [Opus high]
-                    Resumable. The ~22 already-v3 records come back once
-                    for method_fit only.
-                    Fresh session per batch.
-                      python engine/tools/rescore_status.py           progress
-                      python engine/tools/rescore_status.py --next 30 claim a batch
-                      python engine/tools/career_fit.py A "application, validation"   the lookup
-                      python engine/tools/rescore_status.py --verify  catch half-applied edits
-                      python engine/tools/org_floor.py --apply        after every batch
-                    Delete /rescore + rescore_status.py once it reports 100%.
-
 /track <t> <event>  Update an application's status, then refresh dashboard.[Haiku low]
                     events: cv | sent | interviewing |
                             feedback "note" | closed <offer|rejected|ghosted|withdrawn> |

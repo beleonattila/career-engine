@@ -70,7 +70,8 @@ STALE = [
 # A path the engine names. Templated ones ([slug], {a,b}, *.md, <id>, YYYY) are patterns, not files.
 PATH_RE = re.compile(r"(?<![\w/.-])((?:user|engine)/[\w./@-]*[\w/])")
 TEMPLATED = re.compile(r"[\[\]{}*<>|]|YYYY|\.\.\.")
-ON_DEMAND = {"user/workspace/trash", "user/workspace/trash/_trash_log.md"}  # created by /track
+ON_DEMAND = {"user/workspace/trash", "user/workspace/trash/_trash_log.md",   # created by /track
+             "user/workspace/logs/method_sightings.tsv"}                     # by method_sightings.py add
 
 results = []  # (status, check, message, details)
 
@@ -168,6 +169,8 @@ def check_settings():
 # What ats_sweep.py, level_sweep.py and log_run.py read from user/profile/search_terms.toml.
 SEARCH_PATTERNS = {"sweep": ("tier1", "tier2", "maybe", "computational"),
                    "level": ("overlevel", "phd_call", "optional_level")}
+# ats_sweep.py's method lane, [sweep.method] — optional as a section, complete when present.
+METHOD_PATTERNS = ("title_strong", "title", "body_build", "body_users")
 
 
 def check_search_terms():
@@ -191,6 +194,18 @@ def check_search_terms():
                 re.compile(v, re.I)
             except re.error as e:
                 bad.append(f"{section}.{k} does not compile: {e}")
+    # [sweep.method] is optional (no section = no M tier), but when present it is read whole.
+    method = t.get("sweep", {}).get("method")
+    if method is not None:
+        for k in METHOD_PATTERNS:
+            v = method.get(k) if isinstance(method, dict) else None
+            if not isinstance(v, str) or not v:
+                bad.append(f"sweep.method.{k} — want a regular expression (a TOML literal string)")
+                continue
+            try:
+                re.compile(v, re.I)
+            except re.error as e:
+                bad.append(f"sweep.method.{k} does not compile: {e}")
     fit = t.get("sweep", {}).get("t2q_min_employer_fit")
     if not isinstance(fit, int) or isinstance(fit, bool) or not 0 <= fit <= 100:
         bad.append(f"sweep.t2q_min_employer_fit = {fit!r} — want an integer 0–100")

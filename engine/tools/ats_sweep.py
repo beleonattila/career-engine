@@ -10,7 +10,9 @@ Deliberately does NOT filter by posting age. Age is a sort key, never a discard 
 see "Why age is not a filter" in engine/skills/search-positions-common.md. Dedup is by identity, not date.
 
 Output: a compact TSV on stdout (and user/workspace/logs/ats_sweep_latest.tsv), newest first.
-The LLM reads that table and makes the actual collect/skip call.
+The LLM reads that table and makes the actual collect/skip call. Tiers T1..T2? are the career
+track's; M / Mb (after them) are the skill track's method lane, assigned only to rows the career
+tiers left untiered (search-positions-skill.md §Method lane).
 
 Usage:
     python engine/tools/ats_sweep.py                 # tiered roles in the allowlist countries, newest first
@@ -64,6 +66,15 @@ MAYBE = re.compile(_TERMS["sweep"]["maybe"], re.I)
 COMPUTATIONAL = re.compile(_TERMS["sweep"]["computational"], re.I)
 # T2? needs the employer's career_fit at or above this (the user's threshold, in the same file).
 T2Q_MIN_FIT = _TERMS["sweep"]["t2q_min_employer_fit"]
+# The skill track's method lane ([sweep.method]): M = the title names a method-building seat,
+# Mb = the role text says the seat builds tools for scientists. Only ever assigned to a row the
+# career tiers left at '-', so T1..T2? counts are untouched. Optional: a terms file without the
+# section simply produces no M rows.
+_METHOD = _TERMS["sweep"].get("method", {})
+M_TITLE_STRONG = re.compile(_METHOD["title_strong"], re.I) if _METHOD else None
+M_TITLE = re.compile(_METHOD["title"], re.I) if _METHOD else None
+M_BODY_BUILD = re.compile(_METHOD["body_build"], re.I) if _METHOD else None
+M_BODY_USERS = re.compile(_METHOD["body_users"], re.I) if _METHOD else None
 # Roles that are never a fit regardless of keyword noise.
 EXCLUDE = re.compile(
     r"\b(sales|account executive|marketing|recruit|talent|people ops|hr\b|finance|"
@@ -529,7 +540,13 @@ def main():
                 # T1/T2/T2? counts, so MAYBE costs no recall -- and dropping it let body text
                 # promote "Community Manager" and "Lab Technician" at a protein-design company
                 # to T1b. Body tiering upgrades within this set; it does not widen it.
-                if not all_roles and not MAYBE.search(title):
+                # A title outside MAYBE may still enter the method check ("Software Engineer",
+                # "Platform Developer") -- but only that check: career tiering keeps its own
+                # prefilter, measured above, so a method title can never become T1b.
+                career_title = all_roles or bool(MAYBE.search(title))
+                method_title = bool(M_TITLE and (M_TITLE.search(title)
+                                                 or M_TITLE_STRONG.search(title)))
+                if not career_title and not method_title:
                     continue
                 if not all_geo and not in_scope(loc, geo_strict, geo_loose):
                     continue
@@ -545,13 +562,15 @@ def main():
                     continue
                 seen_urls.add(url)
 
-                tier = "T1" if TIER1.search(blob) else ("T2" if TIER2.search(blob) else "-")
+                tier = "-"
+                if career_title:
+                    tier = "T1" if TIER1.search(blob) else ("T2" if TIER2.search(blob) else "-")
                 fit = fits.get(vault_slug, 0)
+                own = derole(body, house) if body else ""
                 # Body match, boilerplate removed. 'b' suffix = the term is in the ad text, not
                 # the title, so Gate 2 (placement) still has to be answered when the ad is
                 # opened -- but the lead is no longer invisible.
-                if tier == "-" and body:
-                    own = derole(body, house)
+                if tier == "-" and own and career_title:
                     if TIER1.search(own):
                         tier = "T1b"
                     elif len(terms_in(TIER2, own)) >= 2:
@@ -567,9 +586,19 @@ def main():
                 # unnoticed while Workday was sampled at 60 rows/board; full enumeration took
                 # T2? from 19 to 43, of which 38 were AstraZeneca/Sanofi/Amgen/GSK infrastructure
                 # roles (measured 2026-08-08).
-                if (tier == "-" and fit >= T2Q_MIN_FIT and len(jobs) <= T2Q_MAX_BOARD
-                        and COMPUTATIONAL.search(title)):
+                if (tier == "-" and career_title and fit >= T2Q_MIN_FIT
+                        and len(jobs) <= T2Q_MAX_BOARD and COMPUTATIONAL.search(title)):
                     tier = "T2?"
+
+                # Method lane, for the skill track only (search-positions-skill.md §Method lane).
+                # M from the title alone; Mb needs BOTH a build phrase and scientist users in the
+                # role text -- the build phrase on its own is every corporate IT ad on a pharma
+                # Workday board. Workday/SmartRecruiters/Oracle carry no body, so there only M fires.
+                if tier == "-" and M_TITLE:
+                    if M_TITLE_STRONG.search(title):
+                        tier = "M"
+                    elif own and M_BODY_BUILD.search(own) and M_BODY_USERS.search(own):
+                        tier = "Mb"
 
                 # Demote rather than drop: the row stays in the TSV so a wrong suppression is
                 # recoverable and countable, it just does not spend context. --show-all prints it.
@@ -593,7 +622,7 @@ def main():
                     "tracked": tracked, "url": url,
                 })
 
-    rank = {"T1": 0, "T1b": 1, "T2": 2, "T2b": 3, "T2?": 4, "-": 5}
+    rank = {"T1": 0, "T1b": 1, "T2": 2, "T2b": 3, "T2?": 4, "M": 5, "Mb": 6, "-": 7}
     rows.sort(key=lambda r: (rank[r["tier"]], -r["fit"],
                              r["age"] if isinstance(r["age"], int) else 9999))
 
@@ -618,7 +647,8 @@ def main():
     counts = {t: sum(1 for r in rows if r["tier"] == t) for t in rank}
     print(f"\n# {len(boards)} boards swept | {total} postings seen | {len(shown)} printed "
           f"| {counts['T1']} T1, {counts['T1b']} T1b, {counts['T2']} T2, "
-          f"{counts['T2b']} T2b, {counts['T2?']} T2?, {counts['-']} untiered",
+          f"{counts['T2b']} T2b, {counts['T2?']} T2?, {counts['M']} M, {counts['Mb']} Mb "
+          f"(method lane — skill track), {counts['-']} untiered",
           file=sys.stderr)
     if not show_all and counts["-"]:
         print(f"#   {counts['-']} tier '-' row(s) written to {OUT.name} but not printed "

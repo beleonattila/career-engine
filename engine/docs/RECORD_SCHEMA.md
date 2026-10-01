@@ -21,6 +21,11 @@ and bumps `schema_version`. Neither is ever edited by hand.
 | 0 | — | No stamp: anything written before 2026-10-01. |
 | 1 | 2026-10-01 | The layout after the restructure: records under `user/workspace/`, record paths (`source_file:`, `cv_dir:`) relative to it; `career_fit`, `method_fit` and `skill_match` on every record, `level_fit` on positions; `career_band` / `career_checks`; `track`; contacts as records of their own. Going 0 → 1 adds the stamp and nothing else. |
 
+**Derived fields** are written by a tool from other data and are not part of the format version:
+an org may carry them or not, and nothing else writes them. `career_fit_own` /
+`career_fit_floor` / `career_fit_floor_from` (`org_floor.py`); `method_roles_seen` /
+`last_method_role` (`method_sightings.py --apply`, from `logs/method_sightings.tsv`).
+
 ## Where new records come from
 
 The templates in `engine/skills/inbox-eval.md` §Handlers (companies, groups, positions / PhD) and

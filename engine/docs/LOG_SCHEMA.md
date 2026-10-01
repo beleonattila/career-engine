@@ -105,6 +105,11 @@ One object per run, appended to `search_runs.jsonl`:
   contributes nothing to recall measurement.
 - `verdict` — `skip` or `collect`; `reason` uses stable codes (`gate0`, `gate2`, `gate3d`,
   `dedup`, `expired`, `geo`, `unverifiable`) so they aggregate.
+- `method_lane` — **skill track only, optional** (since 2026-10-01):
+  `{"opened": N, "sightings": N, "collected": N}` — `M`/`Mb` rows opened, ads with a YES build
+  signal (each also logged in `user/workspace/logs/method_sightings.tsv`), and collections that
+  came through the lane rather than the ≥2-competency rule. Not validated yet; it is how the lane
+  will be judged (`engine/skills/search-positions-skill.md` §Report).
 
 **Records written before 2026-08-07** predate the `effort` / `ended` requirements: all 13 carry a
 `model`, none carry an `effort`, and the first six have no `ended`. They are left as written — the

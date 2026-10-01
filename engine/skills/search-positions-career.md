@@ -34,6 +34,10 @@ tiers are the user's:** `user/profile/search_terms.md` §Career track → *Keywo
 is fixed: **Tier 1** — strong, any one is a bullseye · **Tier 2** — supporting / adjacent ·
 **Tier 3** — generic context, never qualifies a lead on its own.
 
+**Ignore `M` / `Mb` rows in the ATS sweep.** They are the skill track's method lane
+([[search-positions-skill]] §Method lane) and carry no direction signal; a method role that is
+also on-direction already shows up here as `T1`–`T2?`.
+
 ## [MODE] Gate 0 — one extra hard reject
 
 In addition to the shared rejects, the career track applies the user's one direction reject —

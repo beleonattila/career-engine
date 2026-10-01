@@ -97,16 +97,70 @@ career track.
 
 Record as: `Gate 3 (competencies): {C1, C6, C7} — 3 present`
 
+**…or through the method lane** (below): **1 counting competency from the user's method
+competencies + a BUILD SIGNAL → COLLECT.** Record as
+`Gate 3 (method lane): {C4} + "you will develop and maintain the analysis platform our scientists use"`.
+
+## [MODE] Method lane
+
+> **Added 2026-10-01.** `/inbox` scores `method_fit` — *does the seat build methods, tools and
+> systems, or only operate them?* ([[inbox-eval]] §`method_fit`) — and the user wants those seats
+> in any domain. They rarely say so in a title: the build hides under "Scientist" or
+> "Bioinformatician", in the responsibilities. So the engine does **not** query job boards for
+> method titles. It finds them two cheaper ways — the ad text of employers it already sweeps, and
+> the employers that have posted such seats before. Why: `engine/docs/decisions.md` §Method lane.
+
+**Where the candidates come from.**
+- **ATS sweep `M` / `Mb` rows** — open every one that is not `tracked`. `M` = the title names a
+  method-building seat; `Mb` = the role text says the seat builds tools for scientists.
+- **Any ad you read for another reason** that turns out to carry a build signal.
+- **The org rotation** (§Which orgs to sweep) — which puts proven method hirers first.
+
+**The BUILD SIGNAL** — a yes/no read, like the career track's output row, not a score. YES iff the
+role text says the seat's own deliverable is a method, tool, pipeline, platform, framework or
+benchmark **that other people then use**, and it sits where Gate 3's *central* rule says a
+competency must sit: the title or the primary responsibilities. Copy the sentence verbatim — it
+is the audit trail. NO when the build is a "nice to have", when the users are customers rather
+than scientists (corporate IT, product software), or when the deliverable is results from
+running something that already exists.
+
+**The method competencies** are the user's: `user/profile/search_terms.md` §Skill track →
+*Method lane*. Exactly one of them, PRESENT under the *central* rule, plus the build signal,
+collects. Without the build signal the normal ≥2 rule applies unchanged.
+
+**Log every sighting — collected or not.** Every ad you open with a YES build signal goes into
+the sightings log, including the ones Gate 4, the geography allowlist or dedup then stops:
+```bash
+python engine/tools/method_sightings.py add --org <orgslug> --title "<title>" --url <url> \
+    --signal "<the build sentence, verbatim>" --outcome <collected|skipped-level|skipped-geo|skipped-gate|expired|duplicate> --source skill
+```
+A skipped one is not wasted: it says this employer hires method people, which is what ranks it in
+the next run's rotation and what makes it a cold-outreach target. This log is the one file
+outside your staging folder you write; the org profiles themselves are only changed by
+`method_sightings.py --apply`, which `/inbox` runs.
+
+> ⚠️ **The lane does not touch direction.** A method seat in clinical data or a non-bio field is
+> collected if it clears the lane, and `/inbox` will score it `career_fit` low and `method_fit`
+> high — that pair is the reason the lane exists. Equally, never use the lane to rescue an ad
+> that fails Gate 2 or Gate 4.
+
 > **This is the mirror of the career track's output test, and the rows that flip are the point**
 > (`search_terms.md` §Skill track names them for this profile). Two searches exist so that
 > neither question has to be compromised to accommodate the other.
 
 ## [MODE] Which orgs to sweep
 
-Rotate `user/workspace/organizations/companies/` and `user/workspace/organizations/research_groups/` oldest-`last_evaluated`-first,
-taking orgs at **`skill_match` 60+** — the employers whose actual stack overlaps the
-competencies, whatever they work on. The career track sweeps the same folders at `career_fit`
-60+; an org clearing both gets swept twice and the parent drops the duplicate.
+```bash
+python engine/tools/method_sightings.py --rotation 30
+```
+
+It lists `user/workspace/organizations/companies/` and `user/workspace/organizations/research_groups/`
+orgs at **`skill_match` or `method_fit` 60+**, plus any org with a logged method sighting —
+the employers whose stack overlaps the competencies or that would make the user their methods
+person, whatever they work on. Order: **orgs with method sightings first**, then orgs with no
+tracked lead, then oldest `last_evaluated`. Work down it for the run's org budget. The career
+track sweeps the same folders at `career_fit` 60+; an org clearing both gets swept twice and the
+parent drops the duplicate.
 
 ---
 
@@ -139,8 +193,14 @@ collected: N   -> user/workspace/inbox/_staging/skill/
 screened:  N
 skipped:   N   (gate0 X · gate1 X · gate2 X · gate3 X · gate4 X · dedup X · geo X)
 competency spread: {how many collections hit each counting competency}
+method lane: {M/Mb rows opened} opened · {build signal YES} sightings logged · {collected via the lane} collected
 channels:  {which sources were actually queried}
 ```
+
+Record the lane in the run JSON as `"method_lane": {"opened": N, "sightings": N, "collected": N}`
+([[LOG_SCHEMA]]). It is how the lane gets judged: after a few runs, if the lane's collections
+mostly score `method_fit` ≥ 75 at `/inbox`, it works; if they mostly land below 50, the build
+signal is being read too loosely.
 
 The competency spread is worth reporting because it says which of the user's skills the market is
 actually asking for — information the career track structurally cannot produce.

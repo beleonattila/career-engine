@@ -34,9 +34,7 @@ What is separable: screening volume tracks **channel breadth** (8.3/run at ≤2 
 `engine/skills/search-positions-common.md` (the data: `engine/docs/decisions.md`).
 
 **Scoring lives in exactly one place: `/inbox`.** Collectors never score; `/cv` consumes
-scores but doesn't compute them. (`/rescore` is the one temporary exception — it applies
-`/inbox`'s rubric to the backlog scored before the 2026-09-10 scoring v3 change, and goes away
-once `rescore_status.py` reports 100%. `org_floor.py` adjusts org scores mechanically, but judges
+scores but doesn't compute them. (`org_floor.py` adjusts org scores mechanically, but judges
 nothing.)
 
 **Three scores, never blended.** `career_fit` (is this the science I want — direction only),

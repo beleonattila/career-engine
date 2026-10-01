@@ -169,6 +169,41 @@ not keyword filtering — `peptide` at Zealand returns *UX Designer* — so thos
 to arbitrary. Workday and SmartRecruiters are now paged in full: **900 → 8300 postings** per run
 at the same token cost.
 
+### Method lane: find build seats through employers, not titles (2026-10-01)
+
+*Rule: search-positions-skill.md §Method lane; terms in the user's search_terms.toml `[sweep.method]`.*
+
+Once `method_fit` existed (2026-09-29), the scoring could see method-building seats but the
+search could not: the skill track caught one only if it happened to name ≥2 competencies, the
+ATS sweep's tiers were all direction terms, and the org rotation keyed on `skill_match`. The first
+plan was to query for method titles (research software engineer, methods developer…). Rejected:
+a build seat rarely says so in its title — it is posted as *Scientist, Computational Biology* or
+*Bioinformatician*, with the build in the responsibilities — and the titles that do say it, searched
+across every domain, return mostly HPC support and corporate IT.
+
+What replaced it, all in the skill track:
+- **Ad text, not titles.** `ats_sweep.py` tiers `M` (a title naming the seat) and `Mb` (the role
+  text says the seat builds tools/pipelines/methods *and* names scientists as the users). Both
+  halves are needed for `Mb`; a build phrase alone is every IT ad on a pharma board. First run:
+  career tiers byte-identical, 10 method rows; "design methods" and bare "method development"
+  were dropped from the pattern after they promoted an SPR/BLI bench role and a display-library
+  role — both are bench vocabulary too.
+- **Employers as the target list.** An org that has posted a build seat before is the best
+  predictor of the next one, and a better cold-outreach target than its "about us" page. Every
+  build-seat ad the skill track opens is logged — *including the ones it then skips* on level or
+  geography, which carry most of the signal — and `/inbox` logs every position it scores
+  `method_fit` ≥ 75. `method_sightings.py --apply` writes `method_roles_seen` onto the org, and the
+  skill track's rotation puts those orgs first.
+- **Gate 3's second route.** One method competency (C1/C4/C7 for this user) plus a build signal
+  collects; otherwise the ≥2 rule stands. Restricted to the method competencies so "we develop new
+  assays" cannot carry a bench role through.
+- **`/rescore` does orgs first**, because the rotation ranks on `method_fit` and only 3 of 157 orgs
+  carried one that day.
+
+The career track is untouched and ignores `M`/`Mb` rows. Judge the lane by its yield: if its
+collections mostly score `method_fit` ≥ 75 at `/inbox` it works; mostly below 50 means the build
+signal is read too loosely.
+
 ### Search telemetry snapshot (2026-08-09)
 
 *Rule: search-positions-common.md §Telemetry*
@@ -448,7 +483,7 @@ honestly; 13 of 16 runs are unlabelled and answer nothing. See *Model and effort
 
 ### `/rescore`: the v3 + `method_fit` migration (2026-09-29)
 
-*Rule: CLAUDE.md §Commands; the skill is `engine/skills/rescore.md`.*
+*Rule: CLAUDE.md §Commands (removed 2026-10-01); the skill was `rescore.md` in engine/skills.*
 
 ⏳ `/rescore` is **temporary** — it re-judges `career_fit` on the 364 records scored before
 **scoring v3** (2026-09-10: band + checks, org floor) **and writes the new `method_fit` on all
@@ -456,7 +491,9 @@ honestly; 13 of 16 runs are unlabelled and answer nothing. See *Model and effort
 The two passes were merged on 2026-09-29 because v3 was only 6% done when `method_fit` landed, and
 sweeping every record twice would have been waste — so the ~22 records already stamped `v3` come
 back round once for the new field. Check progress with
-`python engine/tools/rescore_status.py`. Once it reports 100%, `/rescore` and
+the `rescore_status` tool. Once it reports 100%, `/rescore` and
 `rescore_status.py` can both be deleted — `career_fit.py`, `org_floor.py` and `org_match.py`
 are permanent. Until then the dashboard's career column mixes two scales and warns that it is
 doing so. (The same skill earlier ran the v1 → v2 two-score migration, complete 2026-08.)
+
+**Complete 2026-10-01:** 382/382 records on v3 with `method_fit`, `--verify` clean. The rescore skill, the `rescore_status` tool and the `/rescore` command were deleted the same day; the per-record History lines are the record of what each batch decided.

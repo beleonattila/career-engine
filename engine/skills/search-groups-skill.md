@@ -39,6 +39,12 @@ Write every collection to **`user/workspace/inbox/_staging/skill/`**. Never to `
    **resources** pages matter more here than in the career track: a lab that ships a tool has
    evidenced the pipeline and software competencies directly.
 5. **Collect iff ≥2 distinct counting competencies are evidenced** in the lab's own description.
+5.5 **Log any method-building vacancy you see** on the lab's or institute's jobs page — a seat whose
+   own text says it builds tools, pipelines or methods others use ([[search-positions-skill]]
+   §Method lane, the build signal) — whether or not the lab is collected:
+   `python engine/tools/method_sightings.py add --org <slug> --title "…" --url … --signal "<verbatim>" --outcome seen --source skill`.
+   A lab whose tooling has outgrown its people is exactly the cold-outreach target the method
+   brand is for.
 6. **Run the dedup guard before writing — mandatory (CLAUDE.md).**
 7. **Report** collections, competency spread, screened count, channels.
 

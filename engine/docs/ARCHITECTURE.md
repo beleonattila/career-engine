@@ -90,7 +90,7 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`) |
 | `reconcile_staging.py` | Merge the two search tracks' staging folders into `inbox/`; career wins a collision, stamps `TRACK:`, `--apply` to write |
 | `org_match.py` | Which company/group profile a position belongs to (shared by `dashboard.py` and `org_floor.py`) |
-| `org_floor.py` | An org never scores below its best linked position; report-only by default, `--apply` writes the floor (run by /inbox, /rescore) |
+| `org_floor.py` | An org never scores below its best linked position; report-only by default, `--apply` writes the floor (run by /inbox) |
 | `career_fit.py` | Scoring v3 lookup: band + checks → `career_fit` |
-| `rescore_status.py` | **Temporary** — progress of the v3 + `method_fit` rescore. `--next N` claims a batch for /rescore, `--verify` catches half-applied edits. Delete with /rescore at 100% |
+| `method_sightings.py` | Log of employers seen posting method-building seats (`logs/method_sightings.tsv`): `add` logs one, `--apply` writes `method_roles_seen` / `last_method_role` onto org profiles (run by /inbox), `--rotation N` prints the skill track's org-sweep order |
 | `level_sweep.py` | One-off (2026-08-17) level gate sweep; `--dry-run` to preview |

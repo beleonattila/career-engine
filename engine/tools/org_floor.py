@@ -45,7 +45,7 @@ PROFILE_DIRS = ("organizations/companies", "organizations/research_groups")
 POSITION_DIRS = ("positions/applied", "positions/open", "positions/closed")
 FOLDER_RANK = {"applied": 2, "open": 1, "closed": 0}     # tie-break: prefer a live position
 
-# KEEP IN SYNC with SKIP_TYPES in dashboard.py and rescore_status.py.
+# KEEP IN SYNC with SKIP_TYPES in dashboard.py.
 SKIP_TYPES = {"person_bio"}
 
 FLOOR_KEYS = ("career_fit_own", "career_fit_floor", "career_fit_floor_from")

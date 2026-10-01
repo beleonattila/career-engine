@@ -4,9 +4,8 @@ career_fit.py — the scoring v3 lookup: band + checks -> career_fit.
 
 The mechanism is in engine/skills/inbox-eval.md §career_fit (Step 3 — the lookup); what the checks
 mean is the user's (user/profile/preferences.md §Scoring), and their names and units come from
-user/settings.toml [career_fit.checks]. This is the lookup as code, so /inbox and /rescore do the
-arithmetic identically, and rescore_status.py --verify can catch a record whose number does not
-follow from its own band and checks.
+user/settings.toml [career_fit.checks]. This is the lookup as code, so /inbox does the arithmetic
+the same way every time and a record's number can always be re-derived from its band and checks.
 
     python engine/tools/career_fit.py                     # print the whole table for your checks
     python engine/tools/career_fit.py A "<check>, <check>"

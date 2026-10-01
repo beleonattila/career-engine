@@ -151,6 +151,13 @@ For each file:
 4. Score `career_fit`, `method_fit` **and** `skill_match` for every kind; add `level_fit` for positions/phd.
 5. Extract keywords (see *Keyword extraction*).
 6. Write the new profile, or merge into the existing one.
+   **A position or PhD scored `method_fit` ≥ 75 is a method sighting** — log it, whatever its
+   other scores (why: [[search-positions-skill]] §Method lane):
+   ```bash
+   python engine/tools/method_sightings.py add --org <orgslug> --title "<title>" --url <url> \
+       --signal "<the role-text sentence that shows the build seat, verbatim>" --outcome scored --source inbox
+   ```
+   It deduplicates on URL, so a role the skill track already logged is not counted twice.
 7. Move the source `.txt` to `user/workspace/inbox/processed/` (or `processed/misc/` if junk).
 
 ### Step 4 — Ranked summary
@@ -166,6 +173,11 @@ the list should read as "what is most worth wanting", with `method_fit`, `skill_
 group scoring below its best linked position (see *Step 4 — the org floor* under Scoring), and it
 must run before the dashboard reads the scores. Report its LIFTED / RELEASED lines, if any, under
 the summary. A new position can lift an org this run created or never touched — that is intended.
+
+**Then `python engine/tools/method_sightings.py --apply`**, which writes `method_roles_seen` /
+`last_method_role` onto the org profiles from the sightings log (derived fields — never edit them by
+hand). Run it after the org profiles of this batch exist, so a sighting for a newly created org
+lands on it. Report any org it lists as having no profile.
 
 **Then always run `/dashboard`** (invoke the dashboard skill —
 `engine/skills/dashboard.md`) so the newly written/updated profiles and positions are
@@ -204,8 +216,8 @@ outvote the method. Write each number, then one sentence of justification naming
 ### `career_fit` — direction: a band, then three checks (0–100)
 
 > **Scoring v3 (2026-09-10)** — a band plus the user's checks, and the org floor — replaced four v2
-> rules on the user's instruction (`engine/docs/decisions.md` §Scoring v3). Records stamped `v2`/`v2.1` still carry the
-> old number until `/rescore` re-judges them.
+> rules on the user's instruction (`engine/docs/decisions.md` §Scoring v3). Every record was re-judged
+> under v3 by 2026-10-01.
 
 The number is built in four steps. Only step 1 is a judgement; steps 2–3 are yes/no checks and a
 table lookup; step 4 is a script.
@@ -262,8 +274,6 @@ units × band width), where the maximum is the sum of the full checks in `user/s
 
 **Do the lookup with the script, never by hand:** `python engine/tools/career_fit.py A "<checks>"`
 prints the number; `python engine/tools/career_fit.py` prints the whole table for your checks.
-`rescore_status.py --verify` rejects a v3 record whose number does not follow from its own band and
-checks.
 
 Ties are expected and accepted (agreed 2026-09-10) — `skill_match` sits beside every row.
 
@@ -282,7 +292,7 @@ Justification format (a worked example is in preferences.md §Scoring):
 **An organisation never scores below its best linked position** — open, applied *or closed*: an
 expired posting still proves the org does the work, and an org must not drop when an ad expires.
 Nobody judges this. `python engine/tools/org_floor.py --apply` (from the repo root) enforces it; it runs
-in Step 5 of every `/inbox` and after every `/rescore` batch. Positions are linked to profiles by
+in Step 5 of every `/inbox`. Positions are linked to profiles by
 `org_match.py` — the same matcher the dashboard uses — and a position's `org_profile:` overrides it.
 
 When the floor binds, the script sets `career_fit` to the position's score and keeps the org's own
@@ -481,6 +491,8 @@ file arriving here is either new, a new role at a known org, or a deliberate ref
      `skill_match`, and for positions/phd `level_fit`) and refresh `last_evaluated` to today.
    - If the file has no `method_fit`, add it (introduced 2026-09-29) — it is not part of the
      v2->v3 `career_fit` migration and must be scored for every record that lacks it.
+   - Leave `method_roles_seen` / `last_method_role` alone on an org: `method_sightings.py --apply`
+     owns them (Step 5).
    - If the existing file carries anything but `scoring: v3`, re-judge `career_fit` under the v3
      rubric (band + checks, writing `career_band` / `career_checks`) and stamp `scoring: v3`. A
      `scoring: v1` or unstamped file predates 2026-08-17: rescore `skill_match` too and delete its

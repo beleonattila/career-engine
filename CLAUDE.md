@@ -168,7 +168,7 @@ revert it (the case: `engine/docs/decisions.md` §Age retirement). Undo the whol
 > setting you pick, record `model` and `effort` honestly — an unlabelled run answers nothing.
 
 **The commands:** `/inbox` · `/cv` · `/search-positions` · `/search-companies` ·
-`/search-groups` · `/dashboard` · `/track` · `/linkedin` · `/rescore`. Each is defined by its skill file in
+`/search-groups` · `/dashboard` · `/track` · `/linkedin`. Each is defined by its skill file in
 `engine/skills/` — that file carries the full instructions *and* a `recommended_model:`
 line, so read the skill rather than duplicating its contract here.
 
@@ -180,14 +180,9 @@ line, so read the skill rather than duplicating its contract here.
 > `engine/skills/search-common.md` (geography, staging, TRACK) and `engine/skills/search-positions-common.md`;
 > only the keyword pass and Gate 3 differ per track. **The skill track has no direction floor
 > by design** — it will surface roles built on the user's strongest competencies, whatever their
-> field. Never add a direction filter to it.
+> field. Never add a direction filter to it. Since 2026-10-01 it also runs the **method lane** —
+> build seats found through ad text and through employers that have posted them before
+> (`method_sightings.py`), never through method-title queries (`engine/docs/decisions.md` §Method lane).
 >
 > ⚠️ `/linkedin` runs via **agent-browser** (a headed Chrome reusing a logged-in profile; see the skill). If
 > agent-browser errors, stop and ask the user to restart it — never retry.
->
-> ⏳ `/rescore` is a **migration helper, not a standing command** — it re-judges records scored
-> under an older rubric version, a batch per run (Opus, same tier as `/inbox`). Check progress with
-> `python engine/tools/rescore_status.py`. Once it reports 100%, `/rescore` and
-> `rescore_status.py` can both be deleted — `career_fit.py`, `org_floor.py` and `org_match.py`
-> are permanent. Until then the dashboard's career column mixes two scales and warns that it is
-> doing so. The migration in progress: `engine/docs/decisions.md` §/rescore.

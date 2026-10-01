@@ -345,9 +345,11 @@ you structurally cannot find their postings (a lab is not a company and will nev
 its own entry there).
 
 - **[MODE] Which orgs to sweep.** The **career** track sweeps orgs at `career_fit` 60+; the
-  **skill** track sweeps orgs at `skill_match` 60+. Same threshold, different field — each track
-  rotates through the employers its own question cares about. An org clearing both is swept by
-  both, which is fine: the staging reconciliation drops the duplicate.
+  **skill** track sweeps orgs at `skill_match` **or** `method_fit` 60+, plus any org with a logged
+  method sighting, in the order `python engine/tools/method_sightings.py --rotation 30` prints
+  (since 2026-10-01). Same threshold, different fields — each track rotates through the employers
+  its own question cares about. An org clearing both is swept by both, which is fine: the staging
+  reconciliation drops the duplicate.
 
   > **Geography is not a score threshold.** The scores measure direction and competence, neither of
   > which has anything to say about relocation; the country allowlist ([[search-common]]
@@ -400,6 +402,11 @@ Columns: `tier` · `age_d` · `published` · `org` · `fit` · `status` · `titl
   **`T2?`** means the *title* alone is generic but the *employer* is a small good-fit
   protein-design shop. Treat `T2?` as worth opening: it is how "Machine Learning Scientist @
   Latent Labs" surfaces at all.
+  **`M` / `Mb`** are the **skill track's method lane** and only ever fill a row the tiers above
+  left at `-`: `M` = the title names a method-building seat (research software / research
+  engineer …), `Mb` = the role text says the seat builds tools, pipelines or methods *for
+  scientists*. Terms: `[sweep.method]` in `user/profile/search_terms.toml`. The career track
+  ignores them; the skill track reads them per [[search-positions-skill]] §Method lane.
 - **`status`** — `tracked` (org+role already in the vault, skip) · `new-role` (known org, new role —
   collect if it clears the gate) · `NEW-ORG` (no lead anywhere yet — highest value).
 - **`age_d`** is information, not a filter. The script applies **no age limit** by design.

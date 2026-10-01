@@ -45,6 +45,11 @@ Write every collection to **`user/workspace/inbox/_staging/skill/`**. Never to `
    shows up in marketing copy.
 5. **Collect iff ≥2 distinct counting competencies are evidenced** in the company's own
    description of its work.
+5.5 **Log any method-building seat on the careers page** — a role whose own text says it builds
+   tools, pipelines, methods or platforms for scientists ([[search-positions-skill]] §Method lane,
+   the build signal) — whether or not the company is collected, and whether or not you could apply:
+   `python engine/tools/method_sightings.py add --org <slug> --title "…" --url … --signal "<verbatim>" --outcome seen --source skill`.
+   An employer that posts build seats is the method lane's best target; this is how it gets known.
 6. **Run the dedup guard before writing — mandatory (CLAUDE.md).**
 7. **Report** collections, competency spread, screened count, channels.
 
