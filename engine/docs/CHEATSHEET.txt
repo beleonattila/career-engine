@@ -1,0 +1,236 @@
+================================================================
+ CAREER VAULT — COMMAND CHEAT SHEET
+================================================================
+
+PIPELINE:  collect ──► think ──► produce ──► track
+           /search-*   /inbox     /cv         /track + /dashboard
+
+Set the model before running (capability buys judgment; effort buys care):
+  /model haiku   — mechanical tasks
+  /model sonnet  — collection, writing, browser
+  /model opus    — the scoring stage (/inbox)
+
+----------------------------------------------------------------
+ MODEL GUIDE  (cheapest that's safe → sweet spot)
+----------------------------------------------------------------
+/dashboard      Haiku low                      (pure mechanics)
+/track          Haiku low  (Sonnet if plain-language target)
+/search-positions   Sonnet med  (PROVISIONAL - never low; see below)
+/search-companies   Sonnet low-med  (unmeasured; telemetry covers positions only)
+/search-groups      Sonnet low-med  (unmeasured; telemetry covers positions only)
+/cv             Sonnet med  (high for cover letter)
+/linkedin       Sonnet med                     (edits live profile)
+/inbox          Opus high  (budget: Sonnet high — never Haiku)
+
+  SEARCH MODEL/EFFORT IS NOT SETTLED (measured 2026-08-09, 16 runs)
+    config                 runs  coll/run  scr/run  min/run
+    sonnet/low/fast           3       1.0     11.3       22
+    sonnet/?/fast             9       2.2     10.3       68
+    sonnet/ultracode/fast     1       1.0     20.0       65
+    opus/?/fast               2       2.0     33.0       38
+    opus/high/fast            1       3.0     30.0       33
+
+    NOT separable: no config is distinguishable on coll/run. Within sonnet/? alone
+                runs collected 0,0,1,1,1,3,3,3,8 - the within-config spread dwarfs
+                every between-config gap. n=1-3 per cell is noise, not signal.
+                (The earlier "never run at LOW" line was withdrawn 2026-08-09: the
+                three low runs were also the NARROWEST (2,2,4 channels) and the most
+                recent (max dedup drag), and their 3 collections were all redundant
+                duplicates - net new 0. Three confounds, one cell.)
+    Separable  : screening volume tracks CHANNEL BREADTH, not model -
+                <=2 channels 8.3 screened/run | 3-4 ch 8.4 | 5-6 ch 30.2.
+    Worth note : collections stay ~2.0/run at EVERY breadth. More channels bought
+                more looking, not more finding. Investigate before widening further.
+    Unknown   : sonnet/medium has NEVER been run (0 of 16). The recommendation
+                above is inference, not measurement.
+    NOT settleable by A/B: net-new is 1.75/run, SD 2.08 (CV 1.19). Detecting even
+                a DOUBLING needs ~23 runs per arm (~4 months at 2.5/wk); a 50%
+                effect needs ~91. Decide on cost, not on coll/run. Keep logging
+                model+effort anyway - it is free and unrecoverable if skipped.
+    Whatever you pick, LOG model+effort honestly - an unlabelled run adds a '?' row
+    and answers nothing. 13 of 16 runs are '?'.
+
+  ** DEEP PASS OVERDUE: 0 of 16 runs. Starved: euraxess, nordic_boards, phd_portals.
+     phd_portals is the costly one - PhD roles have the highest median fit (70) and
+     hold 12 of the vault's 23 strong leads. **
+
+----------------------------------------------------------------
+ CORE COMMANDS
+----------------------------------------------------------------
+
+/search-positions   Collect open positions (industry + academic + PhD).  [Sonnet low-med]
+/search-companies   Collect target companies (company DB).             [Sonnet low-med]
+/search-groups      Collect research groups (group DB).                [Sonnet low-med]
+
+  ALL THREE ARE ORCHESTRATORS (since 2026-08-17). Each spawns TWO sub-agents
+  in parallel and reconciles them:
+      career track  = is this the work I want?   -> user/workspace/inbox/_staging/career/
+      skill  track  = could I get it and do it?  -> user/workspace/inbox/_staging/skill/
+                      then: python engine/tools/reconcile_staging.py --apply
+                      (career WINS a collision; stamps TRACK:; moves to user/workspace/inbox/)
+  Run one track only:  /search-positions skill
+  The skill track has NO direction floor by design - it surfaces genomics,
+  pipelines and image analysis, because those are the Expert-tier skills.
+  Never add a direction filter to it.
+  Geography (both tracks): the blocks in user/settings.toml [[geography.block]].
+  Everything else is skipped before a single fetch.
+
+/inbox              Process every inbox file: route by filename, score, extract keywords,
+                    build/merge profiles. The ONLY thinking stage.        [Opus high]
+
+/cv [profile]       Generate a targeted CV + cover letter (solicited position, or
+                    unsolicited company/group). Compiles PDFs.            [Sonnet med]
+                    e.g.  /cv user/workspace/positions/open/symphogen_...md
+                          /cv user/workspace/organizations/companies/skape-bio.md
+
+/dashboard          Retire past-deadline leads (expire_sweep.py), then rebuild
+                    user/workspace/artifacts/dashboard.html (tiles, funnel, ranked tabs).           [Haiku low]
+
+/rescore            TEMPORARY. Re-judge career_fit under scoring v3 (2026-09-10: band +
+                    checks, org floor) AND write the new method_fit
+                    (2026-09-29) on every record, one batch per run.      [Opus high]
+                    Resumable. The ~22 already-v3 records come back once
+                    for method_fit only.
+                    Fresh session per batch.
+                      python engine/tools/rescore_status.py           progress
+                      python engine/tools/rescore_status.py --next 30 claim a batch
+                      python engine/tools/career_fit.py A "application, validation"   the lookup
+                      python engine/tools/rescore_status.py --verify  catch half-applied edits
+                      python engine/tools/org_floor.py --apply        after every batch
+                    Delete /rescore + rescore_status.py once it reports 100%.
+
+/track <t> <event>  Update an application's status, then refresh dashboard.[Haiku low]
+                    events: cv | sent | interviewing |
+                            feedback "note" | closed <offer|rejected|ghosted|withdrawn> |
+                            next "text"
+                    e.g.  /track symphogen sent 2026-06-10
+                          /track skape-bio feedback "phone screen booked"
+                          /track westberg closed rejected
+
+----------------------------------------------------------------
+ LINKEDIN  (via agent-browser; headless, stored credentials)
+----------------------------------------------------------------
+
+/linkedin           Edit my LinkedIn profile. agent-browser drives headless Chrome with
+                    stored credentials (already logged in), then edits.[Sonnet med]
+
+----------------------------------------------------------------
+ TYPICAL WEEKLY FLOW
+----------------------------------------------------------------
+
+0. python engine/tools/log_run.py --starved ; --next-queries 4 ; --stats   (seconds; decides the run's
+                                       budget + whether it must be a deep pass)
+1. /model sonnet ; /search-positions   (industry + academic + PhD; logs the run)
+2. /model opus   ; /inbox              (scores everything, builds profiles; auto-runs /dashboard)
+3. /model sonnet ; /cv <best profile>  (make application materials)
+4. /model haiku  ; /track <that> sent  (log it when you apply)
+5. /track <that> feedback "…" / closed <outcome>   (as news arrives)
+
+Monthly-ish:
+  /search-positions "deep pass"        (no age filter — recovers what fast passes dropped)
+  python engine/tools/analyze_misses.py --json      (then let Opus read it and propose skill fixes)
+
+----------------------------------------------------------------
+ STARTING A SESSION
+----------------------------------------------------------------
+No need to "Read the profile" — CLAUDE.md auto-loads the snapshot and every skill reads
+background/preferences/competencies/soft_skills itself. Just set the model and state the goal
+(or run the command). Only prime with "read the profile files" for freeform
+writing/strategy chats that don't go through a /command.
+
+----------------------------------------------------------------
+ TOOLING  (stdlib Python; run from the repo root)
+----------------------------------------------------------------
+
+python engine/tools/ats_sweep.py         Sweep every known employer job board in ONE pass.
+                            ~30s, ZERO LLM tokens, ~900 postings -> ranked TSV.
+                            Run this FIRST in any search. Flags: --all-geo
+                            --all-roles --max-age N
+python engine/tools/ats_discover.py      Find/cache which ATS each company uses -> user/workspace/cache/ats_slugs.tsv
+                            (--refresh to re-probe; 30/93 covered)
+python engine/tools/dedup_check.py       Duplicate guard. MANDATORY before writing to the inbox.
+                            --query <org> "<role>"   --delete
+python engine/tools/expire_sweep.py      Retire past-deadline leads open/ -> closed/  (--dry-run)
+python engine/tools/log_run.py run.json  Validate + append a search-run record to the telemetry
+                            (--stats, --check). Requires model, effort, started, ended.
+python engine/tools/analyze_misses.py    Which run missed what, and why (--json for an Opus pass)
+python engine/tools/reconcile_staging.py Merge the two search tracks into user/workspace/inbox/ (career wins a
+                            collision, stamps TRACK:). --apply to write.
+python engine/tools/dashboard.py         Build user/workspace/artifacts/dashboard.html
+
+----------------------------------------------------------------
+ WHERE THINGS LIVE
+----------------------------------------------------------------
+
+user/workspace/inbox/                      drop zone for raw .txt  (processed -> user/workspace/inbox/processed/)
+                            archive/ is STILL live dedup surface — always searched
+user/workspace/organizations/companies/         company database (93)
+user/workspace/organizations/research_groups/   research-group database (42)
+user/workspace/positions/open|applied|closed/   position + PhD leads (persistent, never deleted)
+user/workspace/applications/               generated CVs + cover letters (PDF)
+user/workspace/logs/                       search telemetry — engine/docs/LOG_SCHEMA.md, search_runs.jsonl, analysis/
+user/workspace/trash/                      quarantine from /track remove|delete; never scanned
+user/workspace/artifacts/dashboard.html              open in a browser
+engine/docs/PIPELINE.md                 full pipeline diagram + contracts
+user/profile/ (background, preferences, competencies, soft_skills)   profile ground truth
+
+----------------------------------------------------------------
+ SCORING (two numbers, never blended -- see engine/skills/inbox-eval.md)
+----------------------------------------------------------------
+
+career_fit  0-100  IS THIS THE SCIENCE I WANT. Direction only: is it AI/ML in silico
+                   protein design or optimization? Method is the identity,
+                   not the application. De novo == optimization. Tool user
+                   == method developer. Location/salary/prestige/seniority
+                   do NOT enter. On every kind of record.
+                     90+  ML is the method AND a protein is the deliverable
+                     75+  both present, one partial
+                     50+  adjacent -- one pillar missing (prediction-only,
+                          sequence-ML-only, generic ML-in-bio)
+                     30+  proteins present, neither ML nor design
+                     <30  off (small-molecule/SBDD, unrelated omics)
+
+method_fit  0-100  IS THIS THE WORK I WANT (added 2026-09-29, rebrand).
+                   Does the seat BUILD methods/tools/pipelines/platforms/
+                   benchmarks others use, or only OPERATE what exists?
+                   Independent of domain (that is career_fit) and of
+                   ability (that is skill_match). On every kind of record;
+                   for an org: "would I be the methods person here?"
+                     90+  building IS the job -- ships tools for others
+                     75+  real building alongside application (most
+                          methods-flavoured research roles and PhDs)
+                     50+  applies existing methods, real customisation,
+                          nothing shipped for others
+                     30+  mostly operating established pipelines
+                     <30  no building (service analysis, routine
+                          reporting, pure wet lab, pure management)
+                   career_fit 35 + method_fit 92 is a real lead, not noise.
+
+skill_match 0-100  CAN I DO IT. Evidenced overlap with user/profile/competencies.md /
+                   user/profile/soft_skills.md, nothing else. On EVERY kind:
+                   a position scores the ad's requirements, a company or
+                   group scores its stated stack ("could I be useful here")
+                   -- the org DBs are what unsolicited applications come from.
+
+level_fit   badge  realistic | reach | below. Scores nothing.
+                   POSITIONS + PHD ONLY (orgs advertise no seniority).
+                   Postdoc => always reach (needs a completed PhD).
+
+Dashboard hides a lead only when BOTH numbers are under 50.
+fit_score and verdict were deleted 2026-08-17. Do not bring them back.
+
+----------------------------------------------------------------
+ STAT DEFINITIONS (dashboard)
+----------------------------------------------------------------
+
+Search results  = files in user/workspace/inbox/processed/
+On-direction    = career_fit >= on_direction  (desirability only; may still be a reach)
+Shown/link-check= ANY of career_fit / method_fit / skill_match >= min_score_shown
+                  (both numbers: [thresholds] in user/settings.toml)
+Best Match tab  = skill_match >= 65, sorted by skill desc. A LENS over positions
+                  (rows also show under Positions/PhD), NOT filtered by track.
+CVs generated   = folders in user/workspace/applications/
+CVs sent        = app_status sent/interviewing/closed (or a sent_date)
+Ongoing         = app_status sent or interviewing
+
+================================================================

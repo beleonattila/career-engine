@@ -1,0 +1,80 @@
+# Employer job boards that engine/tools/ats_discover.py cannot find by guessing, for the
+# life-science pack. Keys are vault slugs (the OrgSlug of a company profile). ats_discover.py
+# seeds these straight into user/workspace/cache/ats_slugs.tsv, so a row does NOT need a company
+# profile: DTU is a university, not a company.
+
+# Workday needs tenant+site and cannot be guessed from a name; seed the ones we have
+# confirmed by hand. Add more as they are found.
+# slug -> (tenant, site, wd_number). All verified by a live call returning a real job count;
+# never add a row you have not actually seen return jobs. Site names are case-sensitive and are
+# often tenant-prefixed ("GSKCareers"), which is not derivable from the company name -- so this
+# map is grown by hand, and each addition permanently widens sweep coverage.
+[workday]
+gsk = { tenant = "gsk", site = "GSKCareers", wd = 5 }
+amgen = { tenant = "amgen", site = "Careers", wd = 1 }
+zealand-pharma = { tenant = "zealandpharma", site = "External", wd = 3 }
+astrazeneca = { tenant = "astrazeneca", site = "Careers", wd = 3 }
+takeda = { tenant = "takeda", site = "External", wd = 3 }
+regeneron = { tenant = "regeneron", site = "Careers", wd = 1 }
+sanofi = { tenant = "sanofi", site = "SANOFICareers", wd = 3 }
+novartis = { tenant = "novartis", site = "NOVARTIS_Careers", wd = 3 }
+# Found 2026-08-08 by reading the tenant off the employer's own careers page rather than
+# guessing site names -- which is the only method that has ever worked for these. Bavarian
+# Nordic sits on wd103, a pod number no guess list would have reached.
+bavarian-nordic = { tenant = "bavariannordic", site = "BavarianNordic", wd = 103 }
+agc-biologics = { tenant = "agcbio", site = "agcbio_careers", wd = 5 }
+pfizer = { tenant = "pfizer", site = "PfizerCareers", wd = 1 }
+csl-behring = { tenant = "csl", site = "CSL_External", wd = 1 }
+# EMBL, found 2026-08-09 while verifying a Group Leader posting. wd103 again -- another pod
+# number no guess list reaches, which is why `embl-ebi` had sat at 0 in ats_slugs.tsv.
+# ONE board serves the whole organisation: Heidelberg and EMBL-EBI (Hinxton) postings arrive
+# together, distinguished only by a site suffix in the title. `embl-ebi` is deliberately NOT
+# registered as a second entry -- it would fetch the same 35 postings again and print every
+# EMBL row twice in the ranked sweep.
+embl-heidelberg = { tenant = "embl", site = "EMBL", wd = 103 }
+
+# Workable. One GET returns the whole board with `published_on` and full descriptions.
+# Format: vault_slug -> workable account slug.
+[workable]
+ascendis-pharma = "ascendis-pharma"
+
+# Oracle Recruiting Cloud (ORC): "{tenant}.fa.{pod}.oraclecloud.com" + a siteNumber. The tenant
+# prefix is an opaque 4-char pod id, so unlike Greenhouse/Ashby slugs it can never be guessed
+# from the company name -- it has to be read off the employer's real careers URL once, then
+# lives here forever. Given a host, `ats_discover.py --orc` resolves the site number automatically.
+# Format: vault_slug -> (host, siteNumber). Common in European academia and public sector.
+[oracle]
+# DTU. Confirmed 2026-08-02: 82 live requisitions, authoritative PostedDate. danish_boards had
+# been skipped in 6 of 6 runs before 2026-07-29 -- this makes DTU coverage free and complete on
+# every sweep instead.
+dtu = { host = "efzu.fa.em2.oraclecloud.com", site = "CX_2001" }
+
+# Probed 2026-07-30 and NOT on Workday under any of ~21 site-name patterns (controls gsk + amgen
+# passed in the same run, so these negatives are trustworthy): genmab, novo-nordisk, lundbeck,
+# leo-pharma, novonesis, ascendis-pharma, bayer, ucb, argenx, roche-genentech, illumina.
+# Mostly Danish/EU pharma -- the highest-value gap left in sweep coverage. They likely run SAP
+# SuccessFactors or Talentsoft, which ats_discover.py does not speak yet. Adding a SuccessFactors
+# probe is the next coverage win; more Workday site-name guessing is not.
+
+# Slugs confirmed correct by hand that automated probing cannot verify on its own — e.g. a
+# collision-prone short slug whose board currently lists only commercial roles. Promote a row
+# here once you have eyeballed the board and it is genuinely the right employer.
+[confirmed_by_hand]
+# OpenEye Scientific (acquired by Cadence); board held only sales/marketing roles on
+# 2026-07-29, so the life-science content check cannot see it.
+openeye-cadence = { ats = "greenhouse", slug = "openeye" }
+
+# Slug collisions confirmed WRONG by inspection — never probe or re-flag these.
+# Checked 2026-07-29: each is a real board belonging to an entirely different company.
+[known_wrong]
+novo-nordisk = ["novo"]    # ashby:novo = a New York fintech (fraud strategy, product counsel)
+nabla-bio = ["nabla"]      # ashby:nabla = Nabla, the French health-AI company in Paris
+eli-lilly = ["eli"]        # ashby:eli = a Montreal consumer app (user acquisition, SCM)
+
+# A bare first token ("novo", "eli", "nabla") collides with unrelated companies, so any hit
+# from that variant must additionally look like an employer in this pack's domain. Verified
+# 2026-07-29: ashby:novo = a New York fintech, ashby:eli = a Montreal consumer app, ashby:nabla =
+# the French health-AI company (NOT Nabla Bio). All three were accepted before this guard existed.
+# A regular expression, matched case-insensitively against the board's job titles and text.
+[board_check]
+terms = 'protein|scien|biolog|bioinform|chem|research|laborator|assay|therapeut|clinical|molecul|genom|drug|discovery|computational|antibod|pharma|enzyme|peptide|structural|immun|\bcell\b|medicinal|preclinic|biotech|cro\b|r&d'

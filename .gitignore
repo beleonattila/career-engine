@@ -1,0 +1,13 @@
+# Everything personal lives in user/ — its own local git repo, never part of the engine.
+/user/
+
+# Local Claude Code settings (permissions differ per person)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+
+# OS cruft
+Thumbs.db
+.DS_Store
