@@ -115,7 +115,6 @@ are required — standard library only).
 | Search results | count of `user/workspace/inbox/processed/*.txt` (cumulative collected leads) |
 | On-direction (≥N) | **shown** records with `career_fit ≥ thresholds.on_direction` (`user/settings.toml`; the tile shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. **Shown-filtered only since 2026-08-29**: it previously counted every record in the vault including expired and closed leads, reading 125 when just 79 were visible. The lifetime figure survives as `positive_all` and appears in the footer note. |
 | Companies / Groups / Positions / PhD | profile counts per category (PhD split from positions by `type: phd` or "PhD" in the title) |
-| Best Match | live position/PhD leads with `skill_match >= 65` — where the user is the strongest candidate. Overlaps Positions/PhD by design |
 | Overdue (unretired) | **Tripwire — should read 0.** Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run |
 | CVs generated | count of `user/workspace/applications/*/` folders (or items with `cv_date`) |
 | CVs sent | items with **positive evidence** of a submission: `app_status` sent/interviewing, any `sent_date`, or closed with outcome rejected/offer. `closed` **alone does not count** — a lead closed `withdrawn` was never submitted. Includes orgs, since an unsolicited application is a real send |
@@ -156,20 +155,11 @@ are required — standard library only).
     Lab** on the shared tokens `{dtu, bioengineering}`. Override a wrong match with `org_profile:`
     in the position's frontmatter — see *inbox-eval*.
 
-- **The Best Match tab is a lens, not a partition.** It holds live position/PhD leads with
-  `skill_match >= MIN_BEST_MATCH` (65), sorted by `skill_match` descending — *where the user is the
-  strongest candidate*, whatever the direction. Every row here **also** appears under Positions or
-  PhD; nothing is moved out of the main lists. `career_fit` is shown but deliberately not
-  filtered on, because a good career fit is welcome and not required.
-  - **It filters on the score, not on `track`.** It was built on provenance first and that failed
-    measurably: of the first two-track run's 6 skill-track collections only **one** had
-    `skill_match` above `career_fit`, while **43** records the *career* track had collected
-    already matched the pattern. Which search found a lead does not predict how it scores —
-    career wins every reconciliation collision, and the skill gate is looser than the score.
-  - `track: career | employability` survives as a **column**, for telemetry and provenance only.
-    It never affects a score, a tab, or visibility.
-  - Records with no `track` field default to `career` — everything collected before 2026-08-17
-    came from the direction search, because it was the only one that existed.
+- **There is no Best Match tab** (removed 2026-10-02 at the user's request). It was Positions + PhD
+  filtered to `skill_match >= 65` and sorted by skill, which the Skill column header already does
+  in one click; with three scores, a tab ranked by one of them is the kind of view the engine avoids
+  (`engine/docs/decisions.md` §Best Match removed). `track: career | employability` stays a
+  **column**, for provenance only — it never affects a score, a tab, or visibility.
 
 - **The Applications tab shows everything** — every record that has an `app_status`
   (CV generated, sent, interviewing, closed) appears here regardless of deadline or lead

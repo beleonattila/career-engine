@@ -219,8 +219,6 @@ Search results  = files in user/workspace/inbox/processed/
 On-direction    = career_fit >= on_direction  (desirability only; may still be a reach)
 Shown/link-check= ANY of career_fit / method_fit / skill_match >= min_score_shown
                   (both numbers: [thresholds] in user/settings.toml)
-Best Match tab  = skill_match >= 65, sorted by skill desc. A LENS over positions
-                  (rows also show under Positions/PhD), NOT filtered by track.
 CVs generated   = folders in user/workspace/applications/
 CVs sent        = app_status sent/interviewing/closed (or a sent_date)
 Ongoing         = app_status sent or interviewing

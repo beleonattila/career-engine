@@ -528,3 +528,12 @@ What changed:
 The job-board misses that first suggested "sweep band A every run" (Adaptyv, Latent Labs) all
 predate the sweep itself; since it exists it has been skipped in 3 of 48 runs. The lever there is
 coverage, not frequency.
+
+### Best Match removed (2026-10-02)
+
+The dashboard's Best Match tab and tile (live positions and PhDs with `skill_match >= 65`, sorted by
+skill) were removed at the user's request. Every row in it was also under Positions or PhD, whose
+sortable Skill column gives the same ranking in one click, and since `method_fit` there are three
+scores — a tab ranked by one of them leans toward the single-number view this engine avoids.
+It was built 2026-08-17 to make strong-candidate leads visible whatever their direction; the
+`min_score_shown` rule (a lead stays visible when *any* score clears the bar) now covers that.

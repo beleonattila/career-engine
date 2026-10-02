@@ -306,21 +306,8 @@ for r in records:
     r["stale"] = _stale(r)
 
 # every count below is "what is visible on the dashboard", nothing else
-# "Best Match" -- where the user is the strongest candidate, whatever the direction.
-# A LENS over positions, not a partition: these rows also appear in Positions/PhD, because
-# a high-skill lead is still a lead. Filtered on the SCORE, not on which search found it --
-# provenance (`track`) turned out not to predict the pattern at all. Of the first two-track
-# run's 6 skill-track collections only one had skill above career, while 43 records
-# collected by the career track already matched it.
-MIN_BEST_MATCH = 65   # "matches most of the criteria" -- the skill_match 75-89 band minus a
-                      # margin, so strong-but-imperfect matches still surface
-
-def _best_match(r):
-    return r["category"] in ("position", "phd") and r["skill"] >= MIN_BEST_MATCH
-
 by_cat = {c: sum(1 for r in records if r["category"] == c and r["shown"])
           for c in ("company", "group", "position", "phd")}
-by_cat["bestmatch"] = sum(1 for r in records if r["shown"] and _best_match(r))
 # kept on disk, hidden from view: still-live leads under the bar on ALL THREE scores
 hidden_low = sum(1 for r in records
                  if r["category"] in ("position", "phd") and _alive(r)
@@ -371,8 +358,6 @@ stats = {
     "groups": by_cat["group"],
     "positions": by_cat["position"],
     "phd": by_cat["phd"],
-    "bestmatch": by_cat["bestmatch"],
-    "min_best_match": MIN_BEST_MATCH,
     "hidden_low": hidden_low,
     "unscored": unscored,
     "v3_pending": v3_pending,
@@ -536,18 +521,12 @@ const TABS=[
  {id:'group',label:'Research Groups'},
  {id:'position',label:'Positions'},
  {id:'phd',label:'PhD'},
- {id:'bestmatch',label:'Best Match'},
 ];
 // Which tab a record belongs to. Positions/PhD are the CAREER track; everything the skill
 // search found sits in its own tab, so the headline counts keep meaning "on-direction
 // pipeline". Companies and groups are never split -- those are browsed to pick a
 // cold-outreach target, not worked top-down like a lead list.
 function inTab(r,id){
-  // Best Match is a LENS, not a partition -- a row here also appears under Positions/PhD.
-  // Filtered on skill_match, deliberately ignoring career_fit: the question is "where am I
-  // the strongest candidate", and a good career fit is welcome but not required.
-  if(id==='bestmatch')
-    return (r.category==='position'||r.category==='phd')&&r.skill>=DATA.stats.min_best_match;
   return r.category===id;
 }
 let active='overview', sortKey='career', sortDir=-1;
@@ -555,7 +534,7 @@ function tiles(){
   const T=[
    ['search_results','Search results','accent'],['positive','On-direction (≥'+S.on_direction+')','accent'],
    ['companies','Companies',''],['groups','Research groups',''],
-   ['positions','Positions',''],['phd','PhD leads',''],['bestmatch','Best Match','accent'],
+   ['positions','Positions',''],['phd','PhD leads',''],
    ['stale','Overdue (unretired)','warn'],
    ['cvs_generated','CVs generated','warn'],['cvs_sent','CVs sent','accent'],
    ['ongoing','Ongoing','warn'],['offers','Offers','good'],['rejections','Rejections',''],
@@ -578,7 +557,7 @@ function countFor(id){
   if(id==='applications')return DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started').length;
   return DATA.records.filter(r=>inTab(r,id)&&r.shown).length;
 }
-function setTab(id){active=id;sortKey=(id==='applications')?'app_status':(id==='bestmatch')?'skill':'career';sortDir=(id==='applications')?1:-1;render();tabs();}
+function setTab(id){active=id;sortKey=(id==='applications')?'app_status':'career';sortDir=(id==='applications')?1:-1;render();tabs();}
 function rowsFor(){
   // Applications stays a complete history — the score filter deliberately does not apply
   // there, so a role that was actually worked on never vanishes from the record.
@@ -597,7 +576,7 @@ function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='care
 function render(){
   if(active==='overview'){document.getElementById('table').innerHTML=overview();return;}
   const rows=rowsFor();
-  const isPos=(active==='position'||active==='phd'||active==='bestmatch'||active==='applications');
+  const isPos=(active==='position'||active==='phd'||active==='applications');
   // Career and Method on every row; Skill and Level only where a job description exists to
   // match against. Three columns, never a blend — see the MIN_SCORE_SHOWN note in dashboard.py.
   let head='<tr>'+th('Career','career')+th('Method','method')+(isPos?th('Skill','skill')+th('Level','level'):'')+
