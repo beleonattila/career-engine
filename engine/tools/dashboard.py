@@ -17,7 +17,8 @@ for _s in (sys.stdout, sys.stderr):  # the summary prints non-cp1252 glyphs; pip
         pass
 
 import html  # noqa: E402
-from paths import ARTIFACTS, WORKSPACE, setting, user_name  # noqa: E402
+from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, user_name  # noqa: E402
+import plan as planstore  # noqa: E402
 ROOT = str(WORKSPACE)  # record paths are relative to user/workspace/
 TODAY = datetime.date.today()
 
@@ -295,7 +296,7 @@ def _shown(r):
     MIN_SCORE_SHOWN. The OR is deliberate: hiding a lead needs "I don't want this science",
     "I don't want this kind of work" and "I can't do it" to be true all at once.
     Stamped onto every record below so the tiles, tab counts, tables, overview and
-    deadline bar cannot drift apart — they all read this one flag.
+    plan deadlines cannot drift apart — they all read this one flag.
     """
     if r["category"] in ("company", "group"):
         return True
@@ -342,13 +343,6 @@ offers = sum(1 for r in records if r["app_outcome"] == "offer")
 rejections = sum(1 for r in records if r["app_outcome"] == "rejected")
 cv_generated_items = sum(1 for r in records if r["app_status"] != "not_started" or r["cv_date"])
 _done_app = {"sent", "interviewing", "closed"}
-_dead_lead = {"expired", "closed"}
-# only still-actionable upcoming deadlines: visible on the dashboard (so alive and
-# clearing MIN_SCORE_SHOWN on at least one score) and not already applied
-deadlines_soon = sorted(
-    [r for r in records if r["deadline_in"] is not None and 0 <= r["deadline_in"] <= 30
-     and r["shown"] and r["lead_status"] not in _dead_lead and r["app_status"] not in _done_app],
-    key=lambda r: r["deadline_in"])
 
 stats = {
     "search_results": search_results,
@@ -402,9 +396,40 @@ for r in records:
         integrity.append({"kind": "sent_not_applied", "path": r["path"],
                           "msg": f"{r['path']} is app_status '{r['app_status']}' but not in positions/applied/"})
 
+# ---------------------------------------------------------------- plan (Timeline + To-do)
+# The two tabs share one store, user/workspace/plan/plan.json (plan.py), which holds what the user
+# added. Records contribute two kinds of item of their own, derived fresh on every run so they can
+# never drift from the frontmatter: every application SENT (a moment, already done -- history for
+# the Timeline) and every live deadline still to act on: shown (so alive and clearing
+# MIN_SCORE_SHOWN), not yet applied, any horizon. Their dates are the record's; plan.json may only restyle, flag, tick or hide
+# them (`overrides`). Defaults: a deadline is urgent inside 14 days -- the red cut-off of the
+# Deadline column -- and important when the lead is on-direction. Both are a first guess for the
+# matrix, which the user overrides in one click.
+def _label(r):
+    if r["category"] in ("position", "phd"):
+        return (r["org"] + " · " if r["org"] and r["org"] != r["name"] else "") + (r["role"] or r["name"])
+    return r["name"]
+
+plan_derived = []
+for r in records:
+    if _sent_evidence(r) and _appdate(r):
+        plan_derived.append({"id": "sent:" + r["path"], "kind": "sent", "path": r["path"],
+                             "title": "Applied · " + _label(r), "start": _appdate(r), "end": None,
+                             "color": "#4f8cff", "important": False, "urgent": False, "done": True})
+    if (r["category"] in ("position", "phd") and r["shown"] and r["deadline_in"] is not None
+            and r["deadline_in"] >= 0 and r["app_status"] not in _done_app):
+        plan_derived.append({"id": "deadline:" + r["path"], "kind": "deadline", "path": r["path"],
+                             "title": "Deadline · " + _label(r), "start": str(r["deadline"])[:10],
+                             "end": None, "color": "#e74c3c", "important": is_positive(r),
+                             "urgent": r["deadline_in"] <= 14, "done": False})
+try:
+    plan_doc = planstore.load()
+    plan_error = ""
+except (planstore.PlanError, ValueError) as e:  # a hand edit broke it: show the records, say why
+    plan_doc, plan_error = planstore.empty(), f"{planstore.PLAN_FILE} is unreadable: {e}"
+
 payload = {"records": records, "stats": stats, "integrity": integrity,
-           "deadlines": [{"name": r["name"], "org": r["org"], "in": r["deadline_in"],
-                          "deadline": r["deadline"], "link": r["url_status"], "path": r["path"]} for r in deadlines_soon]}
+           "plan": {"doc": plan_doc, "derived": plan_derived, "error": plan_error}}
 
 # ---------------------------------------------------------------- HTML
 HTML = """<!doctype html>
@@ -413,6 +438,7 @@ HTML = """<!doctype html>
 <title>Career Dashboard__TITLE_NAME__</title>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--line:#272c36;--txt:#e6e9ef;--sub:#9aa3b2;--accent:#4f8cff;
+--link:#5eead4;--cv:#d8b4fe;
 --strong:#2ecc71;--mod:#f1c40f;--weak:#e67e22;--reach:#e74c3c;}
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--txt)}
@@ -424,7 +450,7 @@ header .meta{color:var(--sub);font-size:12px}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
 .tile .n{font-size:26px;font-weight:700}
 .tile .l{color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.tile.accent .n{color:var(--accent)} .tile.good .n{color:var(--strong)} .tile.warn .n{color:var(--mod)}
+.tile.accent .n{color:var(--link)} .tile.good .n{color:var(--strong)} .tile.warn .n{color:var(--mod)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 10px}
 .tab{background:var(--panel);border:1px solid var(--line);color:var(--sub);padding:8px 14px;border-radius:8px;cursor:pointer}
 .tab.active{color:var(--txt);border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
@@ -434,20 +460,22 @@ table{width:100%;border-collapse:collapse;background:var(--panel);border:1px sol
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
 th{font-size:12px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;cursor:pointer;user-select:none;position:sticky;top:0;background:#1b1f27}
 tr:hover td{background:#1b1f27}
-td a{color:var(--accent);text-decoration:none}
+/* Text is never blue: blue and the browser's default link blue are near-invisible on this
+   background. --accent stays for borders and fills; text that used it reads --link. */
+a,a:visited{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
 .score{font-weight:700;border-radius:6px;padding:2px 8px;display:inline-block;min-width:34px;text-align:center;color:#0b0d10}
 .s-strong{background:var(--strong)} .s-mod{background:var(--mod)} .s-weak{background:var(--weak)} .s-reach{background:var(--reach)}
 .badge{font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--sub);white-space:nowrap}
-.b-sent{border-color:var(--accent);color:var(--accent)} .b-interviewing{border-color:var(--mod);color:var(--mod)}
-.b-cv{border-color:#7d8aff;color:#9aa6ff} .b-closed{border-color:var(--sub)} .b-offer{border-color:var(--strong);color:var(--strong)}
+.b-sent{border-color:var(--link);color:var(--link)} .b-interviewing{border-color:var(--mod);color:var(--mod)}
+.b-cv{border-color:var(--cv);color:var(--cv)} .b-closed{border-color:var(--sub)} .b-offer{border-color:var(--strong);color:var(--strong)}
 .b-rejected{border-color:var(--reach);color:var(--reach)}
 .tier{font-size:11px;color:var(--sub)}
-.tier.applied{color:var(--accent);font-weight:600;cursor:help}
+.tier.applied{color:var(--link);font-weight:600;cursor:help}
 .dl-soon{color:var(--reach);font-weight:700} .dl-ok{color:var(--sub)}
 .hidden{display:none}
 .note{color:var(--sub);font-size:12px;margin:6px 0 0}
-.deadbar{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
-.deadbar b{color:var(--reach)}
+.notice{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+__PLAN_CSS__
 </style></head><body>
 <header>
   <h1>Career Dashboard</h1>
@@ -455,8 +483,7 @@ td a{color:var(--accent);text-decoration:none}
 </header>
 <div class="wrap">
   <div class="tiles" id="tiles"></div>
-  <div class="deadbar" id="deadbar"></div>
-  <div class="deadbar" id="integrity"></div>
+  <div class="notice" id="integrity"></div>
   <div class="tabs" id="tabs"></div>
   <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()"></div>
   <div id="table"></div>
@@ -516,6 +543,8 @@ function evalCell(r){
 }
 const TABS=[
  {id:'overview',label:'Overview'},
+ {id:'timeline',label:'Timeline'},
+ {id:'todo',label:'To-do'},
  {id:'applications',label:'Applications'},
  {id:'company',label:'Companies'},
  {id:'group',label:'Research Groups'},
@@ -542,18 +571,13 @@ function tiles(){
   document.getElementById('tiles').innerHTML=T.map(([k,l,c])=>
    '<div class="tile '+c+'"><div class="n">'+(S[k]??0)+'</div><div class="l">'+l+'</div></div>').join('');
 }
-function deadbar(){
-  const d=DATA.deadlines;
-  document.getElementById('deadbar').innerHTML = d.length
-   ? '⏰ <b>Deadlines within 30 days:</b> '+d.map(x=>x.org+' — '+x.deadline+' ('+x['in']+'d)'+(x.link!=='working'?' <span style=\"color:'+(x.link==='dead'?'var(--reach)':'var(--mod)')+'\">⚠ '+x.link+'</span>':'')).join(' · ')
-   : '⏰ No deadlines within 30 days.';
-}
 function tabs(){
   document.getElementById('tabs').innerHTML=TABS.map(t=>
    '<div class="tab'+(t.id===active?' active':'')+'" onclick="setTab(\\''+t.id+'\\')">'+t.label+
    (t.id!=='overview'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
 }
 function countFor(id){
+  if(id==='timeline'||id==='todo')return planCount(id);
   if(id==='applications')return DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started').length;
   return DATA.records.filter(r=>inTab(r,id)&&r.shown).length;
 }
@@ -574,7 +598,14 @@ function rowsFor(){
 function th(label,key){return '<th onclick="setSort(\\''+key+'\\')">'+label+(sortKey===key?(sortDir>0?' ▲':' ▼'):'')+'</th>';}
 function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='career'||k==='skill'||k==='method')?-1:1;}render();}
 function render(){
+  // The stat tiles and the integrity check summarise the whole vault, so they belong to Overview
+  // only; every other tab
+  // starts straight at its own content.
+  document.getElementById('tiles').classList.toggle('hidden',active!=='overview');
+  document.getElementById('integrity').classList.toggle('hidden',active!=='overview');
   if(active==='overview'){document.getElementById('table').innerHTML=overview();return;}
+  if(active==='timeline'){renderTimeline();return;}
+  if(active==='todo'){renderTodo();return;}
   const rows=rowsFor();
   const isPos=(active==='position'||active==='phd'||active==='applications');
   // Career and Method on every row; Skill and Level only where a job description exists to
@@ -643,7 +674,7 @@ function integrity(){
 }
 function thresholdNote(){
   const el=document.getElementById('threshold');if(!el)return;
-  let t='Position and PhD tiles, tabs, Overview and deadline reminders count only <b>live leads '
+  let t='Position and PhD tiles, tabs, Overview and plan deadlines count only <b>live leads '
     +'reaching '+S.min_fit_shown+' on at least one score</b> — a lead is hidden only when it is '
     +'both off-direction <i>and</i> out of reach. '
     +S.hidden_low+' live lead(s) below '+S.min_fit_shown+' on <i>both</i> scores are kept on disk in '
@@ -666,12 +697,19 @@ function thresholdNote(){
     +'age-retired ('+S.positive_all+' lifetime).';
   el.innerHTML=t;
 }
-tiles();deadbar();integrity();tabs();thresholdNote();render();
+__PLAN_JS__
+tiles();integrity();tabs();thresholdNote();render();planInit();
 </script></body></html>"""
 
 payload_json = json.dumps(payload).replace("</", "<\\/")  # keep inline <script> safe
+# The plan tabs' code lives beside this file rather than in the string above: it is long, and in a
+# Python string every JS backslash would need doubling.
+def _asset(name):
+    with open(os.path.join(str(TOOLS), "web", name), encoding="utf-8") as f:
+        return f.read().replace("</script", "<\\/script")
 _name = html.escape(user_name())  # from user/profile/snapshot.md; the header just omits it if unset
-out = (HTML.replace("__PAYLOAD__", payload_json).replace("__DATE__", TODAY.isoformat())
+out = (HTML.replace("__PLAN_CSS__", _asset("plan.css")).replace("__PLAN_JS__", _asset("plan.js"))
+       .replace("__PAYLOAD__", payload_json).replace("__DATE__", TODAY.isoformat())
        .replace("__TITLE_NAME__", f" — {_name}" if _name else "")
        .replace("__META_NAME__", f"{_name} · " if _name else ""))
 outpath = os.path.join(str(ARTIFACTS), "dashboard.html")
@@ -693,6 +731,10 @@ if unscored:
 if v3_pending:
     print(f"  [!] {v3_pending} record(s) still on a pre-v3 career_fit — run /rescore "
           f"(progress: python engine/tools/rescore_status.py)")
+print(f"  plan: {len(plan_doc['items'])} item(s) of your own + {len(plan_derived)} from records "
+      f"(edit them: python engine/tools/serve.py)")
+if plan_error:
+    print(f"  [!] {plan_error}")
 if integrity:
     print(f"  [!] integrity: {len(integrity)} issue(s):")
     for x in integrity:

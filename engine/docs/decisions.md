@@ -537,3 +537,17 @@ sortable Skill column gives the same ranking in one click, and since `method_fit
 scores — a tab ranked by one of them leans toward the single-number view this engine avoids.
 It was built 2026-08-17 to make strong-candidate leads visible whatever their direction; the
 `min_score_shown` rule (a lead stays visible when *any* score clears the bar) now covers that.
+
+### Timeline and To-do: one store, a local server (2026-10-02)
+
+*Rule: `engine/skills/dashboard.md` §Timeline and To-do.*
+
+The user asked for a timeline (long plan and progression, past included) and an important × urgent
+to-do matrix (focus, future and open only), editable and **in sync**. Both read one file,
+`user/workspace/plan/plan.json`, so sync is structural rather than a copy kept up to date.
+Browser `localStorage` was rejected: the items would live in one browser profile, out of reach of
+the tools and of Claude, and lost with the site data. The dashboard is a `file://` page, which
+cannot write files, so editing goes through `serve.py`, a stdlib server bound to 127.0.0.1; the
+plain file stays a read-only view. Record-derived items (applications sent, live deadlines) take
+their dates from the frontmatter on every run and can only be restyled or hidden, so the plan can
+never contradict a record.

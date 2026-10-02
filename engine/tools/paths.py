@@ -34,6 +34,7 @@ APPLICATIONS = WORKSPACE / "applications"
 LOGS = WORKSPACE / "logs"
 CACHE = WORKSPACE / "cache"
 ARTIFACTS = WORKSPACE / "artifacts"
+PLAN = WORKSPACE / "plan"            # Timeline + To-do store (plan.py)
 
 SETTINGS = USER / "settings.toml"
 _settings = None

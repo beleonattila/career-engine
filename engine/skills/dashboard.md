@@ -104,11 +104,43 @@ links / suspected hallucinations) are absent from every count and tab by constru
    (record counts + key stats).
 4. Report both numbers to the user — leads retired **and** the dashboard summary — then give the
    path to open: `user/workspace/artifacts/dashboard.html` (double-click, or `start user/workspace/artifacts/dashboard.html` on Windows).
+   Opened that way the Timeline and To-do tabs are read-only; to edit them, `python engine/tools/serve.py`.
 
 If `python` is missing, report it and point the user at `dashboard.py` (no other deps
 are required — standard library only).
 
+## Timeline and To-do (added 2026-10-02)
+
+Two tabs over **one store**, `user/workspace/plan/plan.json` (`plan.py`), so they are always in
+sync: ticking, flagging or recolouring an item in either changes it in both.
+
+- **Timeline** — the long plan *and the past*: every item, done or not. A zoomed, draggable
+  Gantt view (wheel or drag to move, Ctrl + wheel or the 1M…2Y / All buttons to zoom) above a
+  colour-only miniature of the whole plan, whose window drags too. Ribbons are spans; an item
+  with **no end date is a moment** (a diamond — an application sent). Click a ribbon for its info
+  page: dates, colour, Important / Urgent / Done, notes, and a delete button.
+- **To-do** — what to do next: open items whose date (end, or the moment) is **today or later**,
+  in an important × urgent matrix (rows urgent / not urgent, columns important / not important).
+  A span in progress stays. Drag a card between squares to re-flag it; tick it when done — it
+  leaves the matrix and stays on the Timeline. Your own items left open after their date are
+  listed under the matrix, so nothing overdue disappears silently.
+- **Add** takes a title, start, optional end and a colour (Important / Urgent optional). A new
+  item dated entirely in the past is pre-ticked Done: it records what happened.
+- **Items from records**, derived by `dashboard.py` on every run so they cannot drift: every
+  application **sent** (`_sent_evidence()`, at its send date, already done) and every **live
+  deadline** still to act on (shown, not yet applied, any horizon). Their dates are the record's —
+  change them with `/track`. The plan may only recolour, flag, tick or hide them (`overrides` in
+  `plan.json`; the trash button *hides*, the record is untouched). Defaults: urgent within 14 days,
+  important when `career_fit >= thresholds.on_direction`.
+- **Saving needs `python engine/tools/serve.py`** (127.0.0.1 only; regenerates the dashboard on
+  every load but never runs `expire_sweep.py`). A page opened from disk cannot write files, so it
+  shows the plan read-only with that command. Each save carries `rev`; a stale one is refused and
+  the page reloads the plan, so an edit made elsewhere (by hand, or `plan.py add`) is never lost.
+
 ## Stat definitions (kept in sync with the generator)
+
+The tiles show on the **Overview tab only** (2026-10-02), as does the integrity check; every other
+tab opens straight onto its own content.
 
 | Tile | Definition |
 |---|---|
@@ -168,10 +200,11 @@ are required — standard library only).
 - Expired/closed/past-deadline positions stay on disk (in `user/workspace/positions/open|closed/`) and
   still surface in the **Applications** tab with a muted `role closed`/`role expired` badge
   if a CV was generated for them (so a dead-but-worked lead is visible, just not active).
-- **Deadline bar** shows only *still-actionable* upcoming deadlines (≤30 days): it excludes
-  leads that are `expired`/`closed` and those already `sent`/`interviewing` (no reminder is
-  needed for a role you've applied to).
-- **Link flag:** each deadline shows its `url_status` — yellow `⚠ unchecked` (not yet
+- **There is no deadline bar** (removed 2026-10-02 at the user's request). Live deadlines are
+  items in the **To-do** matrix and on the **Timeline** instead: shown leads not yet
+  `sent`/`interviewing`, any horizon (see §Timeline and To-do).
+- **The integrity check shows on the Overview tab only** (2026-10-02), like the stat tiles.
+- **Link flag:** the Positions and PhD tabs' *Link · age* column shows each lead's `url_status` — yellow `⚠ unchecked` (not yet
   validated), yellow `⚠ unresolved` (the stored url is a search page or board root, so it
   can never confirm anything), or red `⚠ dead`. Clear `unchecked` by running
   `python engine/tools/link_check.py --apply`, which stamps `url_status` / `url_checked` on every open

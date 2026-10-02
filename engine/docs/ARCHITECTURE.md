@@ -23,6 +23,8 @@ career-engine/
 │   ├── hooks/                  ← pre-commit (doctor.py --share); install once per clone with
 │   │                             `git config core.hooksPath engine/hooks`
 │   └── tools/                  ← stdlib-only Python, run from the repo root (index below)
+│       └── web/                ← plan.js · plan.css: the Timeline + To-do tabs, inlined into
+│                                 dashboard.html by dashboard.py
 └── user/                       ← gitignored by the engine; its own local git repo
     ├── personal_data/          ← raw uploads, read-only, not versioned
     │   ├── old_cvs/ · old_cover_letters/ · formal_education/{bsc,msc}/ · publications/
@@ -64,6 +66,7 @@ career-engine/
         ├── trash/              ← created on demand by /track remove|delete; never scanned
         ├── linkedin/           ← engagement log, stats, connection targets
         ├── notes/              ← plans, briefs, pending_tasks.md
+        ├── plan/               ← plan.json: the dashboard's Timeline + To-do items (plan.py)
         ├── logs/               ← search telemetry (search_runs.jsonl, analysis/), link-check
         │                         and ATS-sweep reports
         ├── cache/              ← ats_slugs.tsv
@@ -81,6 +84,8 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `doctor.py` | Read-only health check: layout, settings.toml keys, stale or dangling paths, tools, git safety (incl. the pre-commit guard), records and their `schema_version`, and personal terms in any file the engine tracks or has staged (`--share` makes that last one fail; the pre-commit hook runs it). Terms come from `user/profile/private_terms.txt` |
 | `schema.py` | The record format version: `SCHEMA_VERSION`, a report of records per version, and `--apply` to migrate them (`engine/docs/RECORD_SCHEMA.md`) |
 | `dashboard.py` | → `user/workspace/artifacts/dashboard.html` |
+| `serve.py` | Serves the dashboard on 127.0.0.1 (regenerated per load) so the Timeline and To-do tabs can save; the only writer of `plan/plan.json` from the browser |
+| `plan.py` | The Timeline / To-do store `plan/plan.json`: validation, atomic save with a `rev` check; CLI lists items, `add` appends one |
 | `expire_sweep.py` | Retires past-deadline and stale leads `open/` → `closed/` (step 1 of /dashboard). **Applies by default**; `--dry-run` to preview |
 | `ats_discover.py` | → `cache/ats_slugs.tsv` (one-off/occasional ATS slug discovery; no `--help`, it runs) |
 | `ats_sweep.py` | → `logs/ats_sweep_latest.tsv` (bulk employer-board sweep, ~0 tokens; no `--help`, it runs). `--uncovered` lists band-A employers with no board |

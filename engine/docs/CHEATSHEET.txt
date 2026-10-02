@@ -149,6 +149,10 @@ python engine/tools/analyze_misses.py    Which run missed what, and why (--json 
 python engine/tools/reconcile_staging.py Merge the two search tracks into user/workspace/inbox/ (career wins a
                             collision, stamps TRACK:). --apply to write.
 python engine/tools/dashboard.py         Build user/workspace/artifacts/dashboard.html
+python engine/tools/serve.py             Open the dashboard with saving on (Timeline + To-do
+                            tabs: add, edit, tick, delete). Ctrl+C to stop.
+python engine/tools/plan.py              List plan items; `add "Title" --start D [--end D]
+                            [--important] [--urgent]` adds one without the browser.
 
 ----------------------------------------------------------------
  WHERE THINGS LIVE
@@ -162,7 +166,8 @@ user/workspace/positions/open|applied|closed/   position + PhD leads (persistent
 user/workspace/applications/               generated CVs + cover letters (PDF)
 user/workspace/logs/                       search telemetry — engine/docs/LOG_SCHEMA.md, search_runs.jsonl, analysis/
 user/workspace/trash/                      quarantine from /track remove|delete; never scanned
-user/workspace/artifacts/dashboard.html              open in a browser
+user/workspace/artifacts/dashboard.html              open in a browser (read-only plan; serve.py to edit)
+user/workspace/plan/plan.json              Timeline + To-do items (plan.py)
 engine/docs/PIPELINE.md                 full pipeline diagram + contracts
 user/profile/ (background, preferences, competencies, soft_skills)   profile ground truth
 
