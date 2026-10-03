@@ -89,6 +89,10 @@ Read the target `.md` file. Extract:
 > *how* to write. `skill_match` and the gaps behind it tell you how much framing the letter
 > has to do. A low `skill_match` means lead harder on the transferable evidence and the
 > matched strengths; it never means inventing coverage (see *Factual grounding*, CLAUDE.md).
+- **Gaps can be stale.** The Fit Assessment was written on the profile's `last_evaluated` date.
+  Before framing a gap in the letter, check `user/profile/competencies.md` and
+  `user/profile/background.md` for evidence added since. A gap that has closed is a strength to
+  state, and the profile gets a dated History line saying so (rescoring stays with `/inbox`).
 - **Key Requirements** section: full list
 - **Language Patterns** section: both lists (identity & culture, technical keywords)
 - **Notes** section: any manual additions
@@ -242,6 +246,13 @@ stranding the space above it). Use:
 
 Never let a guard be large enough to force a whole section onto a fresh page while half a
 page sits empty above it. The goal is orphan prevention, not fixed gaps.
+
+**No entry is ever split across pages** (user rule, 2026-10-03). A page break may fall *between*
+entries (two publications, two jobs, two `\cvskill` blocks), never *inside* one. `\cvjob` and
+`\cvskill` are minipages and already atomic; a list whose items are plain paragraphs is not. Put
+`\interlinepenalty=10000` right after `\begin{enumerate}` in the Publications list (and in any
+other multi-line list) so each item moves whole. When verifying page fill (Step 2i), check every
+page break for a split entry as well as for gaps.
 
 Output path: `user/workspace/applications/[OrgSlug]_[YYYY-MM]/CV_[Name]_[OrgSlug].tex`
 
