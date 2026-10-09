@@ -32,6 +32,13 @@ csl-behring = { tenant = "csl", site = "CSL_External", wd = 1 }
 # registered as a second entry -- it would fetch the same 35 postings again and print every
 # EMBL row twice in the ranked sweep.
 embl-heidelberg = { tenant = "embl", site = "EMBL", wd = 103 }
+# Illumina, found 2026-10-06 by reading the Workday host off the apply link of a UK Senior
+# Bioinformatics Scientist ad (jobRxiv). The 2026-07-30 probe below listed illumina as "not on
+# Workday" because the site name "illumina-careers" is not a guessable pattern. Live call: 154 postings.
+illumina = { tenant = "illumina", site = "illumina-careers", wd = 1 }
+# argenx (Belgium, antibody therapeutics), found 2026-10-06 by reading the Workday host off
+# careers.argenx.com. Live call: 84 postings, mostly commercial and clinical roles on that date.
+argenx = { tenant = "argenx", site = "External_Careers", wd = 3 }
 
 # Workable. One GET returns the whole board with `published_on` and full descriptions.
 # Format: vault_slug -> workable account slug.
