@@ -115,7 +115,10 @@ def load(globpat, kind):
             # here"), which is what unsolicited applications are decided on.
             # -1 means the field is absent -- not yet scored. 0 is a real score meaning
             # "no overlap", so the two must stay distinct; the page renders -1 as an em dash.
-            "career": as_int(fm.get("career_fit")),
+            # -1 when absent, like method and skill below. It defaulted to 0 until 2026-10-10, which
+            # made a real career_fit 0 (band E, off-direction work) indistinguishable from a missing
+            # one, and the unscored count below flagged two fully scored band-E leads.
+            "career": as_int(fm.get("career_fit"), -1),
             # method_fit (2026-09-29): does the seat BUILD methods or only operate them?
             # Independent of career_fit by design -- it exists so method roles outside protein
             # design are visible at all. Absent on every record until /rescore writes it.
@@ -324,7 +327,7 @@ hidden_low = sum(1 for r in records
 #        scored — the two-score shape is unchanged — but their career_fit awaits a v3 re-judgement.
 SCORED_VERSIONS = ("v2", "v2.1", "v3")
 unscored = sum(1 for r in records
-               if r["scoring"] not in SCORED_VERSIONS or r["career"] <= 0 or r["skill"] < 0)
+               if r["scoring"] not in SCORED_VERSIONS or r["career"] < 0 or r["skill"] < 0)
 # Scored, but career_fit judged before scoring v3 (no band, no checks, orgs averaged). Counted on
 # every record, not just shown ones: the column mixes two scales until /rescore reaches 100%.
 v3_pending = sum(1 for r in records if r["scoring"] != "v3")
@@ -461,7 +464,7 @@ def vault_stats():
                   ["Positions", stats["positions"]], ["PhD leads", stats["phd"]]],
         "scatter": [{"career": r["career"], "skill": r["skill"], "cat": r["category"],
                      "name": _label(r), "path": r["path"]}
-                    for r in leads if r["shown"] and r["skill"] >= 0],
+                    for r in leads if r["shown"] and r["career"] >= 0 and r["skill"] >= 0],
         "weeks": [{"week": w, **weeks[w]} for w in recent],
     }
 
