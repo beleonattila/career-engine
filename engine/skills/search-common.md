@@ -45,7 +45,8 @@ every record, so how off-direction a lead is stays visible without suppressing i
 > `method_fit` 90 role gets collected at all.
 >
 > **Since 2026-10-01 the skill track looks for them on purpose** — the *method lane*: the ATS
-> sweep's `M`/`Mb` rows (build wording in the ad text, not method titles), a second Gate 3 route
+> sweep's `M`/`Mb`/`M?` rows (build wording in the ad text, or a sighted employer — not method
+> titles), a second Gate 3 route
 > (one method competency + a build signal), a sightings log of employers that post such seats,
 > and an org rotation that puts those employers first. Positions: [[search-positions-skill]]
 > §Method lane. Companies and groups: their skill tracks log any build seat seen on a careers page

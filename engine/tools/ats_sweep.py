@@ -76,6 +76,12 @@ M_TITLE_STRONG = re.compile(_METHOD["title_strong"], re.I) if _METHOD else None
 M_TITLE = re.compile(_METHOD["title"], re.I) if _METHOD else None
 M_BODY_BUILD = re.compile(_METHOD["body_build"], re.I) if _METHOD else None
 M_BODY_USERS = re.compile(_METHOD["body_users"], re.I) if _METHOD else None
+# The M? tier's title test: the weak method titles as whole words ("Bioengineer / Molecular
+# Biologist" is not an engineer seat), minus corporate functions. Measured 2026-10-10: without
+# these, a sighted employer's application-support and security engineers came through as M?.
+M_TITLE_WORD = re.compile(r"\b(?:%s)" % _METHOD["title"], re.I) if _METHOD else None
+M_CORPORATE = re.compile(r"(?i:\b(security|support|help ?desk|service desk|sales|field service"
+                         r"|facilities|workplace)\b)|\bIT\b")
 # Roles that are never a fit regardless of keyword noise.
 EXCLUDE = re.compile(
     r"\b(sales|account executive|marketing|recruit|talent|people ops|hr\b|finance|"
@@ -465,6 +471,22 @@ def tracked_index():
     return idx
 
 
+def sighted_orgs():
+    """Org slugs with at least one logged method sighting (`method_roles_seen` >= 1).
+
+    method_sightings.py --apply (run by /inbox) writes the count onto the profile under its vault
+    slug, so this needs no alias resolution of its own. Read for the M? tier.
+    """
+    out = set()
+    for folder in ("companies", "research_groups"):
+        for p in (ROOT / "organizations" / folder).glob("*.md"):
+            m = re.search(r"^method_roles_seen:\s*(\d+)",
+                          p.read_text(encoding="utf-8", errors="replace"), re.M)
+            if m and int(m.group(1)) > 0:
+                out.add(p.stem)
+    return out
+
+
 def org_fit_scores():
     """company slug -> career_fit, so a generic title at an on-direction employer still ranks.
 
@@ -534,6 +556,7 @@ def main():
 
     known = tracked_index()
     fits = org_fit_scores()
+    sighted = sighted_orgs()
     # One board can front several vault orgs: DTU's single endpoint covers roles filed as
     # dtu-bioengineering, dtu-biosustain-cpe and a PI-named lab slug. Without folding those in, every
     # university role would read as NEW-ORG on every run. Only applies to single-token board
@@ -633,6 +656,20 @@ def main():
                     elif own and M_BODY_BUILD.search(own) and M_BODY_USERS.search(own):
                         tier = "Mb"
 
+                # M? -- the method lane's employer route, inside the sweep. An employer that has
+                # posted a build seat before is likely to again, and the next one need not say
+                # so in the words M/Mb test for: Adaptyv's "Software Engineer, Product" builds
+                # its lab orchestration platform ("building the orchestration layer"), which the
+                # build-phrase pattern does not match, so it sat in tier '-' through every sweep
+                # from 10-01 until the 10-10 skill track went looking (decisions.md §A sweep miss
+                # is a triage miss). Title only -- a build-phrase requirement would drop exactly
+                # that ad -- and small boards only, as for T2?: on a pharma board "engineer" is
+                # everything.
+                if (tier == "-" and M_TITLE_WORD and vault_slug in sighted
+                        and len(jobs) <= T2Q_MAX_BOARD and M_TITLE_WORD.search(title)
+                        and not M_CORPORATE.search(title)):
+                    tier = "M?"
+
                 # Demote rather than drop: the row stays in the TSV so a wrong suppression is
                 # recoverable and countable, it just does not spend context. --show-all prints it.
                 if tier != "-" and over_level(title):
@@ -655,7 +692,7 @@ def main():
                     "tracked": tracked, "url": url,
                 })
 
-    rank = {"T1": 0, "T1b": 1, "T2": 2, "T2b": 3, "T2?": 4, "M": 5, "Mb": 6, "-": 7}
+    rank = {"T1": 0, "T1b": 1, "T2": 2, "T2b": 3, "T2?": 4, "M": 5, "Mb": 6, "M?": 7, "-": 8}
     rows.sort(key=lambda r: (rank[r["tier"]], -r["fit"],
                              r["age"] if isinstance(r["age"], int) else 9999))
 
@@ -680,8 +717,8 @@ def main():
     counts = {t: sum(1 for r in rows if r["tier"] == t) for t in rank}
     print(f"\n# {len(boards)} boards swept | {total} postings seen | {len(shown)} printed "
           f"| {counts['T1']} T1, {counts['T1b']} T1b, {counts['T2']} T2, "
-          f"{counts['T2b']} T2b, {counts['T2?']} T2?, {counts['M']} M, {counts['Mb']} Mb "
-          f"(method lane — skill track), {counts['-']} untiered",
+          f"{counts['T2b']} T2b, {counts['T2?']} T2?, {counts['M']} M, {counts['Mb']} Mb, "
+          f"{counts['M?']} M? (method lane — skill track), {counts['-']} untiered",
           file=sys.stderr)
     if not show_all and counts["-"]:
         print(f"#   {counts['-']} tier '-' row(s) written to {OUT.name} but not printed "

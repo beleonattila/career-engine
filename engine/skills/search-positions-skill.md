@@ -111,8 +111,11 @@ competencies + a BUILD SIGNAL → COLLECT.** Record as
 > the employers that have posted such seats before. Why: `engine/docs/decisions.md` §Method lane.
 
 **Where the candidates come from.**
-- **ATS sweep `M` / `Mb` rows** — open every one that is not `tracked`. `M` = the title names a
-  method-building seat; `Mb` = the role text says the seat builds tools for scientists.
+- **ATS sweep `M` / `Mb` / `M?` rows** — open every one that is not `tracked`. `M` = the title names
+  a method-building seat; `Mb` = the role text says the seat builds tools for scientists; `M?` = a
+  software/engineering title at a small employer with a logged method sighting, where neither of the
+  others fired. `M?` is the employer route inside the sweep: it says *look*, not *build seat* — the
+  BUILD SIGNAL below is still read from the ad.
 - **Any ad you read for another reason** that turns out to carry a build signal.
 - **The org rotation** (§Which orgs to sweep) — which puts proven method hirers first.
 

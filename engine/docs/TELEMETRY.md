@@ -77,13 +77,15 @@ What the shape says:
 - **A sweep miss is a triage miss, not a source gap.** The 10-05 sweep did return the three Adaptyv
   postings the 10-10 run collected, as did every sweep since at least 10-01, with unchanged posting
   dates. They were tier `-`, which goes to the TSV but is not printed, and agents read only what is
-  printed: *Software Engineer, Product* names a build seat but no scientist users, so `Mb` did not
-  fire, and the display library role matches no career title. The 10-10 skill track reached them
+  printed: *Software Engineer, Product*'s build sentence ("building the orchestration layer") is
+  not one the build-phrase pattern matches, so `Mb` did not fire, and the display library role
+  matches no career title. The 10-10 skill track reached them
   through Adaptyv's earlier method sightings. Each run's sweep output is now archived
   (`logs/ats_sweep/<run_id>.tsv`), so `analyze_misses.py` can tell `UNTIERED` (returned, not
   printed) and `UNSCREENED` (printed, skimmed past) from a real gap. In all six archived runs every
   sweep miss is `UNTIERED`; the 224 sweep `SOURCE_INCOMPLETE` events before them cannot be re-read.
-  Tiering more rows (an `M?` tier for sighted employers) is an open decision
+  Since 2026-10-10 the sweep tiers such rows `M?` (a software/engineering title at a small employer
+  with a logged method sighting), which on a live sweep would have printed all three
   (`engine/docs/decisions.md` §A sweep miss is a triage miss).
 
 Standing state as of 2026-10-10 (`python engine/tools/log_run.py --stats`):

@@ -216,7 +216,7 @@ def attribute(find, run):
 
     # The fast pass's window is each source's own recency filter (LinkedIn's f_TPR). The ATS
     # sweep has none -- it enumerates every board, however old the posting -- so a sweep miss is
-    # never an age miss. Charging it as one hid 107 sweep events (2026-10-10), among them the
+    # never an age miss. Charging it as one hid 104 sweep events (2026-10-10), among them the
     # three Adaptyv postings that sat untiered in the 10-01 sweeps.
     if run.get("mode") == "fast" and ch_key not in NO_AGE_FILTER:
         w = run.get("age_window_days")

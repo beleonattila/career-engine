@@ -416,8 +416,11 @@ Columns: `tier` · `age_d` · `published` · `org` · `fit` · `status` · `titl
   **`M` / `Mb`** are the **skill track's method lane** and only ever fill a row the tiers above
   left at `-`: `M` = the title names a method-building seat (research software / research
   engineer …), `Mb` = the role text says the seat builds tools, pipelines or methods *for
-  scientists*. Terms: `[sweep.method]` in `user/profile/search_terms.toml`. The career track
-  ignores them; the skill track reads them per [[search-positions-skill]] §Method lane.
+  scientists*, **`M?`** = a software/engineering title (whole word, corporate functions excluded)
+  at an employer with a logged method sighting, on a board of at most 100 postings — the
+  employer route, for build seats worded in ways `M`/`Mb` miss (since 2026-10-10). Terms:
+  `[sweep.method]` in `user/profile/search_terms.toml`. The career track ignores them; the skill
+  track reads them per [[search-positions-skill]] §Method lane.
 - **`status`** — `tracked` (org+role already in the vault, skip) · `new-role` (known org, new role —
   collect if it clears the gate) · `NEW-ORG` (no lead anywhere yet — highest value).
 - **`age_d`** is information, not a filter. The script applies **no age limit** by design.

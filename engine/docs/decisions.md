@@ -563,19 +563,29 @@ The open question from the same day's telemetry (the 10-05 sweep "did not return
 postings that the 10-10 sweep did) had a plain answer: it had returned them, in every sweep since at
 least 10-01, with unchanged posting dates, as tier `-`. Tier `-` rows go to the TSV but are not
 printed, and the agents read only what is printed. *Software Engineer, Product* names a build seat
-(LabOS orchestration) but says nothing about scientist users, so `Mb` did not fire; the display
-library role matches no career title. The 10-10 skill track reached them through Adaptyv's earlier
+and its users (the lab), but its build sentence ("building the orchestration layer" of LabOS) is not
+one the build-phrase pattern matches, so `Mb` did not fire; the display library role matches no
+career title. The 10-10 skill track reached them through Adaptyv's earlier
 method sightings, a route the interrupted 10-05 run never took.
 
 Two attribution errors had hidden this. `SOURCE_INCOMPLETE` read "the sweep did not return it",
 which an enumerating source cannot do for a live posting; and the fast pass's 21-day window was
-charged to the sweep, which has no age filter (107 events, including the same three postings in the
+charged to the sweep, which has no age filter (104 events, including the same three postings in the
 10-01 runs). Each run's sweep output is now archived under its run_id, a sweep miss found in it
 becomes `UNTIERED` (tier `-`) or `UNSCREENED` (printed, not screened), and `ats_sweep` is exempt
 from `AGE_EXCLUDED`. Across the six archived runs every sweep miss is `UNTIERED`; the 224
 `SOURCE_INCOMPLETE` sweep events before them cannot be re-read, but the same mechanism is the likely
-explanation for many. Whether to tier more rows (an `M?` tier for sighted employers' untiered
-engineering rows) is a separate decision, not taken.
+explanation for many.
+
+**`M?` tier, taken the same day.** An untiered row becomes `M?` when its employer has a logged
+method sighting (`method_roles_seen` ≥ 1 on the profile), its board has at most 100 postings, and its
+title matches the weak method titles as whole words and names no corporate function (security,
+support, sales, IT …). It is the method lane's employer route moved into the sweep, so it no longer
+depends on the org rotation that budget-cut runs skip. Title only, deliberately: a build-phrase
+requirement was tested and would have dropped the Product ad it exists for. Measured on a live sweep:
+10 rows before the whole-word and corporate filters (Adaptyv "Bioengineer / Molecular Biologist",
+Isomorphic Labs support and security engineers), 5 after, all Adaptyv, among them all three postings
+the 10-05 run missed.
 
 ### Best Match removed (2026-10-02)
 
