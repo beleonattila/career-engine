@@ -7,13 +7,13 @@ description: >
   dashboard", "update the dashboard", "show my stats", "regenerate dashboard". Runs the
   generator that scans the vault's profiles and position leads, computes statistics, and
   writes a self-contained user/workspace/artifacts/dashboard.html with ranked tabs (companies, research groups,
-  positions, PhD), an applications funnel, and stat tiles.
+  positions, PhD) and a Statistics tab charting the vault and the search telemetry.
 ---
 
 # dashboard
 
 Builds `user/workspace/artifacts/dashboard.html` — a single self-contained file (no dependencies,
-no server) with stat tiles, an application funnel, and sortable/filterable tabs ranked
+no server) with a Statistics tab of charts and sortable/filterable tabs ranked
 by `career_fit`.
 
 **Recommended model:** Haiku, low effort (mechanical). The dashboard is a *view*: it
@@ -81,9 +81,9 @@ links / suspected hallucinations) are absent from every count and tab by constru
      `unverified`.
 
    > **`expire_sweep.py` and `dashboard.py` read the same `thresholds.stale_days`**, so they
-   > cannot drift apart. The sweep retires; the dashboard tile is a **tripwire** that should read **0**, because
-   > `/dashboard` runs the sweep as step 1. A non-zero *Overdue (unretired)* tile means the sweep
-   > has not run.
+   > cannot drift apart. The sweep retires; the dashboard's overdue count is a **tripwire** that should
+   > read **0**, because `/dashboard` runs the sweep as step 1. When it is not, a warning appears on the
+   > Statistics tab (*Records by kind*) and in the page footer: the sweep has not run.
 
    > **The sweep only catches leads whose *deadline* has passed.** A posting pulled early — or
    > one that never had a deadline — stays in `open/` looking healthy. That is what
@@ -137,17 +137,34 @@ sync: ticking, flagging or recolouring an item in either changes it in both.
   shows the plan read-only with that command. Each save carries `rev`; a stale one is refused and
   the page reloads the plan, so an edit made elsewhere (by hand, or `plan.py add`) is never lost.
 
-## Stat definitions (kept in sync with the generator)
+## Statistics tab (kept in sync with the generator)
 
-The tiles show on the **Overview tab only** (2026-10-02), as does the integrity check; every other
-tab opens straight onto its own content.
+The stat tiles that headed the Overview were replaced on 2026-10-10 by a **Statistics** tab
+(`engine/tools/web/stats.js` · `stats.css`, inlined like the plan tabs): hand-built SVG charts, no
+library, each with a hover/focus tooltip and a *Show data* table. The integrity check stays on
+Overview only. Two sections:
 
-| Tile | Definition |
+- **Vault** — the application funnel, records by kind, a career-fit × skill-match scatter of live
+  position and PhD leads, and leads collected per week split by search track (`track: career`
+  against everything else, since skill-track records say `employability` or `skill`).
+- **Search telemetry** — runs logged, deep passes, the LinkedIn shortlist rate; why leads were
+  missed (all vs strong leads); net-new leads per run by mode; what each channel found; channel
+  coverage (reached / skipped / failed); rejections by reason; days from posting to discovery.
+  Computed by `log_run.py`'s own functions and read from the newest *cumulative*
+  `logs/analysis/misses_*.json` (windowed `--since` reports are skipped), so the tab and
+  `log_run.py --stats` cannot disagree. Refresh the miss charts with `analyze_misses.py`.
+
+Colours are the reference data-viz palette's dark steps, validated on the panel surface
+`#171a21` (three slots, all pairs pass); text never wears a series colour.
+
+The numbers the tiles carried are defined below; the funnel and *Records by kind* charts show them.
+
+| Number | Definition |
 |---|---|
 | Search results | count of `user/workspace/inbox/processed/*.txt` (cumulative collected leads) |
-| On-direction (≥N) | **shown** records with `career_fit ≥ thresholds.on_direction` (`user/settings.toml`; the tile shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. **Shown-filtered only since 2026-08-29**: it previously counted every record in the vault including expired and closed leads, reading 125 when just 79 were visible. The lifetime figure survives as `positive_all` and appears in the footer note. |
+| On-direction (≥N) | **shown** records with `career_fit ≥ thresholds.on_direction` (`user/settings.toml`; the label shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. **Shown-filtered only since 2026-08-29**: it previously counted every record in the vault including expired and closed leads, reading 125 when just 79 were visible. The lifetime figure survives as `positive_all` and appears in the footer note. |
 | Companies / Groups / Positions / PhD | profile counts per category (PhD split from positions by `type: phd` or "PhD" in the title) |
-| Overdue (unretired) | **Tripwire — should read 0.** Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run |
+| Overdue (unretired) | **Tripwire — should read 0;** shown only as a warning when it does not. Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run |
 | CVs generated | count of `user/workspace/applications/*/` folders (or items with `cv_date`) |
 | CVs sent | items with **positive evidence** of a submission: `app_status` sent/interviewing, any `sent_date`, or closed with outcome rejected/offer. `closed` **alone does not count** — a lead closed `withdrawn` was never submitted. Includes orgs, since an unsolicited application is a real send |
 | Ongoing | items with `app_status` sent or interviewing |
@@ -203,7 +220,7 @@ tab opens straight onto its own content.
 - **There is no deadline bar** (removed 2026-10-02 at the user's request). Live deadlines are
   items in the **To-do** matrix and on the **Timeline** instead: shown leads not yet
   `sent`/`interviewing`, any horizon (see §Timeline and To-do).
-- **The integrity check shows on the Overview tab only** (2026-10-02), like the stat tiles.
+- **The integrity check shows on the Overview tab only** (2026-10-02).
 - **Link flag:** the Positions and PhD tabs' *Link · age* column shows each lead's `url_status` — yellow `⚠ unchecked` (not yet
   validated), yellow `⚠ unresolved` (the stored url is a search page or board root, so it
   can never confirm anything), or red `⚠ dead`. Clear `unchecked` by running

@@ -1,0 +1,41 @@
+/* Statistics tab (stats.js). The dashboard is dark-only, so these are the dark steps of the
+   reference data-viz palette, validated on the panel surface #171a21: slots 1-3 pass every
+   check all-pairs (worst CVD dE 9.4, normal-vision 20.9, all >= 3:1). Text never wears a
+   series colour -- identity comes from the swatch or line key beside it. */
+.vz{--series-1:#3987e5;--series-2:#d95926;--series-3:#199e70;
+  --vz-grid:#272c36;--vz-base:#3a4150;--vz-ink:#e6e9ef;--vz-ink2:#9aa3b2;--vz-surface:#171a21}
+.vz h2{font-size:15px;margin:22px 0 4px}
+.vz .vz-lede{color:var(--vz-ink2);font-size:12px;margin:0 0 10px}
+/* auto-fill, not auto-fit: charts are sized to their card as each is drawn, and auto-fit would let
+   the first card span the row until the second one arrives, leaving its chart drawn at twice the
+   width it is finally shown at. */
+.vz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(520px,100%),1fr));gap:16px}
+.vz-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.vz-card h3{font-size:13px;margin:0 0 2px}
+.vz-card .vz-sub{color:var(--vz-ink2);font-size:12px;margin:0 0 10px}
+.vz-card svg{display:block;width:100%;height:auto;overflow:visible}
+.vz-card svg text{font:11px -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;fill:var(--vz-ink2);
+  font-variant-numeric:tabular-nums}
+.vz-card svg text.vz-val{fill:var(--vz-ink)}
+.vz-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--vz-ink2);margin:0 0 6px}
+.vz-legend span{display:inline-flex;align-items:center;gap:6px}
+.vz-legend i{display:inline-block;width:12px;height:3px;border-radius:2px}
+.vz-kpis{display:flex;gap:28px;flex-wrap:wrap;margin:4px 0 6px}
+.vz-kpis div{min-width:120px}
+.vz-kpis b{display:block;font-size:22px;font-weight:700;color:var(--vz-ink)}
+.vz-kpis span{color:var(--vz-ink2);font-size:12px}
+.vz-mark{cursor:default;outline:none}
+.vz-mark:focus-visible{outline:2px solid var(--vz-ink);outline-offset:1px}
+.vz details{margin-top:8px}
+.vz summary{color:var(--vz-ink2);font-size:12px;cursor:pointer}
+.vz-table{margin-top:6px;font-size:12px}
+.vz-table th{position:static}
+.vz-table td,.vz-table th{padding:4px 8px}
+.vz-empty{color:var(--vz-ink2);font-size:12px;padding:18px 0}
+#vz-tip{position:fixed;z-index:50;pointer-events:none;background:#0b0d10;border:1px solid var(--vz-base);
+  border-radius:8px;padding:8px 10px;font-size:12px;color:var(--vz-ink);max-width:320px;display:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.4)}
+#vz-tip .vz-tt{color:var(--vz-ink2);margin-bottom:4px}
+#vz-tip .vz-tr{display:flex;align-items:center;gap:8px;white-space:nowrap}
+#vz-tip .vz-tr i{display:inline-block;width:10px;height:2px;border-radius:1px}
+#vz-tip .vz-tr b{font-weight:700}

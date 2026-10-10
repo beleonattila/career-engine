@@ -23,8 +23,8 @@ career-engine/
 │   ├── hooks/                  ← pre-commit (doctor.py --share); install once per clone with
 │   │                             `git config core.hooksPath engine/hooks`
 │   └── tools/                  ← stdlib-only Python, run from the repo root (index below)
-│       └── web/                ← plan.js · plan.css: the Timeline + To-do tabs, inlined into
-│                                 dashboard.html by dashboard.py
+│       └── web/                ← plan.js · plan.css (Timeline + To-do) and stats.js · stats.css
+│                                 (Statistics tab), inlined into dashboard.html by dashboard.py
 └── user/                       ← gitignored by the engine; its own local git repo
     ├── personal_data/          ← raw uploads, read-only, not versioned
     │   ├── old_cvs/ · old_cover_letters/ · formal_education/{bsc,msc}/ · publications/

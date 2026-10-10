@@ -3,7 +3,7 @@
 
 Scans the vault's profiles + position leads, reads YAML frontmatter, computes
 statistics, and emits a single self-contained dashboard.html (tabs + sortable
-tables + stat tiles + application funnel). No external dependencies.
+tables + a Statistics tab of hand-built SVG charts). No external dependencies.
 
 Run:  python engine/tools/dashboard.py
 Out:  dashboard.html  (open in any browser)
@@ -31,7 +31,7 @@ TODAY = datetime.date.today()
 # to pick a cold-outreach target, not worked top-down like a lead list.
 # The bar itself is personal: user/settings.toml [thresholds].
 MIN_SCORE_SHOWN = setting("thresholds.min_score_shown")
-# career_fit at or above this counts as on-direction (the tile below). Same file.
+# career_fit at or above this counts as on-direction (the funnel's second bar). Same file.
 ON_DIRECTION = setting("thresholds.on_direction")
 
 # ---------------------------------------------------------------- frontmatter
@@ -295,7 +295,7 @@ def _shown(r):
     expired/closed, deadline not past) AND at least ONE of its three scores reaches
     MIN_SCORE_SHOWN. The OR is deliberate: hiding a lead needs "I don't want this science",
     "I don't want this kind of work" and "I can't do it" to be true all at once.
-    Stamped onto every record below so the tiles, tab counts, tables, overview and
+    Stamped onto every record below so the statistics, tab counts, tables, overview and
     plan deadlines cannot drift apart — they all read this one flag.
     """
     if r["category"] in ("company", "group"):
@@ -428,8 +428,114 @@ try:
 except (planstore.PlanError, ValueError) as e:  # a hand edit broke it: show the records, say why
     plan_doc, plan_error = planstore.empty(), f"{planstore.PLAN_FILE} is unreadable: {e}"
 
+# ---------------------------------------------------------------- statistics & telemetry tab
+# The Statistics tab replaced the stat tiles on 2026-10-10: the same numbers, plus the search
+# telemetry, drawn as charts. Telemetry is computed by the telemetry tools' own functions
+# (log_run.py) and read from analyze_misses.py's latest cumulative report -- never re-derived
+# here, so the tab and `log_run.py --stats` cannot disagree.
+def _week(datestr):
+    try:
+        d = datetime.date.fromisoformat(str(datestr)[:10])
+    except (TypeError, ValueError):
+        return None
+    return (d - datetime.timedelta(days=d.weekday())).isoformat()   # Monday of that week
+
+def vault_stats():
+    leads = [r for r in records if r["category"] in ("position", "phd")]
+    weeks = {}
+    for r in leads:
+        w = _week(r["created"])
+        if w:
+            b = weeks.setdefault(w, {"career": 0, "skill": 0})
+            # The skill track's records say `track: employability` (its earlier name) or `skill`.
+            b["career" if r["track"] == "career" else "skill"] += 1
+    recent = sorted(weeks)[-16:]
+    return {
+        "funnel": [["Search results", stats["search_results"]],
+                   ["On-direction, live (career ≥ %d)" % ON_DIRECTION, stats["positive"]],
+                   ["CVs generated", stats["cvs_generated"]], ["CVs sent", stats["cvs_sent"]],
+                   ["Ongoing", stats["ongoing"]], ["Offers", stats["offers"]]],
+        "outcomes": {"rejections": stats["rejections"], "offers": stats["offers"],
+                     "ongoing": stats["ongoing"]},
+        "kinds": [["Companies", stats["companies"]], ["Research groups", stats["groups"]],
+                  ["Positions", stats["positions"]], ["PhD leads", stats["phd"]]],
+        "scatter": [{"career": r["career"], "skill": r["skill"], "cat": r["category"],
+                     "name": _label(r), "path": r["path"]}
+                    for r in leads if r["shown"] and r["skill"] >= 0],
+        "weeks": [{"week": w, **weeks[w]} for w in recent],
+    }
+
+def telemetry_stats():
+    """Search telemetry for the Statistics tab, or {"error": ...} when there is none yet."""
+    try:
+        import log_run
+    except Exception as e:                      # a broken terms file must not break the page
+        return {"error": f"log_run.py could not be loaded: {e}"}
+    runs = log_run.load()
+    if not runs:
+        return {"error": "no search runs logged yet (user/workspace/logs/search_runs.jsonl)"}
+    view = log_run.collection_view(runs)
+    idx = log_run.vault_outcomes()
+    strong_by_run, chan = {}, {}
+    for i, find, info, credited in log_run.attribute_outcomes(runs, view, idx):
+        c = chan.setdefault(find.get("channel") or "?", {"new": 0, "strong": 0})
+        c["new"] += 1
+        if credited and info["fit"] is not None and info["fit"] >= log_run.STRONG_FIT:
+            c["strong"] += 1
+            strong_by_run[i] = strong_by_run.get(i, 0) + 1
+    run_rows, cover = [], {}
+    for i, r in enumerate(runs):
+        d = r.get("duration_min", log_run.duration_min(r))
+        run_rows.append({"id": r.get("run_id"), "date": str(r.get("started") or "")[:10],
+                         "mode": r.get("mode") or "?", "track": r.get("track") or "?",
+                         "cfg": f"{r.get('model', '?')}/{r.get('effort', '?')}",
+                         "new": len(view[i]["new"]), "strong": strong_by_run.get(i, 0),
+                         "screened": len(r.get("screened", [])),
+                         "mins": d if isinstance(d, int) else None})
+        for c in r.get("channels", []):
+            k = cover.setdefault(c["key"], {"reached": 0, "skipped": 0, "failed": 0})
+            st = "reached" if c.get("status") in ("reached", "partial") else c.get("status")
+            if st in k:
+                k[st] += 1
+    reasons = log_run.screen_reasons(runs).most_common()
+    top = [[k, n] for k, n in reasons[:10]]
+    if len(reasons) > 10:
+        top.append(["other", sum(n for _, n in reasons[10:])])
+    hits = short = 0
+    for r in runs:
+        for c in r.get("channels", []):
+            if c.get("key") == "linkedin" and isinstance(c.get("shortlisted"), int):
+                hits += c.get("hits") or 0
+                short += c["shortlisted"]
+    n_deep, deep_age = log_run.deep_pass_age(runs)
+    out = {"runs": run_rows, "channels": chan, "coverage": cover, "reasons": top,
+           "n_runs": len(runs), "n_deep": n_deep, "deep_age": deep_age,
+           "strong_fit": log_run.STRONG_FIT, "li_hits": hits, "li_short": short, "misses": None}
+    # The latest CUMULATIVE attribution report. Windowed ones (--since) carry "since" in the
+    # name and answer a different question, so they are skipped.
+    reports = [p for p in glob.glob(os.path.join(ROOT, "logs", "analysis", "misses_*.json"))
+               if "since" not in os.path.basename(p)]
+    if reports:
+        latest = max(reports, key=os.path.getmtime)
+        try:
+            with open(latest, encoding="utf-8") as f:
+                m = json.load(f)
+            out["misses"] = {
+                "file": os.path.relpath(latest, ROOT).replace("\\", "/"),
+                "written": datetime.date.fromtimestamp(os.path.getmtime(latest)).isoformat(),
+                "runs": m.get("runs_logged"), "total": m.get("total_attributed_misses"),
+                "strong_leads": m.get("strong_leads"), "threshold": m.get("strong_threshold"),
+                "all": m.get("cause_histogram") or {},
+                "strong": m.get("strong_cause_histogram") or {},
+                "lags": [x["lag_days"] for x in m.get("leads", []) if isinstance(x.get("lag_days"), int)],
+            }
+        except (OSError, ValueError, KeyError) as e:
+            out["misses_error"] = f"{os.path.basename(latest)} is unreadable: {e}"
+    return out
+
 payload = {"records": records, "stats": stats, "integrity": integrity,
-           "plan": {"doc": plan_doc, "derived": plan_derived, "error": plan_error}}
+           "plan": {"doc": plan_doc, "derived": plan_derived, "error": plan_error},
+           "vault": vault_stats(), "telemetry": telemetry_stats()}
 
 # ---------------------------------------------------------------- HTML
 HTML = """<!doctype html>
@@ -446,11 +552,6 @@ header{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-
 header h1{font-size:18px;margin:0}
 header .meta{color:var(--sub);font-size:12px}
 .wrap{padding:20px 24px;max-width:1400px;margin:0 auto}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:8px}
-.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
-.tile .n{font-size:26px;font-weight:700}
-.tile .l{color:var(--sub);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.tile.accent .n{color:var(--link)} .tile.good .n{color:var(--strong)} .tile.warn .n{color:var(--mod)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 10px}
 .tab{background:var(--panel);border:1px solid var(--line);color:var(--sub);padding:8px 14px;border-radius:8px;cursor:pointer}
 .tab.active{color:var(--txt);border-color:var(--accent);box-shadow:inset 0 -2px 0 var(--accent)}
@@ -476,13 +577,13 @@ a,a:visited{color:var(--link);text-decoration:none} a:hover{text-decoration:unde
 .note{color:var(--sub);font-size:12px;margin:6px 0 0}
 .notice{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
 __PLAN_CSS__
+__STATS_CSS__
 </style></head><body>
 <header>
   <h1>Career Dashboard</h1>
   <span class="meta">__META_NAME__generated __DATE__ · regenerate with <code>/dashboard</code></span>
 </header>
 <div class="wrap">
-  <div class="tiles" id="tiles"></div>
   <div class="notice" id="integrity"></div>
   <div class="tabs" id="tabs"></div>
   <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()"></div>
@@ -543,6 +644,7 @@ function evalCell(r){
 }
 const TABS=[
  {id:'overview',label:'Overview'},
+ {id:'stats',label:'Statistics'},
  {id:'timeline',label:'Timeline'},
  {id:'todo',label:'To-do'},
  {id:'applications',label:'Applications'},
@@ -559,22 +661,10 @@ function inTab(r,id){
   return r.category===id;
 }
 let active='overview', sortKey='career', sortDir=-1;
-function tiles(){
-  const T=[
-   ['search_results','Search results','accent'],['positive','On-direction (≥'+S.on_direction+')','accent'],
-   ['companies','Companies',''],['groups','Research groups',''],
-   ['positions','Positions',''],['phd','PhD leads',''],
-   ['stale','Overdue (unretired)','warn'],
-   ['cvs_generated','CVs generated','warn'],['cvs_sent','CVs sent','accent'],
-   ['ongoing','Ongoing','warn'],['offers','Offers','good'],['rejections','Rejections',''],
-  ];
-  document.getElementById('tiles').innerHTML=T.map(([k,l,c])=>
-   '<div class="tile '+c+'"><div class="n">'+(S[k]??0)+'</div><div class="l">'+l+'</div></div>').join('');
-}
 function tabs(){
   document.getElementById('tabs').innerHTML=TABS.map(t=>
    '<div class="tab'+(t.id===active?' active':'')+'" onclick="setTab(\\''+t.id+'\\')">'+t.label+
-   (t.id!=='overview'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
+   (t.id!=='overview'&&t.id!=='stats'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
 }
 function countFor(id){
   if(id==='timeline'||id==='todo')return planCount(id);
@@ -598,12 +688,13 @@ function rowsFor(){
 function th(label,key){return '<th onclick="setSort(\\''+key+'\\')">'+label+(sortKey===key?(sortDir>0?' ▲':' ▼'):'')+'</th>';}
 function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='career'||k==='skill'||k==='method')?-1:1;}render();}
 function render(){
-  // The stat tiles and the integrity check summarise the whole vault, so they belong to Overview
-  // only; every other tab
-  // starts straight at its own content.
-  document.getElementById('tiles').classList.toggle('hidden',active!=='overview');
+  // The integrity check summarises the whole vault, so it belongs to Overview only; every other
+  // tab starts straight at its own content. The stat tiles that used to head the page are the
+  // Statistics tab since 2026-10-10.
   document.getElementById('integrity').classList.toggle('hidden',active!=='overview');
+  document.getElementById('filter').parentNode.classList.toggle('hidden',active==='stats');
   if(active==='overview'){document.getElementById('table').innerHTML=overview();return;}
+  if(active==='stats'){renderStats();return;}
   if(active==='timeline'){renderTimeline();return;}
   if(active==='todo'){renderTodo();return;}
   const rows=rowsFor();
@@ -674,7 +765,7 @@ function integrity(){
 }
 function thresholdNote(){
   const el=document.getElementById('threshold');if(!el)return;
-  let t='Position and PhD tiles, tabs, Overview and plan deadlines count only <b>live leads '
+  let t='Position and PhD statistics, tabs, Overview and plan deadlines count only <b>live leads '
     +'reaching '+S.min_fit_shown+' on at least one score</b> — a lead is hidden only when it is '
     +'both off-direction <i>and</i> out of reach. '
     +S.hidden_low+' live lead(s) below '+S.min_fit_shown+' on <i>both</i> scores are kept on disk in '
@@ -698,7 +789,8 @@ function thresholdNote(){
   el.innerHTML=t;
 }
 __PLAN_JS__
-tiles();integrity();tabs();thresholdNote();render();planInit();
+__STATS_JS__
+integrity();tabs();thresholdNote();render();planInit();
 </script></body></html>"""
 
 payload_json = json.dumps(payload).replace("</", "<\\/")  # keep inline <script> safe
@@ -709,6 +801,7 @@ def _asset(name):
         return f.read().replace("</script", "<\\/script")
 _name = html.escape(user_name())  # from user/profile/snapshot.md; the header just omits it if unset
 out = (HTML.replace("__PLAN_CSS__", _asset("plan.css")).replace("__PLAN_JS__", _asset("plan.js"))
+       .replace("__STATS_CSS__", _asset("stats.css")).replace("__STATS_JS__", _asset("stats.js"))
        .replace("__PAYLOAD__", payload_json).replace("__DATE__", TODAY.isoformat())
        .replace("__TITLE_NAME__", f" — {_name}" if _name else "")
        .replace("__META_NAME__", f"{_name} · " if _name else ""))
