@@ -27,25 +27,29 @@ that earlier run missed it**, and the telemetry says why. Late discoveries are t
   something, so the newest runs are reported as *not yet testable*.
 
 **Current attribution — 52 runs, 1,058 miss-events, measured 2026-10-10.** Median lag **9 days**,
-max 229 (n=137). `SOURCE_INCOMPLETE` 32.1% · `AGE_EXCLUDED` 23.2% · `CHANNEL_SKIPPED` 19.8% ·
-`QUERY_GAP` 14.7% · `CHANNEL_NOT_RUN` 4.1% · `GEO_GAP` 3.7% · `GATED_OUT` 2.6%.
+max 229 (n=137). `SOURCE_INCOMPLETE` 40.8% · `CHANNEL_SKIPPED` 19.8% · `QUERY_GAP` 14.7% ·
+`AGE_EXCLUDED` 13.3% · `CHANNEL_NOT_RUN` 4.1% · `GEO_GAP` 3.7% · `GATED_OUT` 2.6% · `UNTIERED` 1.1%.
+Two attribution fixes on 2026-10-10 moved these: the ATS sweep is no longer charged with
+`AGE_EXCLUDED` (it has no age filter; 104 events moved, mostly to `SOURCE_INCOMPLETE`), and a sweep
+miss found in that run's archived sweep output is `UNTIERED` rather than `SOURCE_INCOMPLETE`.
 13 redundant collections excluded. 6 are the two tracks of one run each logging the same lead and
 2 are one track logging a lead twice (both Oxford, 10-05); `reconcile_staging.py` merges such twins
 before the inbox (checked for Bayer on 10-10: one file reached it), so these 8 are a logging
 artefact rather than dedup failures. The other 5 are genuine re-collections across runs.
 
 **On strong leads (career_fit ≥ 75: 34 leads, 155 miss-events) — the histogram to act on:**
-`SOURCE_INCOMPLETE` 34.8% · `CHANNEL_SKIPPED` 33.5% · `QUERY_GAP` 10.3% · `CHANNEL_NOT_RUN` 7.1% ·
-`GEO_GAP` 7.1% · `AGE_EXCLUDED` 5.8% · `GATED_OUT` 1.3%. By channel: `SOURCE_INCOMPLETE` is
-`linkedin` 21 · `danish_boards` 15 · `euraxess` 12 · `ats_sweep` 5; `CHANNEL_SKIPPED` is
+`SOURCE_INCOMPLETE` 36.1% · `CHANNEL_SKIPPED` 33.5% · `QUERY_GAP` 10.3% · `CHANNEL_NOT_RUN` 7.1% ·
+`GEO_GAP` 7.1% · `AGE_EXCLUDED` 4.5% · `GATED_OUT` 1.3%. By channel: `SOURCE_INCOMPLETE` is
+`linkedin` 21 · `danish_boards` 15 · `euraxess` 12 · `ats_sweep` 7 (all from runs before the sweep
+archive, so unreadable as source gap vs triage); `CHANNEL_SKIPPED` is
 `danish_boards` 23 · `euraxess` 19 · `phd_portals` 6 · `ats_sweep` 4 (the last from before the sweep
 existed).
 
 **After the 2026-10-01 fixes (`--since 2026-10-02`): 4 runs, 12 miss-events, none on a strong lead.**
 Only the 10-05 deep pass (both tracks) is testable; the two 10-10 fast runs are not yet. The 12:
-`SOURCE_INCOMPLETE` 8 (`ats_sweep` 6 — three Adaptyv postings, career_fit 20–30, that the 10-10 sweep
-returned; `linkedin` 2), `QUERY_GAP` 2, `CHANNEL_SKIPPED` 2 (`research_groups`, the run was cut
-off). One deep pass is too little to call the fixes working, but nothing in it contradicts them.
+`UNTIERED` 6 (three Adaptyv postings, career_fit 20–30, below), `SOURCE_INCOMPLETE` 2 (`linkedin`),
+`QUERY_GAP` 2, `CHANNEL_SKIPPED` 2 (`research_groups`, the run was cut off). One deep pass is too
+little to call the fixes working, but nothing in it contradicts them.
 
 **These numbers are not directly comparable with the 2026-10-01 snapshot** (48 runs, 573 events;
 strong leads: `SOURCE_INCOMPLETE` 30% · `CHANNEL_SKIPPED` 18% · `QUERY_GAP` 18%). Until 2026-10-10
@@ -61,19 +65,26 @@ What the shape says:
   for budget. The weekly deep pass that the fixes introduced caught all four four days later. Fast
   passes still skip those boards by design (`--starved` forces a channel back after three misses);
   the lever is the deep-pass cadence, not full coverage on every fast pass.
-- **`AGE_EXCLUDED` is still by design.** All 142 events since August cite the 21-day window of the
-  fast pass's LinkedIn search (`f_TPR=r1814400`); the deep pass drops it. A miss citing any *other*
-  window would be a regression. On strong leads it is 5.8%.
+- **`AGE_EXCLUDED` is still by design.** All 92 events since August cite the fast pass's 21-day
+  window: `linkedin` 80 (`f_TPR=r1814400`), `euraxess` 7, `phd_portals` 5. The deep pass drops it.
+  A miss citing any *other* window would be a regression. On strong leads it is 4.5%.
 - **`QUERY_GAP` is still mostly low-value roles.** All 155 events are LinkedIn, *"no logged query
   matched the role wording"*; on strong leads it is 16 events.
 - **`SOURCE_INCOMPLETE` is the remaining lever,** led by LinkedIn on strong leads. The 2026-10-01
   three-page rule targets it, but neither 10-10 fast track followed it (the career track read 41 of
   90 pages); since 2026-10-10 runs log `pages` and `short_pages` and `log_run.py` warns on a
   shortfall. Judge the rule with `--since 2026-10-11` once later runs have tested those runs.
-- **Open question: `ats_sweep` misses on an enumerating source.** The sweep pages every board in
-  full, so it should not miss a live posting; yet the 10-05 sweep did not return three Adaptyv
-  (Ashby) postings dated July that the 10-10 sweep did. Either the posting dates are stale (re-listed
-  roles keep their first date) or the rows were filtered out downstream. Not yet checked.
+- **A sweep miss is a triage miss, not a source gap.** The 10-05 sweep did return the three Adaptyv
+  postings the 10-10 run collected, as did every sweep since at least 10-01, with unchanged posting
+  dates. They were tier `-`, which goes to the TSV but is not printed, and agents read only what is
+  printed: *Software Engineer, Product* names a build seat but no scientist users, so `Mb` did not
+  fire, and the display library role matches no career title. The 10-10 skill track reached them
+  through Adaptyv's earlier method sightings. Each run's sweep output is now archived
+  (`logs/ats_sweep/<run_id>.tsv`), so `analyze_misses.py` can tell `UNTIERED` (returned, not
+  printed) and `UNSCREENED` (printed, skimmed past) from a real gap. In all six archived runs every
+  sweep miss is `UNTIERED`; the 224 sweep `SOURCE_INCOMPLETE` events before them cannot be re-read.
+  Tiering more rows (an `M?` tier for sighted employers) is an open decision
+  (`engine/docs/decisions.md` §A sweep miss is a triage miss).
 
 Standing state as of 2026-10-10 (`python engine/tools/log_run.py --stats`):
 - **Deep passes:** 12 of 52 runs, the last 4 days ago; 2 of 12 did not reach `phd_portals`.

@@ -555,6 +555,28 @@ introduced caught all four on 10-05. Two changes came out of it:
   `log_run.py` can warn. The paging fix itself can only be judged once runs that follow it have
   been tested by later finds.
 
+### A sweep miss is a triage miss until shown otherwise (2026-10-10)
+
+*Rule: `analyze_misses.py` `UNTIERED` / `UNSCREENED`; `log_run.py` sweep archive.*
+
+The open question from the same day's telemetry (the 10-05 sweep "did not return" three Adaptyv
+postings that the 10-10 sweep did) had a plain answer: it had returned them, in every sweep since at
+least 10-01, with unchanged posting dates, as tier `-`. Tier `-` rows go to the TSV but are not
+printed, and the agents read only what is printed. *Software Engineer, Product* names a build seat
+(LabOS orchestration) but says nothing about scientist users, so `Mb` did not fire; the display
+library role matches no career title. The 10-10 skill track reached them through Adaptyv's earlier
+method sightings, a route the interrupted 10-05 run never took.
+
+Two attribution errors had hidden this. `SOURCE_INCOMPLETE` read "the sweep did not return it",
+which an enumerating source cannot do for a live posting; and the fast pass's 21-day window was
+charged to the sweep, which has no age filter (107 events, including the same three postings in the
+10-01 runs). Each run's sweep output is now archived under its run_id, a sweep miss found in it
+becomes `UNTIERED` (tier `-`) or `UNSCREENED` (printed, not screened), and `ats_sweep` is exempt
+from `AGE_EXCLUDED`. Across the six archived runs every sweep miss is `UNTIERED`; the 224
+`SOURCE_INCOMPLETE` sweep events before them cannot be re-read, but the same mechanism is the likely
+explanation for many. Whether to tier more rows (an `M?` tier for sighted employers' untiered
+engineering rows) is a separate decision, not taken.
+
 ### Best Match removed (2026-10-02)
 
 The dashboard's Best Match tab and tile (live positions and PhDs with `skill_match >= 65`, sorted by

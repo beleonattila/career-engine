@@ -6,7 +6,7 @@ Telemetry is only worth keeping if it is well-formed months later, so this valid
 appending rather than trusting hand-written JSON. See logs/SCHEMA.md.
 
 Usage:
-    python engine/tools/log_run.py run.json          # validate + append
+    python engine/tools/log_run.py run.json          # validate + append (+ archive that run's sweep TSV)
     python engine/tools/log_run.py run.json --check  # validate only, append nothing
     python engine/tools/log_run.py --stats           # summarise the existing log
     python engine/tools/log_run.py --starved         # channels not reached in the last 3 runs
@@ -17,7 +17,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from paths import REPO, WORKSPACE as ROOT, setting, user_toml  # noqa: E402 — records are relative to user/workspace/
@@ -84,6 +84,17 @@ REQUIRED_GEOS = setting("geography.linkedin_loop")[:setting("geography.linkedin_
 # the career track reading 41 of 90 pages, with nothing in the log to show it but a free-text note.
 PAGES = 3
 SHORT_REASONS = {"exhausted", "no_shortlist", "not_run"}
+
+# Each run's ATS sweep output, kept under its run_id. ats_sweep.py overwrites its TSV every run,
+# so without a copy "the sweep never returned it" and "it returned it in tier '-', which is not
+# printed" look the same to analyze_misses.py -- and they need opposite fixes. Measured
+# 2026-10-10: the six ats_sweep misses since the 10-01 fixes were all three Adaptyv postings
+# sitting untiered in every sweep since at least 10-01, logged as SOURCE_INCOMPLETE.
+SWEEP_LATEST = ROOT / "logs" / "ats_sweep_latest.tsv"
+SWEEP_ARCHIVE = ROOT / "logs" / "ats_sweep"
+# The sweep belongs to this run if it was written between a little before `started` (the
+# orchestrator may sweep before spawning the tracks) and shortly after `ended`.
+SWEEP_BEFORE_H, SWEEP_AFTER_MIN = 3, 30
 
 
 def parse_stamp(s):
@@ -232,6 +243,34 @@ def paging_shortfall(rec):
                           if s.get("reason") == "not_run" and s.get("geo") in REQUIRED_GEOS})
     return {"owed": owed, "read": li["pages"], "unexplained": unexplained,
             "required_not_run": req_not_run}
+
+
+def sweep_archive_path(run_id):
+    return SWEEP_ARCHIVE / (re.sub(r"[^0-9A-Za-z_-]", "", str(run_id)) + ".tsv")
+
+
+def archive_sweep(rec):
+    """Copy ats_sweep_latest.tsv to logs/ats_sweep/<run_id>.tsv if this run produced it.
+
+    Returns a one-line message, or None when the run did not reach the sweep. A stale TSV (one
+    written outside the run's window) is not archived: filing another run's sweep under this
+    run_id would make analyze_misses.py blame this run's triage for rows it never saw.
+    """
+    if not any(c.get("key") == "ats_sweep" and c.get("status") in ("reached", "partial")
+               for c in rec.get("channels", [])):
+        return None
+    a, b = parse_stamp(rec.get("started")), parse_stamp(rec.get("ended"))
+    if not SWEEP_LATEST.exists() or not a or not b:
+        return "warning: ats_sweep reached but no sweep output to archive -- UNTIERED misses " \
+               "cannot be attributed for this run"
+    written = datetime.fromtimestamp(SWEEP_LATEST.stat().st_mtime, tz=a.tzinfo)
+    if not (a - timedelta(hours=SWEEP_BEFORE_H) <= written <= b + timedelta(minutes=SWEEP_AFTER_MIN)):
+        return (f"warning: {SWEEP_LATEST.name} was written {written:%Y-%m-%d %H:%M}, outside this "
+                f"run -- not archived, so UNTIERED misses cannot be attributed for this run")
+    SWEEP_ARCHIVE.mkdir(parents=True, exist_ok=True)
+    dest = sweep_archive_path(rec["run_id"])
+    dest.write_bytes(SWEEP_LATEST.read_bytes())
+    return f"sweep output archived to {dest.relative_to(REPO).as_posix()}"
 
 
 def phd_reached(rec):
@@ -670,6 +709,9 @@ def main():
     with LOG.open("a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
     print(f"appended to {LOG.relative_to(REPO).as_posix()}")
+    msg = archive_sweep(rec)
+    if msg:
+        print(("  " if msg.startswith("warning") else "") + msg)
 
 
 if __name__ == "__main__":

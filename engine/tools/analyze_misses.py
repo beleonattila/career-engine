@@ -57,6 +57,9 @@ except ImportError:                                       # analysed outside the
     def lead_key(find, seen):                             # org+role only, no URL/alias matching
         return (str(find.get("org") or ""), role_key(find.get("role")), "")
 OUTDIR = ROOT / "logs" / "analysis"
+# Channels with no recency filter on any pass (search-positions-common.md: the ATS endpoints
+# "need no age filter at all"), so AGE_EXCLUDED is never attributed to them.
+NO_AGE_FILTER = {"ats_sweep"}
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -138,6 +141,58 @@ def was_screened(run, org, role):
     return None
 
 
+_SWEEPS = {}
+
+
+def sweep_rows(run_id):
+    """The archived ATS sweep of one run as (urls -> tier, [(org, title tokens, tier)]), or None.
+
+    Archived by log_run.py since 2026-10-10 (three earlier runs backfilled from the user repo's
+    history). A run with no archive falls back to SOURCE_INCOMPLETE, as before.
+    """
+    if run_id in _SWEEPS:
+        return _SWEEPS[run_id]
+    try:
+        from log_run import sweep_archive_path
+        path = sweep_archive_path(run_id)
+    except Exception:                                         # analysed outside the vault
+        path = None
+    rows = None
+    if path is not None and path.exists():
+        urls, titled = {}, []
+        for line in path.read_text(encoding="utf-8").splitlines()[1:]:
+            f = line.split("\t")
+            if len(f) < 9:
+                continue
+            tier, org, title, url = f[0], f[3], f[6], f[8].strip()
+            if url:
+                urls[canon_url(url) if canon_url else url.lower()] = tier
+            titled.append((org, set(role_key(title).split("-")) - {""}, tier))
+        rows = (urls, titled)
+    _SWEEPS[run_id] = rows
+    return rows
+
+
+def sweep_tier(find, run):
+    """The tier `run`'s sweep gave this lead, or None if the sweep did not return it (or is
+    not archived). Matched on the URL, else on employer plus every title word in the role slug
+    (the slug adds a city: `software-engineer-product-london` for "Software Engineer, Product")."""
+    rows = sweep_rows(run.get("run_id"))
+    if not rows:
+        return None
+    urls, titled = rows
+    u = find.get("url") or ""
+    if u:
+        hit = urls.get(canon_url(u) if canon_url else u.lower())
+        if hit is not None:
+            return hit
+    role_toks = set(role_key(find.get("role")).split("-")) - {""}
+    for org, toks, tier in titled:
+        if org == find.get("org") and len(toks) >= 2 and toks <= role_toks:
+            return tier
+    return None
+
+
 def attribute(find, run):
     """Why did `run` not collect `find`? Returns (code, detail)."""
     posted, started = d(find.get("posted")), d(run.get("started"))
@@ -159,7 +214,11 @@ def attribute(find, run):
     if chan.get("status") == "failed":
         return ("CHANNEL_FAILED", f"{ch_key} failed")
 
-    if run.get("mode") == "fast":
+    # The fast pass's window is each source's own recency filter (LinkedIn's f_TPR). The ATS
+    # sweep has none -- it enumerates every board, however old the posting -- so a sweep miss is
+    # never an age miss. Charging it as one hid 107 sweep events (2026-10-10), among them the
+    # three Adaptyv postings that sat untiered in the 10-01 sweeps.
+    if run.get("mode") == "fast" and ch_key not in NO_AGE_FILTER:
         w = run.get("age_window_days")
         if isinstance(w, int) and (started - posted).days > w:
             return ("AGE_EXCLUDED", f"{(started - posted).days}d old vs {w}d window")
@@ -169,6 +228,16 @@ def attribute(find, run):
             return ("GEO_GAP", f"{find.get('country')} not in {sorted(chan.get('geos') or [])}")
         if not query_covered(chan, find.get("role", ""), find.get("org", "")):
             return ("QUERY_GAP", "no logged query matched the role wording")
+
+    # The sweep enumerates every board in full, so "reached but not returned" is the wrong
+    # reading when the row is in that run's output: the source returned it and triage hid it.
+    if ch_key == "ats_sweep":
+        tier = sweep_tier(find, run)
+        if tier == "-":
+            return ("UNTIERED", "in the sweep output as tier '-', which is not printed")
+        if tier:
+            return ("UNSCREENED", f"printed by the sweep as tier {tier}, but neither screened "
+                                  f"nor collected")
 
     return ("SOURCE_INCOMPLETE", f"{ch_key} was reached and covered, yet did not return it")
 

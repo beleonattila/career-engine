@@ -9,7 +9,14 @@ discoveries are the ground truth signal.
 ```
 user/workspace/logs/search_runs.jsonl     append-only, one JSON object per /search-positions run
 user/workspace/logs/analysis/             miss-attribution reports written by analyze_misses.py
+user/workspace/logs/ats_sweep/<run_id>.tsv  that run's ATS sweep output, archived by log_run.py
 ```
+
+`log_run.py` copies `ats_sweep_latest.tsv` to `logs/ats_sweep/<run_id>.tsv` when it appends a run that
+reached `ats_sweep`, provided the TSV was written within the run (3 h before `started` to 30 min after
+`ended`); otherwise it warns and archives nothing. Since 2026-10-10; the 10-01, 10-05 and 10-10 runs
+were backfilled from the user repo's history. It is what lets a sweep miss be split into "the board
+did not have it" and "the sweep returned it and triage hid it".
 
 ---
 
@@ -205,12 +212,20 @@ i.e. **a third of all screening effort is spent recognising leads the vault alre
 | `CHANNEL_FAILED` | `C` present with status `failed` | robustness, retries |
 | `GEO_GAP` | `C` is linkedin and lead's country not in `R.geos` | geography loop |
 | `QUERY_GAP` | geo covered, but no logged query matches the lead's terms | keyword rotation |
-| `AGE_EXCLUDED` | `R.mode == fast` and `R.started - P > R.age_window_days` | window / deep-pass cadence |
+| `AGE_EXCLUDED` | `R.mode == fast` and `R.started - P > R.age_window_days`; never for `ats_sweep`, which has no age filter | window / deep-pass cadence |
+| `UNTIERED` | `C` is `ats_sweep` and the lead is in `R`'s archived sweep output as tier `-` | **triage, not the source** — the sweep returned it and did not print it |
+| `UNSCREENED` | `C` is `ats_sweep` and the lead is in `R`'s sweep output with a printed tier, but not in `R.screened` | the run skimmed past a row it was shown |
 | `SOURCE_INCOMPLETE` | everything above covered, still missed | **the source is not an enumeration** — don't trust it alone |
 
 `SOURCE_INCOMPLETE` is the residual bucket and the most important one to watch: it is what
 LinkedIn's ranked-subset behaviour looks like in aggregate. A rising share there means no amount
 of query or geography tuning will help, and the channel needs replacing rather than tuning.
+
+For `ats_sweep` it is the wrong reading whenever that run's sweep output is archived: the sweep
+enumerates every board in full, so a lead in its output was *returned*, and the miss is `UNTIERED`
+or `UNSCREENED`. Runs before the archive (all of them up to 2026-10-01) still fall to
+`SOURCE_INCOMPLETE` for want of evidence. Measured 2026-10-10: in the six archived runs every sweep
+miss was `UNTIERED` (three Adaptyv postings untiered in each sweep), and none was a board gap.
 
 ---
 
@@ -224,6 +239,7 @@ Interpretation guide:
 - Lots of `CHANNEL_SKIPPED` → the run budget is the bottleneck, not the method.
 - Lots of `GATED_OUT` → precision was bought at the cost of recall; re-read the Gate 3 buckets.
 - Lots of `SOURCE_INCOMPLETE` → stop tuning that source; add an independent one.
+- Lots of `UNTIERED` → the sweep's tier rules hide relevant rows; fix the tiering, not the source.
 - `AGE_EXCLUDED` above zero → an age filter has crept back in somewhere.
 
 ## Related

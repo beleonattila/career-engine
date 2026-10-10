@@ -91,7 +91,7 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `ats_sweep.py` | → `logs/ats_sweep_latest.tsv` (bulk employer-board sweep, ~0 tokens; no `--help`, it runs). `--uncovered` lists band-A employers with no board |
 | `dedup_check.py` | Duplicate guard, mandatory before writing to the inbox |
 | `link_check.py` | Verifies open leads still point at a live posting; report-only by default, `--apply` stamps `url_status` and retires dead leads (see LINK_HEALTH.md) |
-| `log_run.py` | Validate + append a run record to `logs/search_runs.jsonl` |
+| `log_run.py` | Validate + append a run record to `logs/search_runs.jsonl`; archives that run's sweep TSV to `logs/ats_sweep/` |
 | `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `career_fit`, prints a strong-lead histogram, `--min-fit N`, `--since` (misses by runs after a fix) |
 | `reconcile_staging.py` | Merge the two search tracks' staging folders into `inbox/`; career wins a collision, stamps `TRACK:`, `--apply` to write |
 | `org_match.py` | Which company/group profile a position belongs to (shared by `dashboard.py` and `org_floor.py`) |

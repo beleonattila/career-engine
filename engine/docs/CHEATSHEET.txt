@@ -143,7 +143,8 @@ python engine/tools/log_run.py run.json  Validate + append a search-run record t
                             (--stats, --check, --next-queries N). Requires model, effort,
                             started, ended, linkedin pages. Warns on a skipped required
                             country, LinkedIn paging short of 3 per query x country without
-                            a logged reason, or a deep pass without phd_portals.
+                            a logged reason, or a deep pass without phd_portals. Archives
+                            the run's sweep TSV to logs/ats_sweep/<run_id>.tsv.
 python engine/tools/analyze_misses.py    Which run missed what, and why (--json for an Opus pass)
                             Prints a second histogram over strong leads; --min-fit N
                             restricts the whole report to leads at career_fit >= N.

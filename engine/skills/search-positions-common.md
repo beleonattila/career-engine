@@ -652,12 +652,15 @@ python engine/tools/log_run.py --stats                         # skipped channel
 `analyze_misses.py` does only the deterministic part: for every collected lead it finds the runs
 that *should* have caught it (posted before the run, found after) and assigns a cause —
 `CHANNEL_SKIPPED` · `CHANNEL_NOT_RUN` · `CHANNEL_FAILED` · `GEO_GAP` · `QUERY_GAP` ·
-`AGE_EXCLUDED` · `GATED_OUT` · `SOURCE_INCOMPLETE`. Full definitions in `engine/docs/LOG_SCHEMA.md`.
+`AGE_EXCLUDED` · `GATED_OUT` · `UNTIERED` · `UNSCREENED` · `SOURCE_INCOMPLETE`. Full definitions in
+`engine/docs/LOG_SCHEMA.md`. The two sweep causes need each run's sweep output, which `log_run.py`
+archives when it logs the run.
 
 **The cause histogram is the deliverable.** "62% `GEO_GAP`" is an instruction; "we missed 8 things"
 is not. Read it as: lots of `CHANNEL_SKIPPED` → the run budget is the bottleneck, not the method ·
 lots of `GATED_OUT` → precision was bought with recall, re-read the Gate 3 buckets · lots of
-`SOURCE_INCOMPLETE` → stop tuning that source, add an independent one · any `AGE_EXCLUDED` → an
+`SOURCE_INCOMPLETE` → stop tuning that source, add an independent one · lots of `UNTIERED` → the
+sweep returned it and its tier rules hid it, so fix the tiering · any `AGE_EXCLUDED` → an
 age filter has crept back in.
 
 **The last measured attribution** (16 runs, 94 miss-events, 2026-08-09) and how its shape changed:
