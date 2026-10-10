@@ -75,6 +75,16 @@ RECRUITER_POOL = user_toml("profile/search_terms.toml")["linkedin"].get("recruit
 # --stats, because country gaps were 12% of the misses on strong leads vs 4% overall (2026-10-01).
 REQUIRED_GEOS = setting("geography.linkedin_loop")[:setting("geography.linkedin_required")]
 
+# Pages per LinkedIn query x country (guest endpoint, start=0/10/20). Since 2026-10-10 a query
+# that reads fewer must say why, per combination, in `short_pages`, with one of these reasons:
+#   exhausted     the last page read returned fewer than 10 cards -- there is no next page
+#   no_shortlist  the last page read shortlisted nothing -- relevance has run out
+#   not_run       the query was not issued in that country at all (never in a required one)
+# Measured 2026-10-10: both fast tracks paged short on judgement ("relevance had fallen off"),
+# the career track reading 41 of 90 pages, with nothing in the log to show it but a free-text note.
+PAGES = 3
+SHORT_REASONS = {"exhausted", "no_shortlist", "not_run"}
+
 
 def parse_stamp(s):
     """Parse an ISO-8601 timestamp, or return None if it is not one."""
@@ -158,6 +168,19 @@ def problems(rec):
             if isinstance(c.get("hits"), int) and isinstance(c.get("shortlisted"), int) \
                     and c["shortlisted"] > c["hits"]:
                 p.append(f"linkedin: shortlisted ({c['shortlisted']}) exceeds hits ({c['hits']})")
+            # Paging. Three pages per query x country is the rule since 2026-10-01; without the
+            # count, a run that read page 1 everywhere logs the same as one that read all three.
+            if not isinstance(c.get("pages"), int):
+                p.append("linkedin reached but 'pages' is not an integer — the three-page rule "
+                         "cannot be checked without it")
+            for s in c.get("short_pages") or []:
+                if not isinstance(s, dict) or not s.get("query") or not s.get("geo") \
+                        or not isinstance(s.get("pages"), int) or not 0 <= s["pages"] < PAGES:
+                    p.append(f"linkedin short_pages entry needs query, geo and pages "
+                             f"(0-{PAGES - 1}): {s!r}")
+                elif s.get("reason") not in SHORT_REASONS:
+                    p.append(f"linkedin short_pages: reason must be one of "
+                             f"{sorted(SHORT_REASONS)}, got {s.get('reason')!r}")
 
     if "screened" not in rec:
         p.append("missing 'screened' — without rejected candidates a GATED_OUT miss is "
@@ -189,6 +212,28 @@ def missing_required_geos(rec):
     return [] if li is None else [g for g in REQUIRED_GEOS if g not in (li.get("geos") or [])]
 
 
+def paging_shortfall(rec):
+    """LinkedIn pages owed under the three-page rule and not accounted for, or None if unknown.
+
+    Owed = queries x geos x PAGES. Each `short_pages` entry excuses the pages it did not read;
+    whatever is still missing after that was skipped without a logged reason. Records written
+    before 2026-10-10 carry no `pages` and return None rather than counting as a shortfall.
+    Also returns the required countries in which a query was logged as `not_run`.
+    """
+    li = linkedin_channel(rec)
+    if li is None or not isinstance(li.get("pages"), int):
+        return None
+    owed = len(li.get("queries") or []) * len(li.get("geos") or []) * PAGES
+    shorts = [s for s in li.get("short_pages") or [] if isinstance(s, dict)
+              and isinstance(s.get("pages"), int)]
+    excused = sum(PAGES - s["pages"] for s in shorts)
+    unexplained = max(0, owed - li["pages"] - excused)
+    req_not_run = sorted({s.get("geo") for s in shorts
+                          if s.get("reason") == "not_run" and s.get("geo") in REQUIRED_GEOS})
+    return {"owed": owed, "read": li["pages"], "unexplained": unexplained,
+            "required_not_run": req_not_run}
+
+
 def phd_reached(rec):
     return any(c.get("key") == "phd_portals" and c.get("status") in ("reached", "partial")
                for c in rec.get("channels", []))
@@ -205,6 +250,15 @@ def warnings(rec):
     if missing:
         w.append(f"linkedin skipped required countries {missing} -- every run covers "
                  f"{REQUIRED_GEOS} (user/settings.toml [geography])")
+    pg = paging_shortfall(rec)
+    if pg and pg["unexplained"]:
+        w.append(f"linkedin paging: {pg['read']} of {pg['owed']} pages read, {pg['unexplained']} "
+                 f"short with no short_pages entry -- {PAGES} pages per query x country unless the "
+                 f"last one was exhausted or shortlisted nothing (search-positions-common.md "
+                 f"§Group 1)")
+    if pg and pg["required_not_run"]:
+        w.append(f"linkedin: a query was not run in required countries {pg['required_not_run']} "
+                 f"-- drop the query everywhere, not a required country for one query")
     if rec.get("mode") == "deep" and not phd_reached(rec):
         w.append("deep pass without phd_portals reached -- PhD portals are mandatory on a deep "
                  "pass (best strong-lead rate of any channel, 3 of 6)")
@@ -519,6 +573,16 @@ def stats():
     geo_short = sum(1 for r in recent if missing_required_geos(r))
     print(f"  required LinkedIn countries {REQUIRED_GEOS}: skipped in {geo_short} of the last "
           f"{len(recent)} runs")
+    paged = [(r, paging_shortfall(r)) for r in recent]
+    paged = [(r, pg) for r, pg in paged if pg]
+    if paged:
+        short = sum(1 for _, pg in paged if pg["unexplained"])
+        read = sum(pg["read"] for _, pg in paged)
+        owed = sum(pg["owed"] for _, pg in paged)
+        print(f"  linkedin paging ({PAGES} per query x country): short without a reason in {short} "
+              f"of {len(paged)} recent run(s) that log pages — {read} of {owed} pages read")
+    else:
+        print(f"  linkedin paging ({PAGES} per query x country): no recent run logs 'pages' yet")
     deep = [r for r in runs if r.get("mode") == "deep"]
     if deep:
         print(f"  deep passes without phd_portals reached: "

@@ -212,8 +212,8 @@ live there and are identical for both tracks.
      find (Group 0) — a registered board leaves the list for good, so the list rotates by
      shrinking. Log those checks under `company_rotation`.
    - LinkedIn country loop — ~40% of the remaining budget. The `linkedin_required` countries are
-     mandatory **on both tracks, every run** — drop query variants before you drop one of them;
-     `log_run.py` warns when a run skips one.
+     mandatory **on both tracks, every run** — drop query variants before you drop one of them,
+     and before you read fewer than three pages of a query (§Group 1); `log_run.py` warns on both.
    - Company / research-group rotation — ~30%, oldest-`last_evaluated` first, no-tracked-lead first.
    - Regional + academic boards (the pack's `boards.md`) — ~30%.
 
@@ -541,10 +541,23 @@ build the URL with LinkedIn's own recency filter and `WebFetch` it directly:
   2026-10-01, `analyze_misses.py`). The guest
   endpoint pages cleanly, 10 cards per page:
   `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=<terms>&location=<COUNTRY>&f_TPR=r1814400&start=0`
-  then `start=10` and `start=20`. Stop early once a page is off-topic — relevance falls off fast
-  (page 3 of `protein design` / UK on 2026-10-01 was macroalgae and metabolomics). `sortBy=DD`
-  has **no effect** on this endpoint (measured 2026-10-01: identical order with and without it), so
-  page, don't sort. Log every page fetched in `hits`.
+  then `start=10` and `start=20`. **Three pages per query in every country you run, fast or deep.**
+  There are exactly two reasons to stop early, and both are facts about the page just read, not a
+  judgement about the next one:
+  - `exhausted` — the page returned fewer than 10 cards; there is no next page.
+  - `no_shortlist` — not one card on the page made the shortlist. Relevance falls off fast (page 3
+    of `protein design` / UK on 2026-10-01 was macroalgae and metabolomics), so a page that
+    shortlists nothing ends that query in that country.
+
+  "Relevance had fallen off" is not a reason unless the page you just read shortlisted nothing.
+  On 2026-10-10 both fast tracks paged short on that judgement: the career track fetched 41 of 90
+  pages, most queries stopping after page 1, and the skill track two of three. If the run is
+  time-boxed, **drop a query, not a page** — the same rule as countries, for the same reason: a
+  query run to page 1 everywhere looks like coverage and is not.
+  `sortBy=DD` has **no effect** on this endpoint (measured 2026-10-01: identical order with and
+  without it), so page, don't sort. Log every page fetched in `hits`, the page count in `pages`,
+  and every query × country that stopped short in `short_pages` (`engine/docs/LOG_SCHEMA.md`);
+  `log_run.py` warns when the pages do not add up.
 - **One recruiter query per pass.** `log_run.py --next-queries` prints it last, marked
   `<- recruiter query` (`recruiter_queries` in `user/profile/search_terms.toml`). Agencies post
   strong roles under generic titles, so the agency name in the keywords is what surfaces them.

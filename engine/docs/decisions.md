@@ -529,6 +529,32 @@ The job-board misses that first suggested "sweep band A every run" (Adaptyv, Lat
 predate the sweep itself; since it exists it has been skipped in 3 of 48 runs. The lever there is
 coverage, not frequency.
 
+### Judging the 2026-10-01 fixes: paging and the `--since` window (2026-10-10)
+
+*Rule: search-positions-common.md §Group 1 (LinkedIn paging); `analyze_misses.py --since`;
+`log_run.py` `pages` / `short_pages`.*
+
+The first telemetry after the fixes above was read cumulatively (52 runs) and blamed channel
+skipping for four strong misses. All of those misses were made by the two 2026-10-01 fast runs,
+which started at 13:06, before the fixes were committed that evening, and the deep pass the fixes
+introduced caught all four on 10-05. Two changes came out of it:
+
+- **`--since` now windows the missing runs, not the finds.** Before, it filtered leads by the date
+  they were found and still charged each one to every earlier run, fixed or not; that filter is now
+  `--found-since`. The same pass fixed an attribution bug: the two tracks of one search start in
+  the same second, and each was charged with missing what the other found. Counting only runs that
+  started strictly earlier removed 72 miss-events (1,130 → 1,058) and both strong-lead misses that
+  had seemed to survive the fixes (Priora, J&J). After the fixes: 4 runs, 12 miss-events, none on a
+  strong lead, and the two 10-10 runs not yet testable.
+- **Three pages became auditable.** The rule allowed stopping "once a page is off-topic", and on
+  10-10 both fast tracks used that as a judgement call: the career track read 41 of 90 pages, most
+  queries stopping after page 1, and the skill track two of three. That is the fix aimed at
+  `SOURCE_INCOMPLETE` on LinkedIn, the top strong-lead cause. Early stops now need one of two facts
+  about the page just read (`exhausted`, `no_shortlist`), a time-boxed run drops a query rather
+  than a page, and the log carries `pages` plus one `short_pages` entry per short combination so
+  `log_run.py` can warn. The paging fix itself can only be judged once runs that follow it have
+  been tested by later finds.
+
 ### Best Match removed (2026-10-02)
 
 The dashboard's Best Match tab and tile (live positions and PhDs with `skill_match >= 65`, sorted by

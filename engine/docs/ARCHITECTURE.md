@@ -92,7 +92,7 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `dedup_check.py` | Duplicate guard, mandatory before writing to the inbox |
 | `link_check.py` | Verifies open leads still point at a live posting; report-only by default, `--apply` stamps `url_status` and retires dead leads (see LINK_HEALTH.md) |
 | `log_run.py` | Validate + append a run record to `logs/search_runs.jsonl` |
-| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `career_fit`, prints a strong-lead histogram, `--min-fit N` |
+| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `career_fit`, prints a strong-lead histogram, `--min-fit N`, `--since` (misses by runs after a fix) |
 | `reconcile_staging.py` | Merge the two search tracks' staging folders into `inbox/`; career wins a collision, stamps `TRACK:`, `--apply` to write |
 | `org_match.py` | Which company/group profile a position belongs to (shared by `dashboard.py` and `org_floor.py`) |
 | `org_floor.py` | An org never scores below its best linked position; report-only by default, `--apply` writes the floor (run by /inbox) |

@@ -141,11 +141,14 @@ python engine/tools/dedup_check.py       Duplicate guard. MANDATORY before writi
 python engine/tools/expire_sweep.py      Retire past-deadline leads open/ -> closed/  (--dry-run)
 python engine/tools/log_run.py run.json  Validate + append a search-run record to the telemetry
                             (--stats, --check, --next-queries N). Requires model, effort,
-                            started, ended. Warns on a skipped required country or a deep
-                            pass without phd_portals.
+                            started, ended, linkedin pages. Warns on a skipped required
+                            country, LinkedIn paging short of 3 per query x country without
+                            a logged reason, or a deep pass without phd_portals.
 python engine/tools/analyze_misses.py    Which run missed what, and why (--json for an Opus pass)
                             Prints a second histogram over strong leads; --min-fit N
                             restricts the whole report to leads at career_fit >= N.
+                            --since DATE[THH:MM] counts only misses by runs started then
+                            or later (judge a fix); --found-since DATE narrows the leads.
 python engine/tools/reconcile_staging.py Merge the two search tracks into user/workspace/inbox/ (career wins a
                             collision, stamps TRACK:). --apply to write.
 python engine/tools/dashboard.py         Build user/workspace/artifacts/dashboard.html

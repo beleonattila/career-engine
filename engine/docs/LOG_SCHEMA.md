@@ -49,7 +49,9 @@ One object per run, appended to `search_runs.jsonl`:
     {"key": "linkedin",   "status": "reached",
      "geos": ["United Kingdom", "European Union", "Denmark"],
      "queries": ["protein design", "enzyme engineering"],
-     "hits": 121, "shortlisted": 14},
+     "hits": 121, "shortlisted": 14, "pages": 11,
+     "short_pages": [{"query": "enzyme engineering", "geo": "Denmark", "pages": 1,
+                      "reason": "no_shortlist"}]},
     {"key": "danish_boards",     "status": "skipped", "reason": "budget"},
     {"key": "euraxess",          "status": "skipped", "reason": "budget"},
     {"key": "company_rotation",  "status": "partial", "checked": ["affinityai", "ai-proteins"]},
@@ -100,6 +102,15 @@ One object per run, appended to `search_runs.jsonl`:
   happened was recorded nowhere. Without it, genuine `SOURCE_INCOMPLETE` — the largest miss
   bucket at 35% — is indistinguishable from "the run skimmed past the row", which is the exact
   ambiguity `screened` exists to remove, one level further up.
+- `channels[].pages` / `short_pages` — `pages` is **required** for `linkedin` (since 2026-10-10): the
+  number of guest-endpoint pages actually fetched. The rule is three pages per query × country
+  (`search-positions-common.md` §Group 1), so a run owes `len(queries) × len(geos) × 3`. Every
+  query × country that read fewer gets one `short_pages` entry — `query`, `geo`, `pages` read
+  (0–2) and a `reason`: `exhausted` (the last page had < 10 cards) · `no_shortlist` (the last page
+  shortlisted nothing) · `not_run` (the query was not issued in that country; never in a required
+  one). `log_run.py` warns when `pages` plus the excused pages fall short of what is owed. Without
+  this, a run that read page 1 everywhere logged the same as one that read all three: on
+  2026-10-10 the career track read 41 of 90 pages and only a free-text note said so.
 - `posted` — the posting's own publish date, `YYYY-MM-DD`, or `null` if genuinely unknown.
   **This is the load-bearing field.** With no posting date, lag is uncomputable and the record
   contributes nothing to recall measurement.
@@ -115,6 +126,9 @@ One object per run, appended to `search_runs.jsonl`:
 `model`, none carry an `effort`, and the first six have no `ended`. They are left as written — the
 log is append-only and the effort actually used is not recoverable — so they show up as `?` in the
 `--stats` grouping and drop out of the min/run column.
+
+**Records written before 2026-10-10** carry no `pages`; `--stats` leaves them out of the paging line
+rather than counting them as short.
 
 **Records written before 2026-08-09** predate `channels[].shortlisted`, so all 16 would fail
 validation today. That is expected and harmless: validation runs only on a record being appended,

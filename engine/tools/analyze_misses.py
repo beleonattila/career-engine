@@ -12,9 +12,18 @@ the judgement calls and the skill recommendations.
 
 Usage:
     python engine/tools/analyze_misses.py                 # report to stdout + logs/analysis/
-    python engine/tools/analyze_misses.py --since 2026-07-01
+    python engine/tools/analyze_misses.py --since 2026-10-02         # only misses BY runs started then or later
+    python engine/tools/analyze_misses.py --found-since 2026-07-01   # only leads FOUND on or after that date
     python engine/tools/analyze_misses.py --json          # machine-readable, for an LLM pass
     python engine/tools/analyze_misses.py --min-fit 75    # only leads that became a record at career_fit >= 75
+
+`--since` is how a fix is judged: it keeps every lead but counts only the misses made by runs that
+started at or after the moment (a date, or a date and time — UTC, the zone `started` is logged in).
+Added 2026-10-10: the cumulative histogram over 52 runs was still dominated by runs made before the
+2026-10-01 fixes, and the two runs blamed for skipping channels had started nine hours before those
+fixes were committed. `--found-since` is the older filter (it was `--since` until then): it narrows
+the leads, but still charges each one to every earlier run, fixed or not. Runs started after the
+newest find cannot have an attributable miss yet — a fix needs later runs before it can be judged.
 
 Every lead is joined to the vault record it became (log_run.match_outcome), so each carries its
 career_fit, and the report always prints a second histogram over strong leads alone. Added
@@ -70,6 +79,18 @@ def d(s):
         return dt.date.fromisoformat(str(s)[:10])
     except (ValueError, TypeError):
         return None
+
+
+def moment(s):
+    """'YYYY-MM-DD' or an ISO timestamp -> naive UTC datetime (a bare date is its midnight)."""
+    s = str(s or "").strip().replace("Z", "")
+    try:
+        t = dt.datetime.fromisoformat(s)
+    except ValueError:
+        return None
+    if t.tzinfo:
+        t = t.astimezone(dt.timezone.utc).replace(tzinfo=None)
+    return t
 
 
 def load():
@@ -173,9 +194,18 @@ def histogram(leads):
 
 def main():
     argv = sys.argv[1:]
-    since = None
-    if "--since" in argv:
-        since = d(argv[argv.index("--since") + 1])
+
+    def opt(flag, parse):
+        if flag not in argv:
+            return None
+        i = argv.index(flag)
+        val = parse(argv[i + 1]) if i + 1 < len(argv) else None
+        if val is None:
+            sys.exit(f"{flag} needs a date (YYYY-MM-DD) or timestamp (YYYY-MM-DDTHH:MM)")
+        return val
+
+    since = opt("--since", moment)                 # misses made by runs started >= this
+    found_since = opt("--found-since", d)          # leads found on or after this date
     as_json = "--json" in argv
     min_fit = int(argv[argv.index("--min-fit") + 1]) if "--min-fit" in argv else None
     fit_of = fit_index()
@@ -210,11 +240,19 @@ def main():
             fit = fit_of(find)
             if min_fit is not None and (fit is None or fit < min_fit):
                 continue
-            if since and found < since:
+            if found_since and found < found_since:
                 continue
             lag = (found - posted).days
             misses = []
+            this_start = moment(run.get("started"))
             for prior in runs[:i]:
+                p_start = moment(prior.get("started")) or dt.datetime.min
+                if since and p_start < since:
+                    continue
+                # The other track of the same search starts in the same second. It ran beside
+                # this one, not before it, so it cannot have missed what this one found.
+                if this_start and p_start >= this_start:
+                    continue
                 res = attribute(find, prior)
                 if not res or res[0] == "NOT_YET_POSTED":
                     continue
@@ -234,8 +272,13 @@ def main():
     total = sum(causes.values())
     strong = [x for x in per_lead if x["career_fit"] is not None and x["career_fit"] >= STRONG_FIT]
     s_causes, s_total = histogram(strong)
+    in_window = [r for r in runs
+                 if not since or (moment(r.get("started")) or dt.datetime.min) >= since]
     report = {"runs_logged": len(runs), "leads_analysed": len(per_lead),
               "total_attributed_misses": total,
+              "since": since.isoformat(timespec="minutes") if since else None,
+              "runs_in_window": [r.get("run_id") for r in in_window] if since else None,
+              "found_since": str(found_since) if found_since else None,
               "min_fit": min_fit,
               "dated_first_collections": [n_dated, n_first],
               "cause_histogram": dict(causes.most_common()),
@@ -249,6 +292,9 @@ def main():
 
     OUTDIR.mkdir(parents=True, exist_ok=True)
     stamp = runs[-1].get("run_id", "latest") if runs else "latest"
+    # A windowed report must not overwrite the cumulative one written from the same log.
+    if since:
+        stamp = f"{stamp}_since{since:%Y%m%dT%H%M}"
     (OUTDIR / f"misses_{re.sub(r'[^0-9A-Za-z-]', '', str(stamp))}.json").write_text(
         json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
 
@@ -257,7 +303,18 @@ def main():
         return
 
     print(f"=== miss attribution over {len(runs)} logged run(s)"
-          + (f", leads at career_fit >= {min_fit}" if min_fit is not None else "") + " ===")
+          + (f", leads at career_fit >= {min_fit}" if min_fit is not None else "")
+          + (f", leads found since {found_since}" if found_since else "") + " ===")
+    if since:
+        print(f"misses counted only for runs started at or after {since:%Y-%m-%d %H:%M} UTC: "
+              f"{len(in_window)} run(s)"
+              + (f" ({', '.join(r.get('run_id', '?') for r in in_window)})" if in_window else ""))
+        last_find = max((d(r.get("started")) for r in runs if r.get("collected")), default=None)
+        if in_window and last_find:
+            untested = [r.get("run_id") for r in in_window
+                        if (d(r.get("started")) or last_find) >= last_find]
+            if untested:
+                print(f"  not yet testable (no later run has found anything): {', '.join(untested)}")
     print(f"posting dates: {n_dated} of {n_first} first collections are dated -- "
           f"only those can be measured")
     if redundant:
@@ -283,6 +340,9 @@ def main():
                   f"{s_total} miss-events) -- the histogram to act on:")
             for c, n in s_causes.most_common():
                 print(f"  {c:<20} {n:>4}  {100 * n / s_total:>5.1f}%")
+        elif min_fit is None:
+            print(f"\non strong leads only (career_fit >= {STRONG_FIT}): no miss-events"
+                  + (" in this window" if since else ""))
         print("\nworst leads:")
         for x in per_lead[:8]:
             if not x["missed_by_n_runs"]:

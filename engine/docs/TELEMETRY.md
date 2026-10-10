@@ -21,6 +21,10 @@ that earlier run missed it**, and the telemetry says why. Late discoveries are t
   lead to its record's `career_fit` and prints a second histogram over leads at 75+ (`--min-fit N`
   restricts the whole report). The two disagree: the headline is dominated by low-value roles
   (`engine/docs/decisions.md` §Recall on strong leads).
+- **Judge a fix on the runs after it, not on the cumulative log.** `--since <date or timestamp>`
+  counts only the misses made by runs started then or later; the cumulative histogram stays
+  dominated by runs that predate every fix. A run cannot show a miss until a later run finds
+  something, so the newest runs are reported as *not yet testable*.
 
 **Current attribution — 48 runs, 573 miss-events, measured 2026-10-01.** Median lag **13 days**,
 max 215 (n=66). `SOURCE_INCOMPLETE` 29.3% · `AGE_EXCLUDED` 21.6% · `QUERY_GAP` 21.6% ·
