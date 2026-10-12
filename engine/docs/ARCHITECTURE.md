@@ -7,7 +7,7 @@ career-engine/
 ├── CLAUDE.md                   ← session instructions; @imports the profile snapshot + memory index
 ├── .claude/commands/           ← one file per slash command, each points at its skill
 ├── .claude/settings.local.json ← local permissions (not versioned)
-├── .agents/  skills-lock.json  ← agent-browser skill (used by /linkedin)
+├── .agents/  skills-lock.json  ← agent-browser skill (link checks; /linkedin fallback)
 ├── engine/
 │   ├── skills/                 ← cv-generate · inbox-eval · dashboard · track ·
 │   │                             linkedin-profile-edit · rescore (temporary)

@@ -4,187 +4,174 @@ cssclasses:
   - skill
 recommended_model: Sonnet (medium effort)
 description: |
-  Edit the LinkedIn profile (or do any LinkedIn task) via agent-browser. Trigger on /linkedin, "update LinkedIn", "add an experience", "change a skill", or any LinkedIn task. agent-browser drives a HEADED Chrome that reuses the user's already-logged-in Chrome profile (--profile Default). The LinkedIn login form CANNOT be automated (LinkedIn blocks webdriver) — never try; reuse the logged-in profile instead.
+  Edit the LinkedIn profile (or do any LinkedIn task) in the Claude desktop app's built-in browser pane. Trigger on /linkedin, "update LinkedIn", "add an experience", "change a skill", or any LinkedIn task. The pane keeps its own persistent sign-in, which the user enters by hand once. The LinkedIn login form is never automated. Fallbacks: Claude in Chrome, then agent-browser.
 ---
 
 # linkedin
 
-Drives **agent-browser** to edit the live LinkedIn profile. **Recommended model:** Sonnet,
-medium effort — it edits a live profile, so favor reliability over cheapness.
+Edits the live LinkedIn profile from the **built-in browser pane** of the Claude desktop app
+(tools `mcp__Claude_Browser__*`). **Recommended model:** Sonnet, medium effort. It edits a live
+public profile, so favour reliability over cheapness.
 
-> **Hard-won context (2026-07-06).** LinkedIn actively blocks automated browsers from its
-> **login form**: it detects `navigator.webdriver = true` and rejects all programmatic input
-> (`fill`, `keyboard inserttext`, click-to-type) even non-headless. It also serves a blank,
-> black-screenshot page to headless Chrome (`HeadlessChrome` UA). **So the login form and the
-> auth vault do NOT work for LinkedIn — do not attempt either.** The way in is to reuse a
-> Chrome profile that is *already* logged in. Full diagnosis in the memory note
-> `agent-browser-linkedin-headless-block.md`.
-
-Use `--session linkedin` on **every** command (keeps all commands on the same browser).
+> **Why the built-in browser (switched 2026-10-12).** LinkedIn rejects browsers launched for
+> automation: it reads `navigator.webdriver` and blocks programmatic login, and serves headless
+> Chrome a blank page. agent-browser worked around that with a headed Chrome, a dedicated profile
+> and `--restore` cookie saving, which was several moving parts that broke whenever Chrome moved.
+> The built-in pane is a normal signed-in browser to LinkedIn. Verified 2026-10-12: it read every
+> section, and edits to plain fields, rich-text fields and a publication all saved and persisted.
 
 ---
 
-## One-time setup (already done, verify if broken)
+## Start a session
 
-1. `%USERPROFILE%\.agent-browser\config.json` must contain `"headed": true`. The `--headed`
-   *flag* is ignored/buggy on this machine, but the *config key* works (makes launches
-   non-headless — required, because headless is blocked by LinkedIn).
-2. A **dedicated persistent LinkedIn profile** lives at
-   `%USERPROFILE%\.agent-browser\profiles\linkedin`. The user logged into LinkedIn there once,
-   by hand, in the headed window ("Keep me logged in" checked). It persists across restarts
-   and is **independent of their everyday Chrome** — no need to close their main browser. This is
-   the standard session; prefer it over `--profile Default` (which forces closing main Chrome).
-3. **`--restore` is mandatory on every command.** It saves session cookies via CDP on close
-   and restores them on launch — verified 2026-07-06 to survive a full close/relaunch.
-   Without it, the login does NOT persist (Chrome doesn't flush the fresh cookie on abrupt
-   close). Always launch with `--session linkedin --restore --profile "<path>"`.
-
-To (re)seed the dedicated profile if the session ever expires: launch it headed on the login
-page and ask the user to sign in **manually** in the visible window (real keystrokes work;
-automated login is blocked). Never type their password or use `auth login`.
-
-```powershell
-agent-browser --session linkedin --restore --profile "$env:USERPROFILE\.agent-browser\profiles\linkedin" open https://www.linkedin.com/login
-# → tell the user to log in in the visible window, then continue
-```
+1. Load the browser tools in one ToolSearch call if they are deferred (query: the
+   `mcp__Claude_Browser__` prefix).
+2. Read the profile URL from `user/profile/linkedin/LINKEDIN.md` (the `URL:` line). Never guess it.
+3. `preview_start` with `url: <profile-url>/` → keep the returned `tabId` for every later call.
+4. `get_page_text`. A page titled **"Sign Up | LinkedIn"** or an `authwall` URL means the pane is
+   not signed in:
+   - `navigate` to `https://www.linkedin.com/login`;
+   - call `tabs_context`. If it reports the pane **hidden**, ask the user to bring it back
+     (**Ctrl+Shift+B**, or the globe icon in the side panel);
+   - ask the user to **sign in by hand** with "Keep me logged in" ticked, and wait for them.
+   The sign-in persists across sessions. **Never** type the password or fill the login form.
 
 ---
 
-## Start each session — reuse the dedicated profile
+## Reading the profile
 
-```powershell
-agent-browser --session linkedin --restore --profile "$env:USERPROFILE\.agent-browser\profiles\linkedin" open https://www.linkedin.com/feed/
-agent-browser --session linkedin wait --load networkidle
-agent-browser --session linkedin screenshot
-```
+The main profile page renders only the top card (headline, location, Open to Work) and the
+Activity feed. Read every other section from its own page:
 
-- Screenshot shows his **feed / name** → logged in, proceed.
-- Screenshot shows a **login page** → the profile's session expired. Re-seed it (see setup
-  above): ask him to log in by hand in the visible window. **Never** automate the login form.
+| Section | URL (`<profile-url>` + …) | How to read |
+|---|---|---|
+| Top card, headline | `/` | `get_page_text` |
+| About | `/edit/forms/summary/new/` | JS: `innerText` of `[contenteditable=true]` (this opens the edit form; close it by navigating away) |
+| Experience | `/details/experience/` | JS: `document.querySelector('main').innerText` after a ~1.5 s wait |
+| Education | `/details/education/` | same |
+| Publications | `/details/publications/` | `find` the title; the edit form shows every field |
+| Projects | `/details/projects/` | same as Experience |
+| Skills | `/details/skills/` | ⚠️ **only the first 10 load here**, whatever you scroll. A full skills audit needs the user or a fallback browser |
 
-If the first navigation on a fresh launch shows a **black screenshot / `about:blank`**, just
-re-run `open <url>` once — the first paint on a cold profile sometimes doesn't settle.
+Cut page text at `"Who your viewers also viewed"`. Everything after it is sidebar and footer.
 
-If agent-browser keeps relaunching **headless** (UA shows `HeadlessChrome`), a stale daemon
-is being reused: kill the daemon process `agent-browser-win32-x64.exe` and any chrome under
-`Temp\agent-browser-chrome-*`, then relaunch.
+**Finding an entry's edit form:** on a `/details/<section>/` page, list the links with
+`[...document.querySelectorAll('main a[href*="edit/forms"]')].map(a => [a.getAttribute('aria-label') || a.innerText, a.href])`
+and `navigate` to the one you want. Forms seen so far:
+
+- Headline: `<profile-url>/edit/intro/`. The headline is a `contenteditable` DIV; name, country
+  and industry are plain inputs.
+- About: `<profile-url>/edit/forms/summary/new/`. `contenteditable`, **2,600-character cap**.
+- Experience entry: `/details/experience/edit/forms/<id>/`. The description is `contenteditable`;
+  there is a **"Notify network"** switch.
+- Publication: `/details/publications/edit/forms/<id>/`. All plain inputs: title, publisher, date,
+  URL, and a description textarea (2,000 cap).
 
 ---
 
-## Interacting — plain fields vs. contenteditable
+## Editing
 
-**Plain fields** (names, single-line inputs, dropdowns) — semantic locators work:
+**Plain inputs and textareas** (publication fields, names): `find` or `read_page` with
+`filter: interactive` for the `ref`, then `form_input`. React registers the value, and the
+character counter updates.
 
-```powershell
-agent-browser --session linkedin find role button click --name "Save"
-agent-browser --session linkedin find label "First name" fill "<first name>"
-```
-
-**Rich-text fields (Headline, About) are `contenteditable` DIVs** — `fill` / `keyboard
-inserttext` do **not** land on them (React ignores it). Use `execCommand` via `eval`, which
-fires the input events React needs. Open the edit form by direct URL, then run the eval:
-
-- Headline form: `<profile-url>/edit/intro/`
-- About form: `<profile-url>/edit/forms/summary/new/`
-
-```powershell
-# 1. open the edit form (headline example)
-agent-browser --session linkedin open <profile-url>/edit/intro/
-agent-browser --session linkedin wait --load networkidle
-```
-
-Write the JS to a file, base64-encode it (base64 preserves unicode like `·` and `–`; use
-`\n\n` between paragraphs for the About), and run with `eval -b`:
+**Rich-text fields (headline, About, experience descriptions) are `contenteditable` DIVs.**
+`form_input` and typing do not reliably land on them. Use `javascript_tool` with `execCommand`,
+which fires the input events React needs:
 
 ```js
-// set_field.js
-(function(){
-  var el = document.querySelector('[contenteditable=true]');
-  if(!el) return JSON.stringify({err:'no field'});
-  el.focus();
-  document.execCommand('selectAll', false, null);
-  var ok = document.execCommand('insertText', false, 'NEW TEXT HERE');
-  return JSON.stringify({ok: ok, now: el.textContent, len: el.textContent.length});
-})()
+// whole field (headline, About)
+const el = document.querySelector('[contenteditable=true]');
+el.focus();
+document.execCommand('selectAll', false, null);
+document.execCommand('insertText', false, NEW_TEXT);   // "\n\n" between paragraphs
 ```
 
-```bash
-b64=$(base64 -w0 set_field.js)
-agent-browser --session linkedin eval -b "$b64"     # expect {"ok":true, ...}
+```js
+// one phrase inside a longer description: select just that text, then type over it
+const el = document.querySelector('[contenteditable=true]');
+const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+let n; while ((n = w.nextNode())) {
+  const i = n.data.indexOf(OLD);
+  if (i >= 0) { el.focus(); const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + OLD.length);
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    document.execCommand('insertText', false, NEW); break; }
+}
 ```
 
-Then screenshot to confirm the text + character counter, save, and verify it persisted:
+The headline form holds several fields, so pick the right element (for example, the one whose
+`innerText` starts with the old headline) and check afterwards that name and country did not
+change.
 
-```powershell
-agent-browser --session linkedin screenshot
-agent-browser --session linkedin find role button click --name "Save"
-# reopen the edit form and read [contenteditable].textContent to confirm it stuck
-```
+**Length:** paragraph breaks inflate `innerText`, so `innerText.length` overstates the count.
+The truth is LinkedIn's own counter: read it with
+`document.body.innerText.match(/[\d,]+\/2,600/)`. Draft to the cap *before* filling: a draft that
+fits in a text file can still exceed 2,600.
 
-Edits are **live**. Screenshot before saving and verify after — writes can be flaky
-(`webdriver` stays true even headed). If an edit won't land, the browser window is visible —
-ask the user to finish that one edit by hand.
+**Before saving:**
+- Experience entries: check the "Notify network" switch is **off** (`[role=switch]`, or a
+  checkbox labelled "notify your network"), unless the user wants the change broadcast.
+- Show the user the exact new text and get a yes, unless they already approved that text. Edits
+  are live and public.
+
+**Saving:** `find` "Save" and click it **by `ref`**, not by coordinate. A coordinate click missed
+once and the edit was silently lost. Wait ~3 s before navigating anywhere. **Success signal:**
+the URL moves to `/edit/forms/next-action/…` (a "people you may know" or Premium prompt). Ignore
+it; never click inside it.
+
+**Verify:** reopen the form (or the `/details/` page) and confirm the new text is there. A save
+can fail without an error.
 
 ---
 
 ## Rules
 
-- **Always** use `--session linkedin --restore` on every command (`--restore` is what makes
-  the login persist across restarts — verified; without it you get logged out on relaunch).
-- **Never** run `agent-browser close` / `close --all` — leave the session for next time.
-  (Exception: killing a stale headless daemon during the setup fix above.)
-- If agent-browser errors or is unresponsive: **stop and ask the user to restart. Never retry.**
-- **Never** automate the LinkedIn login form, type their password, or use the auth vault —
-  LinkedIn blocks it. Always reuse the logged-in `--profile Default`.
-- Keep local snapshot `user/profile/linkedin/LINKEDIN.md` in sync after any live edit.
+- **Never** automate the login form, type a password, sign out, or change account settings.
+  The sign-in belongs to the user.
+- If a site approval is declined or the page is refused, say so and stop. Do not retry.
+- **Low velocity.** Batch profile edits into occasional sessions, at a human pace.
+- **Reading and editing the profile: automated. Acting socially: by hand.** Posts, comments,
+  reactions and connection requests are the user's to do (their preference, and automated social
+  actions risk account flags). Draft them here; the user posts them.
+- Keep the local snapshot `user/profile/linkedin/LINKEDIN.md` in sync after any live edit, and
+  record what was verified live and when.
 
 ---
 
-## Profile URL
+## Fallbacks
 
-`<profile-url>` in the commands on this page is the user's profile URL, recorded in
-`user/profile/linkedin/LINKEDIN.md` (the `URL:` line). Read it there; never guess it.
+**1. Claude in Chrome** (`mcp__claude-in-chrome__*`), if the user has Chrome with the extension.
+It acts in their everyday Chrome with its existing LinkedIn sign-in. Load its skill
+(`anthropic-skills:chrome-browser`) first. Use it for anything the pane cannot do, such as a full
+Skills audit.
 
-## Pending TODOs
-
-They live in `user/profile/linkedin/LINKEDIN.md` — read them there before an editing session.
-
----
-
-## Working efficiently
-
-- **Division of labour.** agent-browser is reliable for **reading** — finding posts to
-  comment on, reading job listings, reviewing a person's public activity, pulling analytics.
-  Use it for scouting + drafting input. Do the **acting** — posting, commenting, connecting —
-  **manually** (the user prefers this, and automating actions risks LinkedIn account flags).
-- **Reads over screenshots.** Prefer `snapshot -i`, `read`, and `eval` to extract text —
-  faster and cheaper. Use screenshots only to visually confirm a write landed.
-- **Low velocity.** Keep automated navigation human-paced; LinkedIn watches request velocity.
-  Batch profile edits into occasional sessions rather than many small ones.
-- **Live oversight (optional).** `agent-browser dashboard start` → open `localhost:4848` to
-  watch the viewport in real time while writes happen.
+**2. agent-browser** (the old route, kept for reference; `.agents/skills/agent-browser/`).
+- `%USERPROFILE%\.agent-browser\config.json` needs `"headed": true` and an `executablePath` that
+  exists. **It broke on 2026-10-12** because Chrome was no longer at the configured path.
+- Dedicated profile `%USERPROFILE%\.agent-browser\profiles\linkedin`, seeded once by a manual login.
+- Every command: `agent-browser --session linkedin --restore --profile "<that path>" …`
+  (`--restore` is what makes the sign-in survive a relaunch).
+- A stale daemon relaunching headless (`HeadlessChrome` UA): kill `agent-browser-win32-x64.exe`
+  and any chrome under `Temp\agent-browser-chrome-*`.
+- Contenteditable fields: the same `execCommand` JS as above, via `eval -b <base64>`.
+- If agent-browser errors: **stop and ask the user. Never retry.** Never `close --all`.
 
 ---
 
 ## Weekly stats snapshot (visibility-strategy tracking)
 
-Log analytics weekly to `user/workspace/linkedin/linkedin_stats.csv` so the visibility strategy's
-metrics show a trend. Read the numbers live, then append one dated row.
-
-```powershell
-# from the feed/profile, read the 7-day analytics + counts
-agent-browser --session linkedin open <profile-url>/
-agent-browser --session linkedin wait --load networkidle
-agent-browser --session linkedin eval "document.querySelector('.pvs-header')?document.body.innerText:document.body.innerText"
-# then append a row: date,profile_views_7d,post_impressions_7d,search_appearances_7d,connections,followers,notes
-```
-
-Fuller analytics (with sources) live at
-`https://www.linkedin.com/analytics/profile-views/` and `.../search-appearances/`.
-Track quality signals (who viewed, relevant search terms), not vanity likes — per the
-visibility strategy. Columns and history are in `user/workspace/linkedin/linkedin_stats.csv`.
+Log analytics weekly to `user/workspace/linkedin/linkedin_stats.csv`. Read the numbers live with
+`get_page_text` from `https://www.linkedin.com/analytics/profile-views/` and
+`…/analytics/search-appearances/`, plus followers and connections from the profile top card.
+Then append one dated row:
+`date,profile_views_7d,post_impressions_7d,search_appearances_7d,connections,followers,notes`.
+Track quality signals (who viewed, relevant search terms), not vanity likes.
 
 ---
+
+## Pending TODOs
+
+They live in `user/profile/linkedin/LINKEDIN.md`. Read them there before an editing session.
 
 ## Related
 [[competencies]] [[soft_skills]]

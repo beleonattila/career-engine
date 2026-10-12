@@ -95,11 +95,11 @@ Set the model before running (capability buys judgment; effort buys care):
                           /track westberg closed rejected
 
 ----------------------------------------------------------------
- LINKEDIN  (via agent-browser; headless, stored credentials)
+ LINKEDIN  (via the built-in browser pane; signed in by hand once)
 ----------------------------------------------------------------
 
-/linkedin           Edit my LinkedIn profile. agent-browser drives headless Chrome with
-                    stored credentials (already logged in), then edits.[Sonnet med]
+/linkedin           Edit my LinkedIn profile in the desktop app's browser pane (its sign-in
+                    persists); shows each change before saving. [Sonnet med]
 
 ----------------------------------------------------------------
  TYPICAL WEEKLY FLOW

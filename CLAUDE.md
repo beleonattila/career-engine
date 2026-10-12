@@ -184,5 +184,6 @@ line, so read the skill rather than duplicating its contract here.
 > build seats found through ad text and through employers that have posted them before
 > (`method_sightings.py`), never through method-title queries (`engine/docs/decisions.md` §Method lane).
 >
-> ⚠️ `/linkedin` runs via **agent-browser** (a headed Chrome reusing a logged-in profile; see the skill). If
+> ⚠️ `/linkedin` runs in the desktop app's **built-in browser pane**, signed in to LinkedIn by the user by hand
+> (never automate the login form). Fallbacks are Claude in Chrome, then agent-browser; see the skill. If
 > agent-browser errors, stop and ask the user to restart it — never retry.
