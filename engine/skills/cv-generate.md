@@ -66,8 +66,11 @@ to catch a dead link (far better than after the CV is made, on deadline day).
    - **Workday host** (`*.myworkdayjobs.com`): query the ATS JSON
      (`POST /wday/cxs/{tenant}/{site}/jobs` with the role title as `searchText`) — if the
      req isn't returned, it's been removed.
-   - Otherwise: open it in a **real browser** (agent-browser headless). An automated-fetch
-     refusal (404/ECONNREFUSED) is *unverified, not dead* — don't trust WebFetch alone.
+   - Otherwise: open it in the desktop app's **built-in browser pane**, signed in to LinkedIn
+     (`engine/docs/LINK_HEALTH.md` §Browser pass says what live and dead look like). An
+     automated-fetch refusal (404/ECONNREFUSED) is *unverified, not dead* — don't trust WebFetch
+     alone. A confirmed-dead posting is recorded with
+     `link_check.py --browser dead --only <file-stem> --why "…"`.
 2. Outcomes:
    - **Live** → set `url_status: working`, `url_checked: today`, proceed.
    - **Moved** (found at a new URL) → update `url`, proceed.

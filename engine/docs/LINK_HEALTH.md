@@ -29,8 +29,46 @@ Two failure modes, both invisible to a naive check:
    404 does. Modern ATS hosts (Emply, Teamtailor, Greenhouse embeds) are all prone to this.
 
 **A 404 is not proof either** (CLAUDE.md link hygiene). The tool reports a bare 404 as
-`DEAD_UNCONFIRMED` and refuses to archive it; confirm in a real browser first, then pass
-`--trust-404`. Only HTTP 410, an explicit "no longer available" message, or LinkedIn's expiry
+`DEAD_UNCONFIRMED` and refuses to archive it; confirm in a real browser first (§Browser pass),
+then record it with `--browser dead`, or pass `--trust-404` to accept every bare 404 at once.
+
+## Browser pass
+
+The verdicts `link_check.py` cannot settle by fetching (`UNVERIFIED`, `DEAD_UNCONFIRMED`, and
+every LinkedIn lead that is not explicitly dead) are settled by eye in the **built-in browser pane**
+of the Claude desktop app (tools `mcp__Claude_Browser__*`). The pane keeps a persistent sign-in,
+the same one `/linkedin` uses (`engine/skills/linkedin-profile-edit.md` §Start a session). That
+matters: LinkedIn shows its expiry banner only to a signed-in viewer.
+
+**Measured 2026-10-12, in the signed-in pane:** a 2-month-old lead showed *"No longer accepting
+applications"* and no Apply button; a 5-day-old lead showed an **Apply** button and no banner. Both
+had been `UNVERIFIED` to the tool. The pane sees what no fetch, and no logged-out browser, can.
+
+1. `python engine/tools/link_check.py` (report only). Work the `DEAD_UNCONFIRMED`, `UNVERIFIED`
+   and LinkedIn rows of `user/workspace/logs/link_check_latest.tsv`, highest `best_score` first.
+2. For each, open the URL in the pane (`preview_start` with the url once, then `navigate` on the
+   same `tabId`). For LinkedIn use the canonical `linkedin.com/jobs/view/<id>` form. Wait ~2.5 s,
+   then read with `javascript_tool`:
+   - **dead:** a phrase from `GONE_MARKERS` in `link_check.py` (on LinkedIn: *"No longer
+     accepting applications"*), or the posting is gone and the page redirects to a search or home;
+   - **live:** the posting renders with an **Apply / Easy Apply** button (or the ATS's apply form)
+     and no gone-marker;
+   - **neither** (sign-in wall, captcha, an empty careers board): leave it `UNVERIFIED`. A pane
+     not signed in to LinkedIn proves nothing about a LinkedIn lead.
+3. Record each verdict, one lead per call. This writes exactly what an automatic verdict writes
+   (fields, Notes line, the move to `closed/`), with "browser pane: <why>" as the reason:
+
+   ```
+   python engine/tools/link_check.py --browser dead --only <file-stem> --why "<what the page showed>"
+   python engine/tools/link_check.py --browser live --only <file-stem> --why "<what the page showed>"
+   ```
+
+   `--only` must match exactly one lead. Active applications are never retired.
+4. Keep a human pace on LinkedIn (a few seconds a page, as the tool's `--linkedin-delay` does), and
+   batch big passes across sessions. If a site approval is declined, stop and say so.
+
+A careers board an automated fetch saw as empty (failure 3) goes the same way. Open the board in
+the pane, let it render, and count the roles before concluding anything. Only HTTP 410, an explicit "no longer available" message, or LinkedIn's expiry
 redirect count as `DEAD` outright.
 
 **⚠️ Correction, 2026-08-16 (later the same day): the canonical LinkedIn page does not tell the
@@ -47,8 +85,8 @@ found, but it is only one of at least two presentations.
 
 `link_check.py` no longer reports any LinkedIn lead as `ALIVE`: it resolves to `DEAD` on an
 explicit signal, otherwise `UNVERIFIED`, meaning *open it in a logged-in browser*. **The 7 open
-LinkedIn leads at fit ≥ 50 currently stamped `working` are unproven** and need a browser pass;
-agent-browser is already configured with a logged-in Chrome profile for exactly this.
+LinkedIn leads at fit ≥ 50 currently stamped `working` are unproven** and need a browser pass
+(§Browser pass below: the desktop app's browser pane, signed in to LinkedIn).
 
 Nothing is deleted. `--apply` stamps `status: expired` / `expired_on` / `url_status: dead`, adds a
 dated Notes line recording *how* it was verified, and moves the file `open/` → `closed/` — the same

@@ -129,7 +129,7 @@ This is mandatory, not optional; eyeball dedup has demonstrably failed.
 re-validates every open lead reaching `thresholds.min_score_shown` (`user/settings.toml`) on **any** of `career_fit`,
 `method_fit` or `skill_match`, and retires the dead ones.
 A link an automated fetch refuses (404/ECONNREFUSED) is *unverified, not dead* — confirm with
-a real browser. **The converse also holds: HTTP 200 is not proof a posting is live.** LinkedIn's
+a real browser (the built-in browser pane: `engine/docs/LINK_HEALTH.md` §Browser pass). **The converse also holds: HTTP 200 is not proof a posting is live.** LinkedIn's
 `ad-library/job/detail/<id>` returns 200 for expired jobs (measured: `engine/docs/LINK_HEALTH.md`).
 Check LinkedIn against the canonical
 `linkedin.com/jobs/view/<id>` page and store *that* form in `url:`. See `engine/docs/LINK_HEALTH.md`.

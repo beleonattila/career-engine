@@ -9,6 +9,10 @@ Stdlib only. Run from the repo root.
     python engine/tools/link_check.py --min-fit 0         # check every lead, not just the dashboard-visible ones
     python engine/tools/link_check.py --only cradle       # check leads whose filename contains "cradle"
 
+    # record what the built-in browser pane showed for ONE lead (no fetch; writes at once)
+    python engine/tools/link_check.py --browser dead --only <file-stem> --why "LinkedIn: No longer accepting applications"
+    python engine/tools/link_check.py --browser live --only <file-stem> --why "Apply button shown"
+
 WHY THIS EXISTS
 ---------------
 A naive "does the URL return 200?" check is actively misleading on the two surfaces
@@ -32,12 +36,14 @@ that dominate this vault:
     `url_status: working` on a dead lead the same day.
 
     Consequence: LinkedIn leads resolve to DEAD (explicit signal) or UNVERIFIED
-    (everything else). UNVERIFIED here means "open it in a logged-in browser" — see
-    the agent-browser setup — not "probably fine".
+    (everything else). UNVERIFIED here means "open it in a logged-in browser" — the
+    desktop app's built-in browser pane, signed in to LinkedIn (engine/docs/LINK_HEALTH.md
+    §Browser pass) — not "probably fine". Record what it showed with --browser.
 
   * **A 404 is not proof.** CLAUDE.md's link-hygiene rule: a link an automated fetch
     refuses is *unverified, not dead*. So a bare 404 is reported as DEAD_UNCONFIRMED
-    and is **never auto-archived**; it is listed for you to confirm in a real browser.
+    and is **never auto-archived**; it is listed for you to confirm in a real browser,
+    then record with --browser dead (one lead) or --trust-404 (all of them).
     Only unambiguous evidence (HTTP 410 Gone, an explicit "no longer available"
     message, or LinkedIn's expiry redirect) counts as DEAD.
 
@@ -46,8 +52,8 @@ VERDICTS
   ALIVE             posting fetched and looks live
   DEAD              unambiguous: 410 Gone, explicit gone-message, or LinkedIn expiry
                     -> --apply archives these
-  DEAD_UNCONFIRMED  404 only. Confirm in a browser, then archive by hand or re-run
-                    with --trust-404
+  DEAD_UNCONFIRMED  404 only. Confirm in a browser, then record with --browser dead,
+                    or re-run with --trust-404
   UNVERIFIED        403 / 429 / timeout / JS-rendered shell / ANY LinkedIn lead without an
                     explicit dead signal — no conclusion possible, needs a real browser
   UNRESOLVED        the stored url is a search page or job board root, not a posting,
@@ -61,6 +67,11 @@ WHAT --apply WRITES
   DEAD        -> url_status: dead · status: expired · expired_on: today
                  + a dated line under ## Notes recording how it was verified,
                  then moved positions/open/ -> positions/closed/
+
+--browser dead|live writes the same fields for the single lead --only names, with
+"browser pane: <--why>" as the Notes reason. It needs --only matching exactly one lead
+in open/ or applied/, and ignores --min-fit: a verdict seen in a browser stands
+whatever the lead scores.
 
 Leads that are applied/sent/interviewing/offer are never touched, and nothing is
 ever deleted — an archived lead stays on disk for dedup_check.py and the
@@ -396,6 +407,31 @@ def apply_results(results, trust_404):
     return archived, stamped, blocked
 
 
+# ------------------------------------------------------------------ browser verdict
+def record_browser_verdict(verdict, only, why):
+    """Write one browser-pane verdict through apply_results, so a lead retired by eye
+    gets exactly the fields, Notes line and move that an automatic DEAD gets."""
+    if not only:
+        sys.exit("--browser needs --only <file-stem> naming exactly one lead")
+    if not why.strip():
+        sys.exit("--browser needs --why: what the page showed (it goes into the Notes line)")
+    leads, _, _ = collect("open+applied", 0, only)
+    if len(leads) != 1:
+        names = ", ".join(l["file"] for l in leads) or "none"
+        sys.exit(f"--only {only!r} matched {len(leads)} lead(s) ({names}); it must match exactly one")
+    lead = leads[0]
+    result = dict(lead, verdict="DEAD" if verdict == "dead" else "ALIVE", code="browser",
+                  final=lead["url"], why=f"browser pane: {why.strip()}")
+    archived, stamped, blocked = apply_results([result], trust_404=False)
+    if archived:
+        print(f"retired  {lead['file']}  ({result['why']})")
+    elif stamped:
+        print(f"stamped  {lead['file']}  url_status: working, url_checked: {TODAY}")
+    else:
+        for n, reason in blocked:
+            print(f"left in place  {n} — {reason}")
+
+
 # ------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser(description="Verify position-lead links are still live.")
@@ -417,7 +453,16 @@ def main():
     ap.add_argument("--linkedin-delay", type=float, default=4.0,
                     help="seconds between LinkedIn requests (they rate-limit hard)")
     ap.add_argument("--report", default=str(LOGS / "link_check_latest.tsv"))
+    ap.add_argument("--browser", choices=["dead", "live"],
+                    help="record a verdict seen in a logged-in browser for the ONE lead --only "
+                         "matches; no fetch, writes immediately (see LINK_HEALTH.md §Browser pass)")
+    ap.add_argument("--why", default="",
+                    help="with --browser: what the page showed, quoted into the Notes line")
     args = ap.parse_args()
+
+    if args.browser:
+        record_browser_verdict(args.browser, args.only, args.why)
+        return
 
     leads, low, dead = collect(args.scope, args.min_fit, args.only)
     if not leads:
