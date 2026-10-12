@@ -67,6 +67,28 @@ had been `UNVERIFIED` to the tool. The pane sees what no fetch, and no logged-ou
 4. Keep a human pace on LinkedIn (a few seconds a page, as the tool's `--linkedin-delay` does), and
    batch big passes across sessions. If a site approval is declined, stop and say so.
 
+**Three LinkedIn states, not two** (first full pass, 2026-10-12: 71 leads → 51 live, 8 dead,
+12 paused):
+- *"No longer accepting applications"* in the job header (the text above "About the job") → dead.
+  Read the header, not the whole page: the sidebar lists other jobs.
+- *"Not currently accepting applications"* → **paused, not dead**. The employer has stopped
+  applications on LinkedIn for now and may reopen them. Leave it `UNVERIFIED` and check the
+  employer's own careers page. It is not in `GONE_MARKERS`, on purpose.
+- Neither, with an Apply / Easy Apply button → live.
+
+When the header also says *"Responses managed off LinkedIn"*, the closure is LinkedIn's listing.
+The employer's own call can outlive it, so check the employer's site before retiring a high-fit
+lead.
+
+**Doing a whole pass.** One page at a time costs two tool calls a lead. Faster: from any open
+`linkedin.com` page, load each `jobs/view/<id>` into a hidden **same-origin iframe**, wait ~3 s,
+read `contentDocument.body.innerText`, then remove the frame. Limits learned the hard way:
+- `javascript_tool` stops at **45 s**, so do 4–5 leads per call and return the results each time.
+  Never keep results only in page memory.
+- **Reload the page before every batch.** The tab's renderer crashed twice after 30–40 frames,
+  losing everything held in the page.
+- Keep the pass's tab in front: background tabs throttle timers, and the batch overruns.
+
 A careers board an automated fetch saw as empty (failure 3) goes the same way. Open the board in
 the pane, let it render, and count the roles before concluding anything. Only HTTP 410, an explicit "no longer available" message, or LinkedIn's expiry
 redirect count as `DEAD` outright.
