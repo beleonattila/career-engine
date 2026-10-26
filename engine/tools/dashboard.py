@@ -125,6 +125,12 @@ def load(globpat, kind):
             "method": as_int(fm.get("method_fit"), -1),
             "skill": as_int(fm.get("skill_match"), -1),
             "level": fm.get("level_fit") or "",
+            # bench_load (schema v2, 2026-10-26): wet-lab work in the seat. Reported, never
+            # scored -- the page can sort by it or hide `substantial` rows, nothing else reads it.
+            # Rank orders the sort: unknown sits between light and substantial, since it may be
+            # either; -1 is a record without the field (orgs).
+            "bench": fm.get("bench_load") or "",
+            "bench_rank": {"none": 0, "light": 1, "unknown": 2, "substantial": 3}.get(fm.get("bench_load") or "", -1),
             # Provenance: which of the two parallel searches found this. Legacy records
             # default to career -- every record predating 2026-08-17 was collected by the
             # direction search, because it was the only one that existed. Provenance never
@@ -589,9 +595,10 @@ __STATS_CSS__
 <div class="wrap">
   <div class="notice" id="integrity"></div>
   <div class="tabs" id="tabs"></div>
-  <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()"></div>
+  <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()">
+    <label id="benchctl" class="tier" style="margin-left:12px;cursor:pointer"><input type="checkbox" id="hidebench" onchange="setHideBench(this.checked)" style="width:auto;vertical-align:middle"> hide substantial wet lab</label></div>
   <div id="table"></div>
-  <p class="note"><b>Career</b> = is this the science I want (direction only) · <b>Method</b> = is this the work I want (does the seat build methods or operate them) · <b>Skill</b> = can I do it (evidenced overlap) · <b>Level</b> = attainable today. <span class="tier">—</span> = not yet scored. Three independent scores, never blended. Ranked by career fit; click any column header to sort. Status reflects <code>app_status</code> in each profile's frontmatter — update it with <code>/track</code>.</p>
+  <p class="note"><b>Career</b> = is this the science I want (direction only) · <b>Method</b> = is this the work I want (does the seat build methods or operate them) · <b>Skill</b> = can I do it (evidenced overlap) · <b>Level</b> = attainable today · <b>Wet lab</b> = bench work in the seat (<code>bench_load</code>; reported, never scored). <span class="tier">—</span> = not yet scored. Three independent scores, never blended. Ranked by career fit; click any column header to sort. Status reflects <code>app_status</code> in each profile's frontmatter — update it with <code>/track</code>.</p>
   <p class="note" id="threshold"></p>
 </div>
 <script>
@@ -608,6 +615,19 @@ function levelCell(r){
   const c={realistic:'var(--strong)',reach:'var(--mod)',below:'var(--sub)'}[r.level]||'var(--sub)';
   return '<span class="badge" style="border-color:'+c+';color:'+c+'">'+r.level+'</span>';
 }
+// Wet lab in the seat (bench_load). A view, never a score: the colours only make the
+// substantial rows easy to spot, and the hide toggle only filters the Positions and PhD tabs.
+function benchCell(r){
+  if(!r.bench)return '<span class="tier">—</span>';
+  const c={substantial:'var(--weak)',light:'var(--mod)'}[r.bench]||'var(--sub)';
+  return '<span class="badge" style="border-color:'+c+';color:'+c+'">'+r.bench+'</span>';
+}
+// Remembered per browser; storage can be missing (private window, file:// quirks), so every
+// access is guarded and the page works without it.
+let hideBench=false;
+try{hideBench=localStorage.getItem('hideBench')==='1';}catch(e){}
+function setHideBench(v){hideBench=v;try{localStorage.setItem('hideBench',v?'1':'0');}catch(e){}render();tabs();}
+function benchOk(r){return !(hideBench&&r.bench==='substantial');}
 // Visibility is decided once, in Python (_shown), and stamped on each record as r.shown:
 // companies/groups always; position/phd only when alive AND at least one score reaches
 // MIN_SCORE_SHOWN. Read the flag here rather than recomputing it, so the two halves cannot
@@ -672,7 +692,7 @@ function tabs(){
 function countFor(id){
   if(id==='timeline'||id==='todo')return planCount(id);
   if(id==='applications')return DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started').length;
-  return DATA.records.filter(r=>inTab(r,id)&&r.shown).length;
+  return DATA.records.filter(r=>inTab(r,id)&&r.shown&&benchOk(r)).length;
 }
 function setTab(id){active=id;sortKey=(id==='applications')?'app_status':'career';sortDir=(id==='applications')?1:-1;render();tabs();}
 function rowsFor(){
@@ -680,7 +700,7 @@ function rowsFor(){
   // there, so a role that was actually worked on never vanishes from the record.
   let rows=(active==='applications')
    ? DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started')
-   : DATA.records.filter(r=>inTab(r,active)&&r.shown);
+   : DATA.records.filter(r=>inTab(r,active)&&r.shown&&benchOk(r));
   const q=document.getElementById('filter').value.toLowerCase();
   if(q)rows=rows.filter(r=>(r.name+' '+r.org+' '+r.role+' '+r.location+' '+r.tier).toLowerCase().includes(q));
   rows.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];
@@ -696,6 +716,8 @@ function render(){
   // Statistics tab since 2026-10-10.
   document.getElementById('integrity').classList.toggle('hidden',active!=='overview');
   document.getElementById('filter').parentNode.classList.toggle('hidden',active==='stats');
+  document.getElementById('benchctl').classList.toggle('hidden',active!=='position'&&active!=='phd');
+  document.getElementById('hidebench').checked=hideBench;
   if(active==='overview'){document.getElementById('table').innerHTML=overview();return;}
   if(active==='stats'){renderStats();return;}
   if(active==='timeline'){renderTimeline();return;}
@@ -704,7 +726,7 @@ function render(){
   const isPos=(active==='position'||active==='phd'||active==='applications');
   // Career and Method on every row; Skill and Level only where a job description exists to
   // match against. Three columns, never a blend — see the MIN_SCORE_SHOWN note in dashboard.py.
-  let head='<tr>'+th('Career','career')+th('Method','method')+(isPos?th('Skill','skill')+th('Level','level'):'')+
+  let head='<tr>'+th('Career','career')+th('Method','method')+(isPos?th('Skill','skill')+th('Level','level')+th('Wet lab','bench_rank'):'')+
            th(active==='applications'?'Org / Role':'Name','name');
   if(active==='applications')head+=th('Status','app_status')+th('CV','cv_date')+th('Sent','sent_date')+th('Next action','next_action')+th('Deadline','deadline_in');
   else{head+=th('Location','location')+th('Tier','tier');
@@ -716,7 +738,7 @@ function render(){
     const nm='<a href="'+r.path+'">'+(r.name||r.org)+'</a>'+(r.role&&active!=='applications'&&!isPos?'':'')+
              (isPos&&r.org?'<div class="tier">'+r.org+'</div>':'');
     let tr='<tr><td>'+scoreCell(r.career)+'</td><td>'+scoreCell(r.method)+'</td>'+
-           (isPos?'<td>'+scoreCell(r.skill)+'</td><td>'+levelCell(r)+'</td>':'');
+           (isPos?'<td>'+scoreCell(r.skill)+'</td><td>'+levelCell(r)+'</td><td>'+benchCell(r)+'</td>':'');
     if(active==='applications'){
       tr+='<td><a href="'+r.path+'">'+(r.org||r.name)+'</a><div class="tier">'+(r.role||r.category)+'</div></td>'+
           '<td>'+appBadge(r)+'</td><td>'+(r.cv_date||'—')+'</td><td>'+(r.sent_date||'—')+'</td>'+

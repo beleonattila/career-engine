@@ -461,6 +461,10 @@ duties, with the deciding phrase quoted under Logistics & Salary. It is kept apa
 whether the person in the seat pipettes. Records older than v2 were migrated to `unknown`, never
 guessed, because silence in an ad is not evidence of a computational seat.
 
+The dashboard shows it as a *Wet lab* column and can hide `substantial` rows on the Positions and
+PhD tabs (2026-10-26, at the user's request). Hiding is a reader's choice made on the page, like
+sorting: it changes no score and nothing the search or `/inbox` does.
+
 ### Link health: HTTP 200 is not proof a posting is live (2026-08-16)
 
 *Rule: CLAUDE.md §Link & status hygiene. Full measurement: `engine/docs/LINK_HEALTH.md`.*

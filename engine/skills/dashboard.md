@@ -236,6 +236,14 @@ The numbers the tiles carried are defined below; the funnel and *Records by kind
   defaults to `career_fit` descending; either score column is clickable. See *Scoring* in
   [[inbox-eval]] for what each number means.
 
+- **Wet lab column and toggle (added 2026-10-26).** Positions, PhD and Applications show
+  `bench_load` (`none · light · unknown · substantial`) as a *Wet lab* column; sorting it orders
+  those four, with `unknown` between `light` and `substantial` because it may be either. On the
+  Positions and PhD tabs a **hide substantial wet lab** checkbox drops `substantial` rows and
+  their tab counts; the browser remembers it (`localStorage`, guarded). It is a view, never a
+  score: it moves no number, and Overview, Statistics, the plan tabs and Applications ignore it
+  (`engine/docs/decisions.md` §`bench_load`).
+
 - **Score threshold — `thresholds.min_score_shown` in `user/settings.toml`** (read into
   `MIN_SCORE_SHOWN` in `dashboard.py`). A position/PhD lead is hidden only when **all three**
   scores fall below it. Any one clearing it keeps the row visible, which is the point of the split: a `career_fit 88 · skill_match 40` stretch role
