@@ -145,6 +145,11 @@ def load(globpat, kind):
             "app_outcome": fm.get("app_outcome") or "",
             "cv_date": fm.get("cv_date") or "",
             "cv_dir": fm.get("cv_dir") or "",
+            # cv_dir_prior: earlier application folders for the same record, kept when cv_dir
+            # moves to a newer one (outreach letter first, formal application later). Only the
+            # integrity check reads it, so a superseded folder is not reported as untracked.
+            "cv_dir_prior": [fm["cv_dir_prior"]] if isinstance(fm.get("cv_dir_prior"), str) and fm["cv_dir_prior"]
+                            else (fm.get("cv_dir_prior") or []),
             "sent_date": fm.get("sent_date") or "",
             "last_contact": fm.get("last_contact") or "",
             "next_action": fm.get("next_action") or "",
@@ -387,12 +392,15 @@ app_dirs = {os.path.basename(d.rstrip("/\\")) for d in glob.glob(os.path.join(RO
 referenced = set()
 integrity = []
 for r in records:
-    cd = (r["cv_dir"] or "").strip().rstrip("/")
-    if cd:
-        referenced.add(os.path.basename(cd))
-        if not os.path.isdir(os.path.join(ROOT, cd)):
-            integrity.append({"kind": "missing_cv_dir", "path": r["path"],
-                              "msg": f"{r['path']} points to cv_dir '{cd}' but that folder is missing"})
+    for field, dirs in (("cv_dir", [r["cv_dir"]]), ("cv_dir_prior", r["cv_dir_prior"])):
+        for cd in dirs:
+            cd = (cd or "").strip().rstrip("/")
+            if not cd:
+                continue
+            referenced.add(os.path.basename(cd))
+            if not os.path.isdir(os.path.join(ROOT, cd)):
+                integrity.append({"kind": "missing_cv_dir", "path": r["path"],
+                                  "msg": f"{r['path']} points to {field} '{cd}' but that folder is missing"})
 for name in sorted(app_dirs - referenced):
     integrity.append({"kind": "untracked_cv", "path": f"applications/{name}/",
                       "msg": f"applications/{name}/ exists but no profile points to it (untracked application)"})

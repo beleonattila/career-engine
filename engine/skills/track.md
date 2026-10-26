@@ -57,14 +57,19 @@ note the change.
 
 1. **Edit frontmatter only; preserve the body.** Add the field if missing, update if
    present. Keep keys grouped with the other lifecycle fields.
-2. **Positions move folders with their lifecycle** (the dashboard reads all three, so this
+2. **One `cv_dir`, earlier folders in `cv_dir_prior`.** When a record's application moves to a
+   new folder (an outreach letter first, a formal programme application later), point `cv_dir`
+   at the new folder and append the old value to the `cv_dir_prior:` list — never drop it. The
+   dashboard's integrity check counts both, so a superseded folder is not reported as untracked.
+   One application folder may be named by several records (an application naming two labs).
+3. **Positions move folders with their lifecycle** (the dashboard reads all three, so this
    is for tidiness):
    - `sent` → also set lead `status: applied` and move the file to `user/workspace/positions/applied/`.
    - `closed` → set lead `status: closed`, move the file to `user/workspace/positions/closed/`.
    - Companies/groups never move — only their frontmatter changes.
-3. **Outcomes:** `offer`, `rejected`, `ghosted`, `withdrawn`. Anything else → ask.
-4. **Confirm in one line** what changed (target, old → new status, dates).
-5. **Regenerate the dashboard** at the end:
+4. **Outcomes:** `offer`, `rejected`, `ghosted`, `withdrawn`. Anything else → ask.
+5. **Confirm in one line** what changed (target, old → new status, dates).
+6. **Regenerate the dashboard** at the end:
    ```bash
    python engine/tools/dashboard.py
    ```
@@ -105,7 +110,7 @@ Procedure:
    ```
    If no source `.txt` was found, still trash the profile and log `sources: none found` —
    that absence is itself a signal worth analysing.
-6. **Do not** apply the position folder-move rules (step 2 of Rules) — removal supersedes them.
+6. **Do not** apply the position folder-move rules (step 3 of Rules) — removal supersedes them.
 7. **Confirm in one line** what was trashed (profile + N source files), then **regenerate the
    dashboard** so the lead drops off.
 

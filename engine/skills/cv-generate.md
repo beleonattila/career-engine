@@ -482,7 +482,9 @@ cv_date: [today]
 ```
 
 Do not overwrite a more advanced status (if `app_status` is already `sent`/`interviewing`/
-`closed`, leave it and just refresh `cv_dir`/`cv_date`). Then regenerate the dashboard
+`closed`, leave it and just refresh `cv_dir`/`cv_date`). When refreshing a `cv_dir` that
+already points at an earlier folder, append the old value to the `cv_dir_prior:` list rather than
+dropping it ([[track]] Rules §2). Then regenerate the dashboard
 (`python engine/tools/dashboard.py`) so the new CV appears. Status beyond
 `cv_generated` (sent, feedback, outcome) is set later via `/track`.
 
