@@ -448,6 +448,19 @@ near zero and were invisible to `/search-*` and the dashboard. `career_fit` 35 �
 is now a lead worth seeing, not noise. Carried by every kind of record; for an org the question is
 *"would I be the methods person here?"*.
 
+### `bench_load`: reported, never scored (2026-10-26)
+
+*Rule: `engine/skills/inbox-eval.md` §Logistics reference (Bench load); format: schema v2.*
+
+The user asked to see how much wet-lab work a seat requires, while keeping bench work neutral in
+scoring. A score would have had to choose a sign for it, and the preference ("would avoid it, will
+do it if the role needs it") is a judgement made when reading the record, the same as geography.
+So positions carry `bench_load: none | light | substantial | unknown`, read off the seat's own
+duties, with the deciding phrase quoted under Logistics & Salary. It is kept apart from the
+`validation` check: an org testing its designs is a plus in `career_fit`, and says nothing about
+whether the person in the seat pipettes. Records older than v2 were migrated to `unknown`, never
+guessed, because silence in an ad is not evidence of a computational seat.
+
 ### Link health: HTTP 200 is not proof a posting is live (2026-08-16)
 
 *Rule: CLAUDE.md §Link & status hygiene. Full measurement: `engine/docs/LINK_HEALTH.md`.*

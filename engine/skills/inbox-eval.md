@@ -148,7 +148,7 @@ For each file:
    this org/role already exist? If yes, you will update it, not duplicate it.
 3. Route to the matching handler (companies / groups / positions / phd).
 	3.5 If it is a company or a research group then search the web and gather information for profiling.
-4. Score `career_fit`, `method_fit` **and** `skill_match` for every kind; add `level_fit` for positions/phd.
+4. Score `career_fit`, `method_fit` **and** `skill_match` for every kind; add `level_fit` and `bench_load` (reported, never scored) for positions/phd.
 5. Extract keywords (see *Keyword extraction*).
 6. Write the new profile, or merge into the existing one.
    **A position or PhD scored `method_fit` ≥ 75 is a method sighting** — log it, whatever its
@@ -434,6 +434,21 @@ the user's level: `user/profile/preferences.md` §Logistics & salary. For the pr
 **Salary** (positions/phd): if stated, compare to that table and flag below/at/above market; if
 not stated, give the country-typical range as context.
 
+**Bench load** (positions/phd only) — `bench_load:` how much **wet-lab work the seat itself**
+requires, read off the ad's duties and requirements. **Reported, never scored**: it moves none of
+the three scores. It exists so the user sees the bench share of a role at a glance; how the user
+feels about bench work lives in `user/profile/preferences.md`.
+
+| Value | When |
+|---|---|
+| `none` | A computational seat. Working *with* an experimental team, or the org testing its designs, does not count: that is the `validation` check, not the seat's bench work. |
+| `light` | Bench work is occasional, optional, or a minority of the role: "support experimental colleagues", "some lab work", "hands-on lab experience is a plus". |
+| `substantial` | Bench work is a core duty or a hard requirement: running assays, cloning and expression, cell culture, a 50/50 or wet-lab-first role, "hands-on lab experience required". |
+| `unknown` | The ad does not say enough to tell. Never guess `none` from silence. |
+
+Report it under **Logistics & Salary** as `**Wet lab in the seat:** [value] — [the ad's own words]`,
+quoting the phrase that decided it.
+
 ### Prestige reference
 
 Tiers: `elite` (1) · `strong` (2) · `established` (3) · `early_stage` (4). What each means in the
@@ -488,7 +503,7 @@ file arriving here is either new, a new role at a known org, or a deliberate ref
 2. **If none:** create the profile.
 3. **If one exists:** **merge, do not overwrite.**
    - Update factual frontmatter (location, funding, prestige, `career_fit`, `method_fit`,
-     `skill_match`, and for positions/phd `level_fit`) and refresh `last_evaluated` to today.
+     `skill_match`, and for positions/phd `level_fit` and `bench_load`) and refresh `last_evaluated` to today.
    - If the file has no `method_fit`, add it (introduced 2026-09-29) — it is not part of the
      v2->v3 `career_fit` migration and must be scored for every record that lacks it.
    - Leave `method_roles_seen` / `last_method_role` alone on an org: `method_sightings.py --apply`
@@ -547,7 +562,7 @@ contact_status: not_contacted
 open_positions: []
 salary_range: [stated or null]
 url: "[careers or homepage url]"
-schema_version: 1
+schema_version: 2
 ---
 
 ## Summary
@@ -613,7 +628,7 @@ last_evaluated: [YYYY-MM-DD]
 contact_status: not_contacted
 open_positions: []
 salary_range: null
-schema_version: 1
+schema_version: 2
 ---
 
 ## Summary
@@ -665,6 +680,7 @@ org_type: [type]
 location: [city, country]
 country: [ISO]
 remote_policy: [policy]
+bench_load: [none | light | substantial | unknown]   # wet-lab work in the seat; reported, never scored
 salary: [as stated or null]
 salary_context: [at_market | above_market | below_market | not_stated]
 prestige_tier: [tier]
@@ -684,7 +700,7 @@ source_file: user/workspace/inbox/processed/[filename]
 created: [YYYY-MM-DD]
 last_evaluated: [YYYY-MM-DD]
 status: evaluating           # expired ONLY if deadline strictly before today, or posting confirmed removed
-schema_version: 1
+schema_version: 2
 ---
 
 ## Role
@@ -702,6 +718,7 @@ schema_version: 1
 **Work arrangement:** [...] · [city, country]
 **Geographic fit:** [...]
 **Salary stated:** [...] · **Market range ([country]):** [...] · **Assessment:** [...]
+**Wet lab in the seat:** [none | light | substantial | unknown] — [the ad's own words]
 
 ## Prestige
 **Tier:** [tier]

@@ -20,6 +20,7 @@ and bumps `schema_version`. Neither is ever edited by hand.
 |---|---|---|
 | 0 | — | No stamp: anything written before 2026-10-01. |
 | 1 | 2026-10-01 | The layout after the restructure: records under `user/workspace/`, record paths (`source_file:`, `cv_dir:`) relative to it; `career_fit`, `method_fit` and `skill_match` on every record, `level_fit` on positions; `career_band` / `career_checks`; `track`; contacts as records of their own. Going 0 → 1 adds the stamp and nothing else. |
+| 2 | 2026-10-26 | Positions (and PhD calls) gain `bench_load: none \| light \| substantial \| unknown`, the wet-lab work the seat itself requires; reported, never scored (`engine/docs/decisions.md` §`bench_load`). Going 1 → 2 adds `bench_load: unknown` to every position, after `remote_policy:`; organisations and contacts only take the new stamp. |
 
 **Derived fields** are written by a tool from other data and are not part of the format version:
 an org may carry them or not, and nothing else writes them. `career_fit_own` /

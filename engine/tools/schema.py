@@ -28,7 +28,7 @@ from collections import Counter
 
 from paths import WORKSPACE
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 RECORD_DIRS = ("positions/open", "positions/applied", "positions/closed",
                "organizations/companies", "organizations/research_groups", "contacts")
@@ -74,7 +74,27 @@ def migrate_0_to_1(text):
     return set_version(text, 1)
 
 
-MIGRATIONS = {0: migrate_0_to_1}
+BENCH_LOAD = re.compile(r"^bench_load:", re.M)
+
+
+def migrate_1_to_2(text):
+    """1 -> 2: positions gain `bench_load` (how much wet-lab work the seat itself requires; reported,
+    never scored). Existing positions get `unknown`, placed after `remote_policy:` when present;
+    organisations and contacts only take the new stamp."""
+    m = FM.match(text)
+    fm = m.group(1)
+    if re.search(r"^role_title:", fm, re.M) and not BENCH_LOAD.search(fm):
+        nl = "\r\n" if "\r\n" in fm else "\n"
+        lines = fm.split(nl)
+        at = next((i + 1 for i, l in enumerate(lines) if l.startswith("remote_policy:")), None)
+        if at is None:
+            at = next((i for i, l in enumerate(lines) if VERSION_LINE.match(l)), len(lines))
+        lines.insert(at, "bench_load: unknown")
+        text = "---" + nl + nl.join(lines) + nl + m.group(2) + nl + text[m.end():]
+    return set_version(text, 2)
+
+
+MIGRATIONS = {0: migrate_0_to_1, 1: migrate_1_to_2}
 
 
 def main():
