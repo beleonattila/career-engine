@@ -127,11 +127,15 @@ sync: ticking, flagging or recolouring an item in either changes it in both.
 - **Add** takes a title, start, optional end and a colour (Important / Urgent optional). A new
   item dated entirely in the past is pre-ticked Done: it records what happened.
 - **Items from records**, derived by `dashboard.py` on every run so they cannot drift: every
-  application **sent** (`_sent_evidence()`, at its send date, already done) and every **live
-  deadline** still to act on (shown, not yet applied, any horizon). Their dates are the record's —
-  change them with `/track`. The plan may only recolour, flag, tick or hide them (`overrides` in
-  `plan.json`; the trash button *hides*, the record is untouched). Defaults: urgent within 14 days,
-  important when `career_fit >= thresholds.on_direction`.
+  application **sent** (`_sent_evidence()`, at its send date, already done), every **interview**
+  (each dated line of a record's `interviews:` list, yellow, done once its day has passed, added
+  2026-11-07) and every **live deadline** still to act on (shown, not yet applied, any horizon).
+  Their dates are the record's — change them with `/track`. The plan may only recolour, flag, tick
+  or hide them (`overrides` in `plan.json`; the trash button *hides*, the record is untouched).
+  Defaults: urgent within 14 days; a deadline is important when `career_fit >=
+  thresholds.on_direction`, an interview always. A record at `app_status: interviewing` with no
+  dated `interviews:` line is an integrity issue (`interview_undated`), so an interview cannot
+  silently miss the Timeline.
 - **Saving needs `python engine/tools/serve.py`** (127.0.0.1 only; regenerates the dashboard on
   every load but never runs `expire_sweep.py`). A page opened from disk cannot write files, so it
   shows the plan read-only with that command. Each save carries `rev`; a stale one is refused and

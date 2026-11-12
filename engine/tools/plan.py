@@ -12,8 +12,8 @@ important/urgent, therefore changes both at once.
                                                    "notes", "hidden"}}}
 
 `items` are what the user added. An item with no `end` is a moment (an application sent), not a
-span. `overrides` restyle the items dashboard.py derives from records (applications sent, live
-deadlines): their dates belong to the record's frontmatter and are changed with /track, so an
+span. `overrides` restyle the items dashboard.py derives from records (applications sent,
+interviews, live deadlines): their dates belong to the record's frontmatter and are changed with /track, so an
 override can recolour, flag, tick or hide one but never move it. `rev` rises on every save; a
 save quoting a stale rev is refused, so a page left open cannot overwrite an edit made since.
 

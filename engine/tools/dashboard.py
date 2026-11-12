@@ -80,6 +80,16 @@ def days_since(datestr):
     du = days_until(datestr)
     return None if du is None else -du
 
+def interview_lines(v):
+    """`interviews:` -> [(date, note)]. One "YYYY-MM-DD: note" line per interview, past or booked
+    (written by /track). Lines without a leading date are skipped: they cannot be placed."""
+    out = []
+    for line in ([v] if isinstance(v, str) else (v or [])):
+        m = re.match(r"^(\d{4}-\d{2}-\d{2})\s*:?\s*(.*)$", str(line).strip())
+        if m:
+            out.append((m.group(1), m.group(2).strip()))
+    return out
+
 # ---------------------------------------------------------------- collectors
 # Non-entity docs that may live alongside profiles (e.g. a person bio in
 # research_groups/) — never count or list these on the dashboard.
@@ -151,6 +161,8 @@ def load(globpat, kind):
             "cv_dir_prior": [fm["cv_dir_prior"]] if isinstance(fm.get("cv_dir_prior"), str) and fm["cv_dir_prior"]
                             else (fm.get("cv_dir_prior") or []),
             "sent_date": fm.get("sent_date") or "",
+            # interviews (2026-11-07): each becomes a moment on the Timeline (plan_derived below).
+            "interviews": interview_lines(fm.get("interviews")),
             "last_contact": fm.get("last_contact") or "",
             "next_action": fm.get("next_action") or "",
             "contact_status": fm.get("contact_status") or "",
@@ -412,19 +424,30 @@ for r in records:
        and (r["path"].startswith("positions/open/") or r["path"].startswith("positions/closed/")):
         integrity.append({"kind": "sent_not_applied", "path": r["path"],
                           "msg": f"{r['path']} is app_status '{r['app_status']}' but not in positions/applied/"})
+    if r["app_status"] == "interviewing" and not r["interviews"]:
+        integrity.append({"kind": "interview_undated", "path": r["path"],
+                          "msg": f"{r['path']} is app_status 'interviewing' but lists no dated "
+                                 f"interviews:, so the interview is missing from the Timeline"})
 
 # ---------------------------------------------------------------- plan (Timeline + To-do)
 # The two tabs share one store, user/workspace/plan/plan.json (plan.py), which holds what the user
 # added. Records contribute two kinds of item of their own, derived fresh on every run so they can
 # never drift from the frontmatter: every application SENT (a moment, already done -- history for
-# the Timeline) and every live deadline still to act on: shown (so alive and clearing
+# the Timeline), every interview listed under `interviews:` (a moment, done once its day has
+# passed), and every live deadline still to act on: shown (so alive and clearing
 # MIN_SCORE_SHOWN), not yet applied, any horizon. Their dates are the record's; plan.json may only restyle, flag, tick or hide
-# them (`overrides`). Defaults: a deadline is urgent inside 14 days -- the red cut-off of the
-# Deadline column -- and important when the lead is on-direction. Both are a first guess for the
-# matrix, which the user overrides in one click.
+# them (`overrides`). Defaults: a deadline or interview is urgent inside 14 days -- the red cut-off
+# of the Deadline column; a deadline is important when the lead is on-direction, an interview
+# always. Both are a first guess for the matrix, which the user overrides in one click.
 def _label(r):
+    """Employer · role for a lead, the name for an org. A position's `name` falls back to its
+    `organization` (no position record has a `name:`), so comparing the two dropped the employer
+    from every lead until 2026-11-07. The employer is cut at " — " (the sub-unit after it is
+    noise on a Timeline ribbon) and left out only when the role already names it."""
     if r["category"] in ("position", "phd"):
-        return (r["org"] + " · " if r["org"] and r["org"] != r["name"] else "") + (r["role"] or r["name"])
+        role = r["role"] or r["name"]
+        org = r["org"].split(" — ")[0].strip()
+        return (org + " · " if org and org.lower() not in role.lower() else "") + role
     return r["name"]
 
 plan_derived = []
@@ -433,6 +456,17 @@ for r in records:
         plan_derived.append({"id": "sent:" + r["path"], "kind": "sent", "path": r["path"],
                              "title": "Applied · " + _label(r), "start": _appdate(r), "end": None,
                              "color": "#4f8cff", "important": False, "urgent": False, "done": True})
+    seen = {}
+    for day, note in r["interviews"]:
+        # The id is the day, not the list position, so an override survives a line added above it.
+        seen[day] = seen.get(day, 0) + 1
+        left = days_until(day)
+        plan_derived.append({"id": f"interview:{r['path']}:{day}" + ("" if seen[day] == 1 else f"-{seen[day]}"),
+                             "kind": "interview", "path": r["path"],
+                             "title": "Interview · " + _label(r), "start": day, "end": None,
+                             "color": "#f1c40f", "important": True,
+                             "urgent": left is not None and 0 <= left <= 14,
+                             "done": left is not None and left < 0, "notes": note})
     if (r["category"] in ("position", "phd") and r["shown"] and r["deadline_in"] is not None
             and r["deadline_in"] >= 0 and r["app_status"] not in _done_app):
         plan_derived.append({"id": "deadline:" + r["path"], "kind": "deadline", "path": r["path"],

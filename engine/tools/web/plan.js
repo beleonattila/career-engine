@@ -7,9 +7,9 @@
 const DAY = 864e5, LANE = 28, BAR_H = 22;
 const PLAN_API = location.protocol.indexOf('http') === 0;
 let PLAN = DATA.plan.doc;                 // {version, rev, items, overrides}
-const DERIVED = DATA.plan.derived;        // from records: applications sent, live deadlines
+const DERIVED = DATA.plan.derived;        // from records: applications sent, interviews, live deadlines
 const PALETTE = ['#4f8cff', '#2ecc71', '#f1c40f', '#e67e22', '#e74c3c', '#9b59b6', '#1abc9c', '#ec6fb0', '#8d99ae'];
-const KIND = {sent: 'applied', deadline: 'deadline'};
+const KIND = {sent: 'applied', interview: 'interview', deadline: 'deadline'};
 let planMsg = DATA.plan.error ? [DATA.plan.error, 'bad'] : ['', ''];
 
 function esc(s) {

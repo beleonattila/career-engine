@@ -43,7 +43,8 @@ Use Sonnet only when the target is given in plain language and needs fuzzy match
 | `contact` [date] | `last_contact: <date>` | records a contact event (email, meeting, intro) without changing `app_status`; the dashboard shows it as "last contact" in the Status column for companies/research groups |
 | `cv` [date] | `app_status: cv_generated`, `cv_date: <date>` | CV produced (usually set by `/cv`) |
 | `sent` [date] | `app_status: sent`, `sent_date: <date>` | application submitted |
-| `interviewing` [date] | `app_status: interviewing` | add a `feedback` line with the date |
+| `interview` \<date\> ["\<note\>"] | append `"<date>: <note>"` to the `interviews:` list; `app_status: interviewing` unless already `closed` | **the date of the interview itself**, past or booked (an invitation's date goes in `feedback`). Each line is a moment on the dashboard Timeline; note = format and who (e.g. `Teams, with the team lead and an HR partner`). One line per round |
+| `interviewing` [date] | `app_status: interviewing` | add a `feedback` line with the date; if the interview date is known, use `interview` instead, since an `interviewing` record with no `interviews:` line is flagged by the dashboard's integrity check |
 | `feedback "<note>"` [date] | append `"<date>: <note>"` to the `feedback:` list | does not change status |
 | `closed <outcome>` | `app_status: closed`, `app_outcome: <offer\|rejected\|ghosted\|withdrawn>` | |
 | `next "<text>"` | `next_action: <text>` | a reminder / follow-up |
@@ -123,6 +124,7 @@ posting ("this looks made up", "can't find this anywhere"), use `hallucination`.
 - `/track symphogen sent 2026-06-10` → status applied + app_status sent + sent_date; move to applied/; refresh.
 - `/track symphogen feedback "phone screen booked for 2026-06-20"` → append feedback line.
 - `/track symphogen interviewing` → app_status interviewing.
+- `/track symphogen interview 2026-06-20 "phone screen with the hiring manager"` → append to `interviews:`, app_status interviewing; it shows on the Timeline.
 - `/track westberg closed rejected` → app_status closed, outcome rejected, move to closed/.
 - `/track skape-bio next "follow up if no reply by 2026-06-25"` → next_action set.
 - `/track ghost-bio remove "404, link dead"` → move ghost-bio profile + its source .txt to `user/workspace/trash/`, log it (reason dead_link), refresh.
