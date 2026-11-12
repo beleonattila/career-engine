@@ -70,6 +70,14 @@ PowerShell 5.1** as the default shell (a `Bash` tool is also available for POSIX
 
 These apply to every task in this project unless explicitly overridden.
 
+**Output style (replies and internal documents)** — Keep it very short, condensed and in simple,
+easy English. Give only the key facts and decisions; skip background and detail. The user will ask
+follow-up questions if more is needed. This covers chat replies **and every internal document**:
+position records, company and group profiles, contact files, notes, History lines, summaries.
+Keep the facts a later step needs (scores, the check that decided them, evidence names, dates,
+deadlines, links); cut the words around them — short bullets, no long paragraphs. Not for
+application material: CVs, letters and emails follow the writing-style rules below.
+
 **Factual grounding** — Never invent or embellish. Every claim in a CV or cover
 letter must be traceable to `user/profile/background.md`, a source document in
 `user/personal_data/`, or something the user has stated in the current session.
