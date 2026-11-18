@@ -75,13 +75,25 @@ links / suspected hallucinations) are absent from every count and tab by constru
    > move back, reset `status:` / `expired_on:` / `expired_reason:`. Skip for one run with
    > `--keep-stale`. Retune for one run with `--stale-days N`, for good in `user/settings.toml`.
 
+   **Exemption: verified recently — `thresholds.verified_days` (14 when introduced, 2026-11-18).**
+   A deadline-less lead **confirmed live within that window** is kept and listed under
+   *"kept — verified live recently"*, never retired on age. Age retirement stands in for missing
+   evidence; a fresh positive verdict *is* that evidence, so the rule has nothing to say.
+   Narrow by design: `url_status: working` only, **never** a LinkedIn `working`, and a window far
+   shorter than `stale_days`, so a lead verified once at collection still ages out. Disable for one
+   run with `--verified-days -1`. The case: `latent-labs_member-of-technical-staff_2026-10`
+   (career_fit **98**) was retired at 46 days and found fully live the same day
+   (`engine/docs/decisions.md` §Age retirement).
+
    - **`⚠ unproven (N)`** — reported, never retired: leads stamped `url_status: working` on a
      `linkedin.com` URL, a verdict `link_check.py` has been unable to produce since 2026-08-16.
      Any survivor predates that fix and means nothing. First run: **7**, all corrected to
      `unverified`.
 
-   > **`expire_sweep.py` and `dashboard.py` read the same `thresholds.stale_days`**, so they
-   > cannot drift apart. The sweep retires; the dashboard's overdue count is a **tripwire** that should
+   > **`expire_sweep.py` and `dashboard.py` read the same `thresholds.stale_days` and
+   > `thresholds.verified_days`**, and apply the same verified-recently exemption, so they
+   > cannot drift apart. A lead the sweep deliberately keeps is not counted as overdue here:
+   > a tripwire that fires on something no action can clear stops being a tripwire. The sweep retires; the dashboard's overdue count is a **tripwire** that should
    > read **0**, because `/dashboard` runs the sweep as step 1. When it is not, a warning appears on the
    > Statistics tab (*Records by kind*) and in the page footer: the sweep has not run.
 
@@ -168,7 +180,7 @@ The numbers the tiles carried are defined below; the funnel and *Records by kind
 | Search results | count of `user/workspace/inbox/processed/*.txt` (cumulative collected leads) |
 | On-direction (≥N) | **shown** records with `career_fit ≥ thresholds.on_direction` (`user/settings.toml`; the label shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. **Shown-filtered only since 2026-08-29**: it previously counted every record in the vault including expired and closed leads, reading 125 when just 79 were visible. The lifetime figure survives as `positive_all` and appears in the footer note. |
 | Companies / Groups / Positions / PhD | profile counts per category (PhD split from positions by `type: phd` or "PhD" in the title) |
-| Overdue (unretired) | **Tripwire — should read 0;** shown only as a warning when it does not. Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run |
+| Overdue (unretired) | **Tripwire — should read 0;** shown only as a warning when it does not. Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run. Leads exempt under `thresholds.verified_days` (confirmed live recently) are **not** counted — the sweep keeps them on purpose |
 | CVs generated | count of `user/workspace/applications/*/` folders (or items with `cv_date`) |
 | CVs sent | items with **positive evidence** of a submission: `app_status` sent/interviewing, any `sent_date`, or closed with outcome rejected/offer. `closed` **alone does not count** — a lead closed `withdrawn` was never submitted. Includes orgs, since an unsolicited application is a real send |
 | Ongoing | items with `app_status` sent or interviewing |

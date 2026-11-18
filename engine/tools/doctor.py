@@ -109,7 +109,8 @@ def check_layout():
 PACK_FILES = ("boards.md", "synonyms.md", "prestige.md", "ats_seeds.toml")
 
 # Every key a tool reads from user/settings.toml, with the range that makes sense for it.
-THRESHOLDS = {"min_score_shown": (0, 100), "stale_days": (1, 3650), "on_direction": (0, 100)}
+THRESHOLDS = {"min_score_shown": (0, 100), "stale_days": (1, 3650), "on_direction": (0, 100),
+              "verified_days": (0, 3650)}
 
 
 def check_settings():

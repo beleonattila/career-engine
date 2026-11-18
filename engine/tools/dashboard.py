@@ -294,9 +294,24 @@ def _best(r):
     return max(r["career"], r["method"], r["skill"])
 
 
-# Read from the same setting as expire_sweep.py, so the tripwire and the sweep cannot drift.
+# Read from the same settings as expire_sweep.py, so the tripwire and the sweep cannot drift.
 STALE_DAYS = setting("thresholds.stale_days")
+VERIFIED_DAYS = setting("thresholds.verified_days")
 ACTIVE_APP = {"applied", "sent", "interviewing", "offer"}
+
+def _verified_recently(r):
+    """True when a fresh liveness verdict exempts this lead from age retirement.
+
+    Mirrors expire_sweep.verified_live() and must stay in step with it: `url_status: working`
+    only, never a LinkedIn `working` (link_check.py cannot produce that verdict for LinkedIn
+    since 2026-08-16), and checked within VERIFIED_DAYS. See expire_sweep.py's module docstring.
+    """
+    if r["url_status"].lower() != "working":
+        return False
+    if "linkedin.com" in r["url"].lower():
+        return False
+    checked = days_since(r["url_checked"])
+    return checked is not None and 0 <= checked <= VERIFIED_DAYS
 
 def _stale(r):
     """TRIPWIRE, not a report: this should normally be zero.
@@ -305,12 +320,19 @@ def _stale(r):
     (user/settings.toml) on age alone, and /dashboard runs that sweep as step 1. So a stale lead surviving
     to this page means the sweep has not run -- go and run it. Before that change this flag
     was the only thing surfacing such leads, of which there were 35.
+
+    Since 2026-11-18 a lead confirmed live within VERIFIED_DAYS is exempt from that sweep, so
+    flagging it here would be a false alarm: the sweep is deliberately keeping it, and telling
+    the user to run the sweep would do nothing. A tripwire that fires on something no action can
+    clear stops being a tripwire.
     """
     if r["category"] not in ("position", "phd"):
         return False
     if not _alive(r) or r["deadline"] not in ("", "null", "None", "~"):
         return False
     if r["app_status"] in ACTIVE_APP or r["lead_status"] in ACTIVE_APP:
+        return False
+    if _verified_recently(r):
         return False
     return r["age"] is not None and r["age"] > STALE_DAYS
 

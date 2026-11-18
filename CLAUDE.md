@@ -154,7 +154,11 @@ Notes line saying the posting was *not* confirmed removed. This knowingly trades
 manageable active set: some retired leads are still live. It is a decision, not a bug — do not
 revert it (the case: `engine/docs/decisions.md` §Age retirement). Undo the whole set with
 `grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`; skip it for one run with
-`--keep-stale`. See `engine/docs/LINK_HEALTH.md`.
+`--keep-stale`. **Exemption (2026-11-18):** a deadline-less lead **confirmed live within
+`thresholds.verified_days`** (`user/settings.toml`, 14) is kept and reported, never retired on age —
+a fresh liveness verdict is the evidence age stands in for. It is narrow by design: `url_status:
+working` only, **never** a LinkedIn `working`, and a window far shorter than `stale_days`.
+`--verified-days -1` disables it for one run. See `engine/docs/LINK_HEALTH.md`.
 
 **Grades** — extract precisely from transcripts; never round or paraphrase.
 

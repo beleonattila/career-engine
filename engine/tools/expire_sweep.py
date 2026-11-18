@@ -47,6 +47,34 @@ Why this stayed safe:
 To undo: `grep -l "expired_reason: stale_no_deadline" positions/closed/*.md`, then move back
 and reset `status:`/`expired_on:`/`expired_reason:`.
 
+VERIFIED-RECENTLY EXEMPTION -- VERIFIED_DAYS (added 2026-11-18)
+---------------------------------------------------------------
+A deadline-less lead confirmed live within VERIFIED_DAYS days is KEPT, and reported under
+"kept -- verified live recently" instead of being retired on age.
+
+Why this is a refinement and not a reversal of the 2026-08-29 decision: age retirement fires
+because a deadline-less lead carries no evidence either way, and age is the only handle there
+is. A positive liveness verdict IS that evidence. When it exists and is fresh, the premise the
+rule rests on does not hold, so the rule has nothing to say. The trade the user chose -- a
+smaller, colder active set over an accurate but unmanageable one -- is untouched for every lead
+nobody has checked, which is nearly all of them.
+
+The case that produced it: `latent-labs_member-of-technical-staff_2026-10` (career_fit 98,
+method_fit 95) was retired at 46 days, then found fully live the same day -- the ad rendered
+with an Apply button and was still listed on the employer's board. Reviving it put it straight
+back over the threshold, so the next sweep would have retired it again, with no way to record
+that it had been checked.
+
+Three guards keep this narrow, so link_check.py cannot quietly exempt the vault:
+  * only `url_status: working` counts. unverified / unresolved / unchecked / dead do not;
+  * a LinkedIn `working` NEVER counts -- stale_verdict() rejects it, because link_check.py has
+    been unable to produce that verdict for LinkedIn since 2026-08-16;
+  * VERIFIED_DAYS is deliberately much shorter than STALE_DAYS (14 vs 45 at introduction), so
+    the check has to be recent and deliberate. A lead verified once at collection still ages
+    out on schedule.
+
+`--verified-days -1` turns the exemption off for one run, restoring pre-2026-11-18 behaviour.
+
 Also reported (never retired): leads carrying `url_status: working` on a linkedin.com URL --
 a verdict link_check.py has been unable to produce since 2026-08-16, so any survivor predates
 that fix and means nothing.
@@ -56,6 +84,8 @@ Usage:
     python engine/tools/expire_sweep.py                    # apply
     python engine/tools/expire_sweep.py --stale-days 90    # widen/narrow the age threshold for one run
     python engine/tools/expire_sweep.py --keep-stale       # deadline expiry only; report age, retire none
+    python engine/tools/expire_sweep.py --verified-days 7  # narrow the verified-recently exemption
+    python engine/tools/expire_sweep.py --verified-days -1 # disable the exemption for one run
 """
 
 import datetime as dt
@@ -82,6 +112,12 @@ PROTECTED = {"applied", "sent", "interviewing", "offer"}
 # see the AGE RETIREMENT note in the module docstring for what this overrides and how to undo it.
 # The number is personal, so it lives in user/settings.toml; dashboard.py reads the same key.
 STALE_DAYS = setting("thresholds.stale_days")
+
+# Days within which a POSITIVE liveness check exempts a deadline-less lead from age retirement.
+# Deliberately far shorter than STALE_DAYS: the exemption is for a deliberate, recent check, not
+# for the routine stamp link_check.py leaves on every lead it sweeps. See the VERIFIED-RECENTLY
+# note in the module docstring for why this refines the age rule rather than reverting it.
+VERIFIED_DAYS = setting("thresholds.verified_days")
 
 
 def field(text, name):
@@ -120,6 +156,27 @@ def stale_verdict(text):
     """
     return ("linkedin.com" in field(text, "url").lower()
             and field(text, "url_status").lower() == "working")
+
+
+def verified_live(text, window):
+    """
+    Days since this lead was confirmed live, when that was recent enough to exempt it from
+    age retirement. None when there is no such evidence.
+
+    Age retirement fires because a deadline-less lead carries no evidence either way. A
+    positive liveness verdict is that evidence, so while it is fresh, age says nothing new.
+    The guards are in the module docstring: `working` only, never a LinkedIn `working`, and a
+    short window. A negative `window` disables the exemption entirely.
+    """
+    if window < 0:
+        return None
+    if field(text, "url_status").lower() != "working" or stale_verdict(text):
+        return None
+    checked = parse_date(field(text, "url_checked"))
+    if checked is None:
+        return None
+    days = (TODAY - checked).days
+    return days if 0 <= days <= window else None
 
 
 AGE_NOTE = (
@@ -176,12 +233,18 @@ def main():
             stale_days = int(sys.argv[sys.argv.index("--stale-days") + 1])
         except (IndexError, ValueError):
             sys.exit("--stale-days needs an integer, e.g. --stale-days 90")
+    verified_days = VERIFIED_DAYS
+    if "--verified-days" in sys.argv:
+        try:
+            verified_days = int(sys.argv[sys.argv.index("--verified-days") + 1])
+        except (IndexError, ValueError):
+            sys.exit("--verified-days needs an integer, e.g. --verified-days 7 (-1 disables)")
     if not OPEN.is_dir():
         sys.exit(f"missing {OPEN}")
     CLOSED.mkdir(parents=True, exist_ok=True)
 
     moved, protected, kept_today, bad = [], [], [], []
-    stale, unproven, aged = [], [], []
+    stale, unproven, aged, verified = [], [], [], []
 
     for p in sorted(OPEN.glob("*.md")):
         text = p.read_text(encoding="utf-8", errors="replace")
@@ -201,6 +264,13 @@ def main():
             # AGE RETIREMENT note at the top of this file.
             age = age_days(text)
             if age is None or age <= stale_days or active:
+                continue
+            # Confirmed live recently: the evidence age stands in for actually exists, so the
+            # age rule has nothing to say about this lead. Reported, never silent.
+            seen = verified_live(text, verified_days)
+            if seen is not None:
+                verified.append((p.name, age, seen, field(text, "career_fit"),
+                                 field(text, "skill_match")))
                 continue
             row = (p.name, age, field(text, "career_fit"),
                    field(text, "skill_match"), field(text, "url_status") or "unchecked")
@@ -261,6 +331,14 @@ def main():
         print("  stamped `expired_reason: stale_no_deadline` — that field reverses the whole set.")
         for name, age, cf, sm, us in sorted(aged, key=lambda x: -x[1]):
             print(f"    {age:>4}d  cf={cf:>3} sm={sm:>3}  url={us:<10} {name}")
+
+    if verified:
+        print(f"\nkept ({len(verified)}) — over {stale_days} days old, but confirmed live "
+              f"within {verified_days} days:")
+        for name, age, seen, cf, sm in sorted(verified, key=lambda x: -x[1]):
+            print(f"    {age:>4}d old  checked {seen}d ago  cf={cf:>3} sm={sm:>3}  {name}")
+        print("  → age retirement stands in for missing evidence; these have it. "
+              "`--verified-days -1` retires them anyway.")
 
     if stale:
         print(f"\n⚠ stale ({len(stale)}) — no deadline, older than {stale_days} days. "

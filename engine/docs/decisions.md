@@ -486,6 +486,28 @@ some retired leads are still live. It is a decision, not a bug — do not revert
 `grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`; skip it for one run with
 `--keep-stale`. See `engine/docs/LINK_HEALTH.md`.
 
+**Refinement, added 2026-11-18 — the verified-recently exemption.** A deadline-less lead confirmed
+live within `thresholds.verified_days` (`user/settings.toml`, **14** when introduced) is kept and
+reported under *"kept — verified live recently"* instead of being retired on age.
+
+*This is not a reversal of the 2026-08-29 decision.* Age retirement fires because a deadline-less
+lead carries no evidence either way, and age is the only handle there is. A positive liveness
+verdict **is** that evidence, so while it is fresh the rule's premise does not hold. Every lead
+nobody has checked ages out exactly as before, which is nearly all of them.
+
+**The case.** On 2026-11-18 the sweep retired `latent-labs_member-of-technical-staff_2026-10`
+(`career_fit` 98 · `method_fit` 95) at 46 days. A browser pass the same day found it fully live:
+the ad rendered with an Apply button and was still listed on the employer's Ashby board. Reviving
+it put it straight back over the threshold, so the next sweep would have retired it again, and the
+vault had no way to record "this was checked". The exemption is that missing handle.
+
+**Three guards keep it narrow**, so `link_check.py` cannot quietly exempt the vault:
+`url_status: working` only (not unverified / unresolved / unchecked / dead); a **LinkedIn
+`working` never counts** (`stale_verdict()` rejects it, since `link_check.py` has been unable to
+produce that verdict for LinkedIn since 2026-08-16); and the window is far shorter than
+`stale_days` (14 vs 45), so a lead verified once at collection still ages out on schedule.
+`--verified-days -1` restores the pre-2026-11-18 behaviour for one run.
+
 ### The model for `/search-*` is provisional (2026-08-09)
 
 *Rule: CLAUDE.md §Commands. The full data: §Model and effort above.*

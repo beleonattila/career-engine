@@ -154,6 +154,28 @@ records — `hzdr_postdoc-generative-ai-denovo-protein-design` (career_fit **95*
 If any of those matter, revive them from `closed/` and verify the link rather than letting the
 sweep decide.
 
+**The verified-recently exemption (2026-11-18).** "Revive and verify" had a hole: verifying a lead
+did not stop the next sweep retiring it again, because nothing in the record said it had been
+checked. `expire_sweep.py` now keeps any deadline-less lead confirmed live within
+`thresholds.verified_days` (`user/settings.toml`, **14**) and reports it under *"kept — verified
+live recently"*.
+
+This does not weaken the age rule. Age retirement is a stand-in for missing evidence; a fresh
+positive verdict is that evidence, so the rule has nothing to say about such a lead. Guards:
+- **`url_status: working` only.** `unverified`, `unresolved`, `unchecked` and `dead` never exempt.
+- **A LinkedIn `working` never counts.** `stale_verdict()` rejects it, for the reason this whole
+  document exists: `link_check.py` has been unable to produce that verdict for LinkedIn since
+  2026-08-16, so a surviving stamp proves nothing.
+- **The window is much shorter than `stale_days`** (14 vs 45), so a lead verified once at
+  collection still ages out on schedule. The exemption is for a deliberate, recent check.
+
+`--verified-days N` retunes it for one run; `--verified-days -1` disables it.
+
+**The case that produced it.** The 2026-11-18 sweep retired
+`latent-labs_member-of-technical-staff_2026-10` (career_fit **98**, method_fit **95**) at 46 days.
+A browser pass the same day found the ad rendering in full with an Apply button, still listed on
+the employer's Ashby board. It was revived, which put it straight back over the threshold.
+
 **Bug found and fixed in the same pass: the On-direction tile was never shown-filtered.** It counted
 every record scoring ≥75 across the whole vault, including expired and closed leads — reading **125**
 while only **79** were visible anywhere on the page. It survived unnoticed because it drifted
