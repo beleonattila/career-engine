@@ -157,8 +157,8 @@ sync: ticking, flagging or recolouring an item in either changes it in both.
 
 The stat tiles that headed the Overview were replaced on 2026-10-10 by a **Statistics** tab
 (`engine/tools/web/stats.js` · `stats.css`, inlined like the plan tabs): hand-built SVG charts, no
-library, each with a hover/focus tooltip and a *Show data* table. The integrity check stays on
-Overview only. Two sections:
+library, each with a hover/focus tooltip and a *Show data* table. The integrity check lives in the
+Home page's taskbar tray. Two sections:
 
 - **Vault** — the application funnel, records by kind, a career-fit × skill-match scatter of live
   position and PhD leads, and leads collected per week split by search track (`track: career`
@@ -191,7 +191,7 @@ The numbers the tiles carried are defined below; the funnel and *Records by kind
 - **Positions & PhD tabs show only *alive* leads** — a lead is alive when it is **not**
   `expired`/`closed` **and** its `deadline` has **not passed** (a lead with no deadline
   counts as alive, since it hasn't passed anything). This applies to the Positions tab,
-  the PhD tab, their tab counts, and the Overview top-5. The filter is computed live from
+  the PhD tab, and their tab counts. The filter is computed live from
   the current date, so a lead drops off the day after its deadline even if its `status`
   frontmatter hasn't been updated to `expired` yet.
   - This display filter and `expire_sweep.py` (step 1) are **belt and braces, not duplicates**.
@@ -236,7 +236,10 @@ The numbers the tiles carried are defined below; the funnel and *Records by kind
 - **There is no deadline bar** (removed 2026-10-02 at the user's request). Live deadlines are
   items in the **To-do** matrix and on the **Timeline** instead: shown leads not yet
   `sent`/`interviewing`, any horizon (see §Timeline and To-do).
-- **The integrity check shows on the Overview tab only** (2026-10-02).
+- **Home is an OS-style entry page** (2026-11-20, replaced the Overview top-5 tables at the user's
+  request; `engine/tools/web/home.js` · `home.css`). Wallpaper, faint logo, the name, one app icon
+  per page with its count, and a taskbar holding the **integrity check** (tray: ✓ or ⚠ N, click for
+  the list) and a clock. Other pages carry a ⌂ Home button; Esc also goes home.
 - **Link flag:** the Positions and PhD tabs' *Link · age* column shows each lead's `url_status` — yellow `⚠ unchecked` (not yet
   validated), yellow `⚠ unresolved` (the stored url is a search page or board root, so it
   can never confirm anything), or red `⚠ dead`. Clear `unchecked` by running
@@ -257,7 +260,7 @@ The numbers the tiles carried are defined below; the funnel and *Records by kind
   those four, with `unknown` between `light` and `substantial` because it may be either. On the
   Positions and PhD tabs a **hide substantial wet lab** checkbox drops `substantial` rows and
   their tab counts; the browser remembers it (`localStorage`, guarded). It is a view, never a
-  score: it moves no number, and Overview, Statistics, the plan tabs and Applications ignore it
+  score: it moves no number, and Home, Statistics, the plan tabs and Applications ignore it
   (`engine/docs/decisions.md` §`bench_load`).
 
 - **Score threshold — `thresholds.min_score_shown` in `user/settings.toml`** (read into

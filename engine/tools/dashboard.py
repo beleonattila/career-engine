@@ -343,7 +343,7 @@ def _shown(r):
     expired/closed, deadline not past) AND at least ONE of its three scores reaches
     MIN_SCORE_SHOWN. The OR is deliberate: hiding a lead needs "I don't want this science",
     "I don't want this kind of work" and "I can't do it" to be true all at once.
-    Stamped onto every record below so the statistics, tab counts, tables, overview and
+    Stamped onto every record below so the statistics, tab counts, tables, home page and
     plan deadlines cannot drift apart — they all read this one flag.
     """
     if r["category"] in ("company", "group"):
@@ -614,7 +614,7 @@ payload = {"records": records, "stats": stats, "integrity": integrity,
 HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><base href="../">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Career Dashboard__TITLE_NAME__</title>
+<title>Career Engine__TITLE_NAME__</title>
 <style>
 :root{--bg:#0f1115;--panel:#171a21;--line:#272c36;--txt:#e6e9ef;--sub:#9aa3b2;--accent:#4f8cff;
 --link:#5eead4;--cv:#d8b4fe;
@@ -651,13 +651,14 @@ a,a:visited{color:var(--link);text-decoration:none} a:hover{text-decoration:unde
 .notice{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
 __PLAN_CSS__
 __STATS_CSS__
+__HOME_CSS__
 </style></head><body>
 <header>
-  <h1>Career Dashboard</h1>
+  <button class="home-btn" onclick="setTab('home')" title="Home (Esc)">⌂ Home</button>
+  <h1>Career Engine</h1>
   <span class="meta">__META_NAME__generated __DATE__ · regenerate with <code>/dashboard</code></span>
 </header>
 <div class="wrap">
-  <div class="notice" id="integrity"></div>
   <div class="tabs" id="tabs"></div>
   <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()">
     <label id="benchctl" class="tier" style="margin-left:12px;cursor:pointer"><input type="checkbox" id="hidebench" onchange="setHideBench(this.checked)" style="width:auto;vertical-align:middle"> hide substantial wet lab</label></div>
@@ -730,7 +731,7 @@ function evalCell(r){
   return '<span class=\"tier\" style=\"color:'+(stale?'var(--mod)':'var(--sub)')+'\">'+(r.last_evaluated||'')+' ('+r.eval_age+'d)</span>';
 }
 const TABS=[
- {id:'overview',label:'Overview'},
+ {id:'home',label:'Home'},
  {id:'stats',label:'Statistics'},
  {id:'timeline',label:'Timeline'},
  {id:'todo',label:'To-do'},
@@ -747,11 +748,14 @@ const TABS=[
 function inTab(r,id){
   return r.category===id;
 }
-let active='overview', sortKey='career', sortDir=-1;
+const NAME=__NAME_JS__, GEN_DATE='__DATE__';
+let active='home', sortKey='career', sortDir=-1;
 function tabs(){
-  document.getElementById('tabs').innerHTML=TABS.map(t=>
+  // Home has its own button in the header; on Home itself the icons are the navigation.
+  if(active==='home'){renderHome();return;}
+  document.getElementById('tabs').innerHTML=TABS.filter(t=>t.id!=='home').map(t=>
    '<div class="tab'+(t.id===active?' active':'')+'" onclick="setTab(\\''+t.id+'\\')">'+t.label+
-   (t.id!=='overview'&&t.id!=='stats'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
+   (t.id!=='home'&&t.id!=='stats'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
 }
 function countFor(id){
   if(id==='timeline'||id==='todo')return planCount(id);
@@ -775,14 +779,12 @@ function rowsFor(){
 function th(label,key){return '<th onclick="setSort(\\''+key+'\\')">'+label+(sortKey===key?(sortDir>0?' ▲':' ▼'):'')+'</th>';}
 function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='career'||k==='skill'||k==='method')?-1:1;}render();}
 function render(){
-  // The integrity check summarises the whole vault, so it belongs to Overview only; every other
-  // tab starts straight at its own content. The stat tiles that used to head the page are the
-  // Statistics tab since 2026-10-10.
-  document.getElementById('integrity').classList.toggle('hidden',active!=='overview');
+  // Home is the OS-style entry page (home.js); it carries the integrity check in its tray.
+  document.body.classList.toggle('at-home',active==='home');
+  if(active==='home'){renderHome();return;}
   document.getElementById('filter').parentNode.classList.toggle('hidden',active==='stats');
   document.getElementById('benchctl').classList.toggle('hidden',active!=='position'&&active!=='phd');
   document.getElementById('hidebench').checked=hideBench;
-  if(active==='overview'){document.getElementById('table').innerHTML=overview();return;}
   if(active==='stats'){renderStats();return;}
   if(active==='timeline'){renderTimeline();return;}
   if(active==='todo'){renderTodo();return;}
@@ -836,25 +838,9 @@ function render(){
   document.getElementById('table').innerHTML='<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>'+
     '<p class="note">'+rows.length+' rows</p>';
 }
-function overview(){
-  // Ranked by career fit — "what is most worth wanting". Skill sits alongside so the cost
-  // of each is visible; it deliberately does not reorder the list.
-  const top=cat=>DATA.records.filter(r=>inTab(r,cat)&&r.shown).sort((a,b)=>b.career-a.career).slice(0,5)
-    .map(r=>'<tr><td>'+scoreCell(r.career)+'</td><td>'+scoreCell(r.method)+'</td><td>'+scoreCell(r.skill)+'</td><td><a href="'+r.path+'">'+(r.name||r.org)+'</a></td><td class="tier">'+(r.location||'')+'</td></tr>').join('');
-  const block=(t,cat)=>'<div><h3 style="margin:8px 0">'+t+'</h3><table><tbody>'+top(cat)+'</tbody></table></div>';
-  return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">'+
-    block('Top companies','company')+block('Top research groups','group')+
-    block('Top positions','position')+block('Top PhD','phd')+'</div>';
-}
-function integrity(){
-  const it=DATA.integrity||[];const el=document.getElementById('integrity');if(!el)return;
-  if(!it.length){el.innerHTML='✅ <b style="color:var(--strong)">Integrity check:</b> no tracking inconsistencies found.';return;}
-  el.innerHTML='⚠ <b style="color:var(--mod)">Integrity check — '+it.length+' issue(s) to resolve:</b><ul style="margin:6px 0 0;padding-left:20px">'+
-    it.map(x=>'<li><span class="tier">['+x.kind+']</span> <a href="'+x.path+'">'+x.msg+'</a></li>').join('')+'</ul>';
-}
 function thresholdNote(){
   const el=document.getElementById('threshold');if(!el)return;
-  let t='Position and PhD statistics, tabs, Overview and plan deadlines count only <b>live leads '
+  let t='Position and PhD statistics, tabs and plan deadlines count only <b>live leads '
     +'reaching '+S.min_fit_shown+' on at least one score</b> — a lead is hidden only when it is '
     +'both off-direction <i>and</i> out of reach. '
     +S.hidden_low+' live lead(s) below '+S.min_fit_shown+' on <i>both</i> scores are kept on disk in '
@@ -879,7 +865,8 @@ function thresholdNote(){
 }
 __PLAN_JS__
 __STATS_JS__
-integrity();tabs();thresholdNote();render();planInit();
+__HOME_JS__
+tabs();thresholdNote();render();planInit();
 </script></body></html>"""
 
 payload_json = json.dumps(payload).replace("</", "<\\/")  # keep inline <script> safe
@@ -891,6 +878,8 @@ def _asset(name):
 _name = html.escape(user_name())  # from user/profile/snapshot.md; the header just omits it if unset
 out = (HTML.replace("__PLAN_CSS__", _asset("plan.css")).replace("__PLAN_JS__", _asset("plan.js"))
        .replace("__STATS_CSS__", _asset("stats.css")).replace("__STATS_JS__", _asset("stats.js"))
+       .replace("__HOME_CSS__", _asset("home.css")).replace("__HOME_JS__", _asset("home.js"))
+       .replace("__NAME_JS__", json.dumps(_name).replace("</", "<\\/"))
        .replace("__PAYLOAD__", payload_json).replace("__DATE__", TODAY.isoformat())
        .replace("__TITLE_NAME__", f" — {_name}" if _name else "")
        .replace("__META_NAME__", f"{_name} · " if _name else ""))

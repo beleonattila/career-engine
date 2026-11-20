@@ -1,0 +1,66 @@
+/* Home: the OS-style entry page. Full-screen desktop with wallpaper, a faint logo behind the
+   name, app icons that open each page, and a taskbar (integrity tray + clock). */
+body.at-home{overflow:hidden}
+body.at-home header,body.at-home .wrap{display:none}
+#desktop{position:fixed;inset:0;display:none;flex-direction:column;color:#eef2ff;overflow:hidden;
+  background:
+    radial-gradient(1200px 700px at 15% 10%,rgba(79,140,255,.35),transparent 60%),
+    radial-gradient(900px 600px at 85% 20%,rgba(168,85,247,.30),transparent 60%),
+    radial-gradient(1000px 700px at 60% 100%,rgba(20,184,166,.28),transparent 60%),
+    linear-gradient(160deg,#070a14 0%,#0b1024 45%,#0a0f1d 100%)}
+body.at-home #desktop{display:flex}
+#desktop::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(rgba(255,255,255,.18) 1px,transparent 1px);background-size:28px 28px;
+  -webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);
+          mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
+.hm-logo{position:absolute;left:50%;top:44%;width:min(78vmin,760px);height:min(78vmin,760px);
+  transform:translate(-50%,-50%);opacity:.16;pointer-events:none}
+.hm-logo .ring1{transform-origin:200px 200px;animation:hm-spin 90s linear infinite}
+.hm-logo .ring2{transform-origin:200px 200px;animation:hm-spin 140s linear infinite reverse}
+@keyframes hm-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.hm-logo .ring1,.hm-logo .ring2{animation:none}}
+.hm-top{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;
+  height:30px;padding:0 16px;font-size:12px;background:rgba(8,11,22,.45);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.07);color:#cfd6e6}
+.hm-top b{color:#fff;letter-spacing:.04em}
+.hm-main{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:clamp(28px,6vh,60px);padding:24px 16px;overflow-y:auto}
+.hm-title{text-align:center}
+.hm-title h1{margin:0;font-size:clamp(40px,8vw,96px);font-weight:800;letter-spacing:.06em;line-height:1;
+  background:linear-gradient(90deg,#93c5fd,#c4b5fd 45%,#5eead4);-webkit-background-clip:text;
+  background-clip:text;color:transparent;text-shadow:0 0 60px rgba(124,140,255,.25)}
+.hm-title p{margin:12px 0 0;color:#aab3c8;font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+.hm-apps{display:grid;grid-template-columns:repeat(4,minmax(96px,128px));gap:22px 26px;justify-content:center}
+@media (max-width:560px){.hm-apps{grid-template-columns:repeat(3,minmax(84px,1fr));gap:18px 12px}}
+.hm-app{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:10px 4px;border-radius:16px;transition:background .15s}
+.hm-app:hover,.hm-app:focus-visible{background:rgba(255,255,255,.07)}
+.hm-app:focus-visible{outline:2px solid #93c5fd;outline-offset:2px}
+.hm-ico{position:relative;width:68px;height:68px;border-radius:20px;display:grid;place-items:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s}
+.hm-app:hover .hm-ico{transform:translateY(-4px) scale(1.06)}
+.hm-ico svg{width:34px;height:34px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hm-badge{position:absolute;top:-6px;right:-8px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;
+  background:#ef4444;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;
+  box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.hm-app span.lbl{font-size:12.5px;color:#e8ecf6;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.hm-bar{position:relative;z-index:3;display:flex;align-items:center;gap:10px;height:48px;padding:0 12px;
+  background:rgba(8,11,22,.6);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid rgba(255,255,255,.08)}
+.hm-orb{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#4f8cff,#a855f7);box-shadow:0 0 18px rgba(124,140,255,.5)}
+.hm-orb svg{width:20px;height:20px}
+.hm-bar .sp{flex:1}
+.hm-tray{all:unset;cursor:pointer;font-size:12px;padding:6px 10px;border-radius:8px;color:#d6dcea}
+.hm-tray:hover,.hm-tray:focus-visible{background:rgba(255,255,255,.08)}
+.hm-clock{font-size:12px;text-align:right;line-height:1.25;color:#e6e9ef;padding:0 6px}
+.hm-clock small{display:block;color:#9aa3b2}
+.hm-notes{position:absolute;right:12px;bottom:58px;z-index:4;width:min(420px,calc(100vw - 24px));
+  max-height:60vh;overflow:auto;padding:14px 16px;border-radius:14px;font-size:13px;
+  background:rgba(16,20,34,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.hm-notes ul{margin:8px 0 0;padding-left:18px}
+.hm-notes li{margin:4px 0}
+/* back-to-home button on every other page */
+.home-btn{background:linear-gradient(135deg,#4f8cff,#a855f7);border:0;color:#fff;font-weight:600;
+  padding:8px 14px;border-radius:8px;cursor:pointer}
