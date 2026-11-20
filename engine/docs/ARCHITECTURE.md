@@ -10,7 +10,7 @@ career-engine/
 ├── .agents/  skills-lock.json  ← agent-browser skill (fallback browser for /linkedin)
 ├── engine/
 │   ├── skills/                 ← cv-generate · inbox-eval · dashboard · track ·
-│   │                             linkedin-profile-edit · rescore (temporary)
+│   │                             linkedin-profile-edit
 │   │   └── search: 3 orchestrators (search-positions|companies|groups) each fanning out
 │   │     to 2 sub-agents — *-career.md and *-skill.md — over shared search-common.md
 │   │     (geography/staging/TRACK) and search-positions-common.md (gates, sources)

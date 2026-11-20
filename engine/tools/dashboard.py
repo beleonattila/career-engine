@@ -131,7 +131,7 @@ def load(globpat, kind):
             "career": as_int(fm.get("career_fit"), -1),
             # method_fit (2026-09-29): does the seat BUILD methods or only operate them?
             # Independent of career_fit by design -- it exists so method roles outside protein
-            # design are visible at all. Absent on every record until /rescore writes it.
+            # design are visible at all.
             "method": as_int(fm.get("method_fit"), -1),
             "skill": as_int(fm.get("skill_match"), -1),
             "level": fm.get("level_fit") or "",
@@ -146,7 +146,6 @@ def load(globpat, kind):
             # direction search, because it was the only one that existed. Provenance never
             # affects a score; it only decides which tab a position appears on.
             "track": (fm.get("track") or "career").lower(),
-            "scoring": fm.get("scoring") or "v1",
             "tier": fm.get("prestige_tier") or "",
             "lead_status": fm.get("status") or "",
             "deadline": fm.get("deadline") or "",
@@ -361,21 +360,8 @@ by_cat = {c: sum(1 for r in records if r["category"] == c and r["shown"])
 hidden_low = sum(1 for r in records
                  if r["category"] in ("position", "phd") and _alive(r)
                  and _best(r) < MIN_SCORE_SHOWN)
-# records still carrying pre-2026-08-17 scores — surfaced so a half-finished /rescore
-# run is visible rather than silently mixing two incompatible scales in one table
-# A v2 stamp is not the same as a complete record: 142 org profiles were migrated before
-# skill_match was extended to companies and groups, so they carry career_fit alone. Count
-# both states -- a missing score is a hole in the table whether or not the file says v2.
-# v2   = migrated to the two-score model
-# v2.1 = additionally re-judged under the corrected "score the role, not the employer" rubric
-# v3   = career_fit as band + three checks, org floor (2026-09-10). v2/v2.1 still count as
-#        scored — the two-score shape is unchanged — but their career_fit awaits a v3 re-judgement.
-SCORED_VERSIONS = ("v2", "v2.1", "v3")
-unscored = sum(1 for r in records
-               if r["scoring"] not in SCORED_VERSIONS or r["career"] < 0 or r["skill"] < 0)
-# Scored, but career_fit judged before scoring v3 (no band, no checks, orgs averaged). Counted on
-# every record, not just shown ones: the column mixes two scales until /rescore reaches 100%.
-v3_pending = sum(1 for r in records if r["scoring"] != "v3")
+# a record with no career_fit or skill_match is a hole in the tables (a blank cell is not zero)
+unscored = sum(1 for r in records if r["career"] < 0 or r["skill"] < 0)
 # Shown-filtered, like every other tile. It was not, until 2026-08-29: it counted every record
 # in the vault including expired and closed leads, so it read 125 while only 79 of those were
 # visible anywhere on the page -- 46 were closed/retired positions and PhD leads. Harmless-looking
@@ -402,7 +388,6 @@ stats = {
     "phd": by_cat["phd"],
     "hidden_low": hidden_low,
     "unscored": unscored,
-    "v3_pending": v3_pending,
     "min_fit_shown": MIN_SCORE_SHOWN,
     # Staleness: shown leads with no deadline that nothing has verified in STALE_DAYS.
     # `stale_positive` is the part that overlaps the On-direction tile, which is why that
@@ -847,13 +832,8 @@ function thresholdNote(){
     +'<code>positions/</code> and excluded from view. Companies and groups are never hidden by score; '
     +'the Applications tab shows the full history regardless.';
   if(S.unscored)t+=' <b style="color:var(--mod)">⚠ '+S.unscored+' record(s) are missing a score</b> '
-    +'— either never migrated from the retired <code>fit_score</code>, or migrated before their kind '
-    +'gained a second score. Run <code>/rescore</code> until this reaches zero; until then the tables '
-    +'are incomplete and a blank cell does not mean zero.';
-  if(S.v3_pending)t+=' <b style="color:var(--mod)">⚠ '+S.v3_pending+' record(s) still carry a pre-v3 '
-    +'<code>career_fit</code></b> — judged before the 2026-09-10 rubric (band + application / validation / '
-    +'package checks; orgs banded by their best line, not their average). The career column mixes two '
-    +'scales until <code>/rescore</code> reaches 100%. The org floor already applies to both.';
+    +'— <code>python engine/tools/doctor.py</code> lists them; score them with <code>/inbox</code>. '
+    +'Until then a blank cell does not mean zero.';
   if(S.stale)t+=' <b style="color:var(--mod)">⚠ '+S.stale+' lead(s) are past the '+S.stale_days
     +'-day age limit and should already have been retired</b> — <code>expire_sweep.py</code> retires '
     +'deadline-less leads on age, and /dashboard runs it as step 1, so this normally reads zero. '
@@ -897,11 +877,8 @@ if stats["stale"]:
     print(f"  ⚠ overdue: {stats['stale']} lead(s) past the {stats['stale_days']}-day age limit are still "
           f"in open/ — run: python engine/tools/expire_sweep.py")
 if unscored:
-    print(f"  [!] {unscored} record(s) missing a score — run /rescore "
-          f"(never-migrated, or migrated before their kind gained a second score)")
-if v3_pending:
-    print(f"  [!] {v3_pending} record(s) still on a pre-v3 career_fit — run /rescore "
-          f"(progress: python engine/tools/rescore_status.py)")
+    print(f"  [!] {unscored} record(s) missing a score — python engine/tools/doctor.py lists them; "
+          f"score them with /inbox")
 print(f"  plan: {len(plan_doc['items'])} item(s) of your own + {len(plan_derived)} from records "
       f"(edit them: python engine/tools/serve.py)")
 if plan_error:

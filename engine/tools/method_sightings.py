@@ -233,7 +233,7 @@ def cmd_rotation(n, profs):
     print(f"\n# {len(rows)} eligible org(s) (skill_match or method_fit >= {SWEEP_MIN}, or a "
           f"sighting); showing {min(n, len(rows))}.", file=sys.stderr)
     if unscored:
-        print(f"# {unscored} of them carry no method_fit yet — /rescore does orgs first.",
+        print(f"# {unscored} of them carry no method_fit yet — /inbox scores it.",
               file=sys.stderr)
     return 0
 

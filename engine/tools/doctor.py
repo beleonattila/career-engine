@@ -16,7 +16,7 @@ Checks, in order:
   git        user/ is ignored by the engine repo, nothing personal is tracked there, user/'s own
              repo keeps personal_data/ and secrets/ out, and the pre-commit guard is installed
   records    every position and organisation record has parseable frontmatter with its scores and
-             every record carries the current schema_version; rescore_status.py --verify is summarised
+             every record carries the current schema_version
   share      personal terms (name, email, the words in user/profile/private_terms.txt) in any file
              the engine tracks or has staged, staged copy included — WARN normally, FAIL with
              --share. engine/hooks/pre-commit runs it before every commit.
@@ -332,16 +332,6 @@ def check_records():
     report("WARN" if off else "PASS", "records",
            f"{'all' if not off else len(off)} record(s) {'at' if not off else 'not at'} schema_version {schema.SCHEMA_VERSION}",
            [f"{rel(p)}: v{v} — run: python engine/tools/schema.py --apply" for p, v in off])
-
-    rs = TOOLS / "rescore_status.py"
-    if rs.exists():
-        r = subprocess.run([sys.executable, str(rs), "--verify"], capture_output=True, text=True,
-                           encoding="utf-8", errors="replace")
-        m = re.search(r"(\d+) problem\(s\) across (\d+) v3", r.stdout)
-        if m:
-            report("WARN" if int(m.group(1)) else "PASS", "records",
-                   f"rescore_status --verify: {m.group(1)} problem(s) across {m.group(2)} v3 record(s)",
-                   [l.strip() for l in r.stdout.splitlines() if l.strip().startswith("[!]")])
 
 
 def private_terms():
