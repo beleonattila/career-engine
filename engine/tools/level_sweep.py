@@ -133,6 +133,13 @@ def undo(dry):
 
 
 def main():
+    # This sweep moves records by default, so an unknown flag (a typo, --help) must stop it.
+    if "-h" in sys.argv or "--help" in sys.argv:
+        print(__doc__)
+        return
+    unknown = [a for a in sys.argv[1:] if a not in ("--dry-run", "--undo")]
+    if unknown:
+        sys.exit(f"unknown option {unknown[0]!r}; nothing changed. Options: --dry-run, --undo")
     dry = "--dry-run" in sys.argv
     if not OPEN.is_dir():
         sys.exit(f"missing {OPEN}")

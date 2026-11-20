@@ -27,7 +27,8 @@ body_users = '\b(scientists?|researchers?|biologists?|chemists?|clinicians?|wet[
 
 [level]
 # Gate 4: titles above your level. Tune overlevel to what you hold (profile/background.md §Level).
-overlevel = '\b(principal|staff|lead|leader|director|vice president|vp|head of|chief|founding|founder|group leader|professor|cto|cso)\b'
+# "Member of Technical Staff" is an IC title at AI labs, so `staff` skips it.
+overlevel = '\b(principal|(?<!technical\s)staff|lead|leader|director|vice president|vp|head of|chief|founding|founder|group leader|professor|cto|cso)\b'
 # In a PhD advert the level word describes the supervisor, not the vacancy.
 phd_call = '\b(phd|ph\.d|doctoral|doctorate|graduate school|stipend)\b'
 # "(Senior) Scientist": the employer takes either level — strip the marker and judge the rest.

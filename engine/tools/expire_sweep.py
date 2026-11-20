@@ -220,6 +220,18 @@ def retire(p, text, dest_dir, reason, note, dry):
 
 
 def main():
+    # This sweep moves records by default, so an unknown flag (a typo, --help) must stop it.
+    args = sys.argv[1:]
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return
+    valued = ("--stale-days", "--verified-days")
+    unknown = [a for i, a in enumerate(args)
+               if a not in ("--dry-run", "--keep-stale") + valued
+               and not (i and args[i - 1] in valued)]
+    if unknown:
+        sys.exit(f"unknown option {unknown[0]!r}; nothing changed. Options: --dry-run, "
+                 "--keep-stale, --stale-days N, --verified-days N (see --help)")
     dry = "--dry-run" in sys.argv
     keep_stale = "--keep-stale" in sys.argv
     stale_days = STALE_DAYS
