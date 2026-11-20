@@ -38,12 +38,6 @@ FM = re.compile(r"\A---\r?\n(.*?)\r?\n(---[ \t]*)\r?\n", re.S)
 VERSION = re.compile(r"^schema_version:\s*(\d+)\s*(?:#.*)?$", re.M)   # a trailing comment is tolerated
 VERSION_LINE = re.compile(r"^schema_version:\s*\d+\s*(?:#.*)?$")
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
-
 
 def records():
     for d in RECORD_DIRS:

@@ -31,13 +31,9 @@ import sys
 import tomllib
 from pathlib import Path
 
+from frontmatter import fm_block
 from paths import ENGINE, PACKS, PROFILE, REPO, SETTINGS, TOOLS, USER, WORKSPACE, user_name
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 # What the engine reads, prose-wise: the files an agent follows.
 PROSE = [REPO / "CLAUDE.md", REPO / "README.md", *sorted((REPO / ".claude" / "commands").glob("*.md")),
@@ -302,7 +298,6 @@ def check_git():
         report("PASS", "git", "pre-commit share guard installed (core.hooksPath = engine/hooks)")
 
 
-FM = re.compile(r"\A---\r?\n(.*?)\r?\n---\r?\n", re.S)
 SKIP_TYPES = {"person_bio"}
 
 
@@ -313,11 +308,10 @@ def check_records():
     for d in dirs:
         for p in sorted(d.glob("*.md")):
             n += 1
-            m = FM.match(read(p))
-            if not m:
+            fm = fm_block(read(p))
+            if fm is None:
                 bad.append(f"{rel(p)}: no frontmatter block")
                 continue
-            fm = m.group(1)
             t = re.search(r"^type:\s*(\S+)", fm, re.M)
             if t and t.group(1) in SKIP_TYPES:
                 continue

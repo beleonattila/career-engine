@@ -22,7 +22,7 @@ Run:  python engine/tools/plan.py                       # list items
                                       [--important] [--urgent] [--done] [--notes "…"]
 Edited in the browser through serve.py.
 """
-import argparse, datetime, json, os, re, secrets, sys, tempfile
+import argparse, datetime, json, os, re, secrets, tempfile
 
 from paths import PLAN
 
@@ -154,12 +154,7 @@ def new_id():
 
 
 def main():
-    for s in (sys.stdout, sys.stderr):
-        try:
-            s.reconfigure(encoding="utf-8")
-        except (AttributeError, ValueError):
-            pass
-    ap = argparse.ArgumentParser(description="The Timeline / To-do store (user/workspace/plan/plan.json)")
+    ap =argparse.ArgumentParser(description="The Timeline / To-do store (user/workspace/plan/plan.json)")
     sub = ap.add_subparsers(dest="cmd")
     a = sub.add_parser("add", help="add one item")
     a.add_argument("title")

@@ -93,17 +93,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from paths import REPO, WORKSPACE as ROOT, setting  # noqa: E402 — records are relative to user/workspace/
+from frontmatter import fm_fields  # noqa: E402
 OPEN, APPLIED, CLOSED = (ROOT / "positions" / "open",
                          ROOT / "positions" / "applied",
                          ROOT / "positions" / "closed")
 LOGS = ROOT / "logs"
 TODAY = dt.date.today().isoformat()
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 # An active application is not a stale lead — same guard as expire_sweep.py
 PROTECTED = {"applied", "sent", "interviewing", "offer"}
@@ -162,20 +158,6 @@ JOB_ID_PARAMS = re.compile(
 
 
 # ------------------------------------------------------------------ frontmatter
-def read_fm(text):
-    if not text.startswith("---"):
-        return {}
-    end = text.find("\n---", 3)
-    if end == -1:
-        return {}
-    fm = {}
-    for line in text[3:end].splitlines():
-        m = re.match(r"^([A-Za-z_][\w]*):\s*(.*)$", line)
-        if m:
-            fm[m.group(1)] = m.group(2).strip().strip('"').strip("'")
-    return fm
-
-
 def set_field(text, name, value):
     if re.search(rf"^{name}:.*$", text, re.M):
         return re.sub(rf"^{name}:.*$", f"{name}: {value}", text, count=1, flags=re.M)
@@ -329,7 +311,7 @@ def collect(scope, min_fit, only):
             if only and only.lower() not in p.name.lower():
                 continue
             text = p.read_text(encoding="utf-8", errors="replace")
-            fm = read_fm(text)
+            fm = fm_fields(text)
             # Three scores since 2026-09-29 (method_fit joined career_fit and skill_match),
             # checked with OR: a lead is worth re-validating if it is EITHER something the user
             # wants (career_fit), OR the kind of work they want (method_fit), OR something they

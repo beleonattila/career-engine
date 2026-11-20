@@ -82,7 +82,8 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 
 | Tool | What it does |
 |---|---|
-| `paths.py` | The one place that knows where `user/` and its folders are (override: `CAREER_USER_DIR`) |
+| `paths.py` | The one place that knows where `user/` and its folders are (override: `CAREER_USER_DIR`); also sets UTF-8 console output for every tool |
+| `frontmatter.py` | Reads a record's header for the read-only tools (`fm_block`, `fm_fields`, `fm_parse`). Tools that rewrite headers keep their own exact-span code |
 | `init_user.py` | New clone: creates `user/` from `engine/templates/user/`, git-inits it and installs the pre-commit guard. Never overwrites; `--add-missing` fills gaps in an existing `user/`, `--dry-run` previews |
 | `doctor.py` | Read-only health check: layout, settings.toml keys, stale or dangling paths, tools, git safety (incl. the pre-commit guard), records and their `schema_version`, and personal terms in any file the engine tracks or has staged (`--share` makes that last one fail; the pre-commit hook runs it). Terms come from `user/profile/private_terms.txt` |
 | `schema.py` | The record format version: `SCHEMA_VERSION`, a report of records per version, and `--apply` to migrate them (`engine/docs/RECORD_SCHEMA.md`) |

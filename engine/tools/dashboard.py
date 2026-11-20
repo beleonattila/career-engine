@@ -8,17 +8,11 @@ tables + a Statistics tab of hand-built SVG charts). No external dependencies.
 Run:  python engine/tools/dashboard.py
 Out:  dashboard.html  (open in any browser)
 """
-import os, re, sys, json, glob, datetime
-
-for _s in (sys.stdout, sys.stderr):  # the summary prints non-cp1252 glyphs; piped output crashed
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
-
-import html  # noqa: E402
-from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, user_name  # noqa: E402
-import plan as planstore  # noqa: E402
+import os, re, json, glob, datetime
+import html
+from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, user_name
+from frontmatter import fm_parse
+import plan as planstore
 ROOT = str(WORKSPACE)  # record paths are relative to user/workspace/
 TODAY = datetime.date.today()
 
@@ -37,31 +31,7 @@ ON_DIRECTION = setting("thresholds.on_direction")
 # ---------------------------------------------------------------- frontmatter
 def parse_frontmatter(path):
     with open(path, encoding="utf-8") as f:
-        text = f.read()
-    if not text.startswith("---"):
-        return {}
-    end = text.find("\n---", 3)
-    if end == -1:
-        return {}
-    block = text[3:end]
-    data, cur = {}, None
-    for line in block.splitlines():
-        if re.match(r"^\s*-\s+", line) and cur:
-            if not isinstance(data.get(cur), list):
-                data[cur] = []
-            data[cur].append(line.strip()[1:].strip().strip('"').strip("'"))
-            continue
-        m = re.match(r"^([A-Za-z_][\w]*):\s*(.*)$", line)
-        if not m:
-            continue
-        k, v = m.group(1), m.group(2).strip()
-        cur = k
-        v = v.strip().strip('"').strip("'")
-        if v.lower() in ("null", "~", ""):
-            data[k] = "" if v == "" else None
-        else:
-            data[k] = v
-    return data
+        return fm_parse(f.read())
 
 def as_int(v, default=0):
     try:

@@ -14,8 +14,17 @@ in the docs is to run them from the repo root: `python engine/tools/<tool>.py`.
                           applications/…) is relative to this folder
 """
 import os
+import sys
 import tomllib
 from pathlib import Path
+
+# Every tool imports this file, so the console fix lives here once: the Windows console defaults
+# to cp1252, and the tools print glyphs (·, —, ⚠) that crash piped output or turn to mojibake.
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
 
 TOOLS = Path(__file__).resolve().parent
 ENGINE = TOOLS.parent

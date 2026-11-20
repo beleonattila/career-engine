@@ -19,11 +19,6 @@ import sys
 
 from paths import ENGINE, REPO, USER
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 TEMPLATE = ENGINE / "templates" / "user"
 

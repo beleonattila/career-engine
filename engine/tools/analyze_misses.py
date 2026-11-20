@@ -61,11 +61,6 @@ OUTDIR = ROOT / "logs" / "analysis"
 # "need no age filter at all"), so AGE_EXCLUDED is never attributed to them.
 NO_AGE_FILTER = {"ats_sweep"}
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 # country -> the linkedin `location=` tokens that would surface it. "European Union" does NOT
 # include CH/NO/UK/IS (measured 2026-07-29), which is why GEO_GAP is attributable at all.

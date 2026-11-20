@@ -37,11 +37,6 @@ import re
 import sys
 from pathlib import Path
 
-for _s in (sys.stdout, sys.stderr):          # Windows console defaults to cp1252 -> mojibake
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 from paths import REPO, WORKSPACE as ROOT  # noqa: E402 — records are relative to user/workspace/
 

@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from paths import REPO, WORKSPACE as ROOT, setting, user_toml  # noqa: E402 — records are relative to user/workspace/
+from frontmatter import fm_fields  # noqa: E402
 LOG = ROOT / "logs" / "search_runs.jsonl"
 
 # Lead identity is shared with the dedup guard and the miss analyser on purpose. When the three
@@ -35,7 +36,6 @@ except ImportError:                                  # run outside the vault
 STRONG_FIT = setting("thresholds.on_direction")     # career_fit counted as a strong lead
 POSITION_GLOBS = ["positions/open/*.md", "positions/applied/*.md", "positions/closed/*.md"]
 PROFILE_GLOBS = ["organizations/companies/*.md", "organizations/research_groups/*.md"]
-FM_LINE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$")
 
 STATUSES = {"reached", "partial", "skipped", "failed"}
 MODELS = {"haiku", "sonnet", "opus", "fable"}
@@ -362,18 +362,9 @@ def deep_pass_age(runs):
 def frontmatter(path):
     """Flat YAML frontmatter of a vault .md as a dict of strings. Stdlib only, so no yaml."""
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        return fm_fields(path.read_text(encoding="utf-8", errors="replace"))
     except OSError:
         return {}
-    if not text.startswith("---"):
-        return {}
-    end = text.find("\n---", 3)
-    out = {}
-    for line in (text[3:end] if end != -1 else text[3:4000]).splitlines():
-        m = FM_LINE.match(line.strip())
-        if m:
-            out[m.group(1)] = m.group(2).strip().strip("\"'")
-    return out
 
 
 def _record(p, folder, kind):

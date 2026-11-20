@@ -55,11 +55,6 @@ from paths import REPO, WORKSPACE as ROOT  # noqa: E402 — records are relative
 OPEN, CLOSED = ROOT / "positions" / "open", ROOT / "positions" / "closed"
 TODAY = dt.date.today()
 
-for _s in (sys.stdout, sys.stderr):
-    try:
-        _s.reconfigure(encoding="utf-8")
-    except (AttributeError, ValueError):
-        pass
 
 # A lead in any of these states is an active application, not a stale lead.
 PROTECTED = {"applied", "sent", "interviewing", "offer", "cv_generated"}
