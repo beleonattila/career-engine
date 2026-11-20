@@ -19,108 +19,86 @@ which the `/search-positions` orchestrator runs as parallel sub-agents.
 **Read `search-common.md` first** — geography, the staging protocol, and the `TRACK:` stamp
 live there and are identical for both tracks.
 
-> **Two steps below are owned by your mode file, not by this one.** Wherever you see
-> **[MODE]**, use the definition from `search-positions-career.md` or
-> `search-positions-skill.md` — whichever one sent you here. Everything else on this page is
-> the same for both tracks and must not be forked: a fix to dedup, sources or telemetry has to
-> land once, here, or the two tracks drift apart.
+> **[MODE] steps are owned by your mode file** (`search-positions-career.md` or
+> `search-positions-skill.md`, whichever sent you here). Everything else here is shared and must
+> not be forked: a fix to dedup, sources or telemetry lands once, here.
 
 ## Task:
 1. Search the web using `WebFetch` for open positions matching the user's profile
 2. **Run mode — fast pass or deep pass.** Two cadences, because no source enumerates reliably
-   (see *Why age is not a filter* below).
+   (*Why age is not a filter* below).
    - **Fast pass** — the default; run 2–3× / week. Apply each source's own recency filter at
-     **~21 days** where one exists. Cheap, catches new postings quickly. Treat the result as a
-     *sample*, never as a complete sweep.
+     **~21 days** where one exists. Treat the result as a *sample*, never a complete sweep.
    - **Deep pass** — run **~weekly** (`log_run.py --stats` flags it OVERDUE after 7 days), or
-     whenever the user says "deep". **No age filter at all.** Collect anything still open, however
-     old the posting. This is the run that recovers what the fast passes dropped; without it,
-     misses are permanent. **`phd_portals` is mandatory on every deep pass.** Measured 2026-10-01:
-     a deep pass finds 1.2 strong leads per run against 0.4 for a fast one, and PhD portals have
-     the best strong-lead rate of any channel (3 of 6) while being skipped in 22 of 48 runs
+     whenever the user says "deep". **No age filter at all**: collect anything still open. This run
+     recovers what the fast passes dropped. **`phd_portals` is mandatory on every deep pass**
      (`engine/docs/decisions.md` §Recall on strong leads).
 
    State which mode you ran in the closing report.
 3. **Never skip on age alone.** A lead is stale only when its **deadline has passed** or the
    posting is confirmed removed. Age is a *sort priority*, never a discard rule.
 4. Check geographical relevance and job type (on-site, hybrid, remote), if not relevant then skip
-5. **[MODE] Relevance gate — keyword pass.** Lightweight and mechanical; `/inbox` on Opus does
-   the real scoring, so this is only a coarse "is it worth an Opus pass?" filter.
-   **Your mode file defines the term list and the pass rule.** Normalise common variants before
-   matching, so short forms still count — this normalisation is shared, and is domain content:
-   the pack's `synonyms.md` (`engine/packs/<pack>/`, where `<pack>` is `search.pack` in
-   `user/settings.toml`).
+5. **[MODE] Relevance gate — keyword pass.** A coarse, mechanical "is it worth an Opus pass?"
+   filter; `/inbox` does the real scoring. **Your mode file defines the term list and the pass
+   rule.** Normalise common variants first (shared domain content: the pack's `synonyms.md`,
+   `engine/packs/<pack>/`, where `<pack>` is `search.pack` in `user/settings.toml`).
 6. **Dedup against already-collected finds — this is the real cost control.** Skipping is decided
-   by **identity, not by age**. Before saving, check *all four* of these for an entry already
-   covering the same org+role:
+   by **identity, not by age**. Before saving, check *all four* for an entry covering the same
+   org+role:
    - `user/workspace/inbox/`
    - `user/workspace/inbox/processed/`
-   - `user/workspace/inbox/processed/archive/`  ← **must be checked**
+   - `user/workspace/inbox/processed/archive/`  ← **must be checked** (skip it and the deep pass
+     re-collects everything you have; `engine/docs/decisions.md` §Dedup)
    - `user/workspace/positions/{open,applied,closed}/`
 
-   > ⚠️ Skip `archive/` and the deep pass will re-collect and re-score everything you already have.
-   > It was once excluded, on reasoning that no longer holds (`engine/docs/decisions.md` §Dedup).
-
-   Do not do this by eye and do not reason about slugs yourself — `dedup_check.py` now does all
-   of it, in three layers of decreasing confidence (job-ad URL → same employer + identical role
-   slug → token overlap, which never blocks). **The URL is the strongest signal**, so pass it
-   whenever you have one:
+   Never do this by eye or reason about slugs yourself — `dedup_check.py` does it in three layers
+   of decreasing confidence (job-ad URL → same employer + identical role slug → token overlap,
+   which never blocks). **The URL is the strongest signal**, so pass it whenever you have one:
    ```bash
    python engine/tools/dedup_check.py --query-url "https://jobs.ashbyhq.com/adaptyv/0b758124-…"
    python engine/tools/dedup_check.py --query cradle "Scientist, Large Libraries" "https://…"
    ```
    Org slug variants are handled **structurally** — organisation-type words (`-university`,
-   `-bio`, `-institute`, `-labs`, `-pharma`, …) are stripped before comparison, so `cradle` ≡
-   `cradle-bio` and `cranfield` ≡ `cranfield-university` without anyone having to notice the
-   collision first. The alias table is now only for renames and acquisitions
-   (`novozymes` → `novonesis`), which no string rule can derive.
-
-   > The structural rule replaced a hand-maintained alias allowlist that missed four collisions in
-   > ten days and let 12 historical duplicates through (`engine/docs/decisions.md` §Dedup).
-7. **Collect decision — a fixed four-gate procedure. Never a holistic judgement.**
-
-   > ⚠️ "Does this feel relevant?" is not reproducible (`engine/docs/decisions.md` §The collect decision). Answer the
-   > gates below **explicitly and in order**, and record the answers in the saved `.txt`. Same ad →
-   > same answers → same verdict.
+   `-bio`, `-institute`, `-labs`, `-pharma`, …) are stripped, so `cradle` ≡ `cradle-bio`. The
+   alias table is only for renames and acquisitions (`novozymes` → `novonesis`)
+   (`engine/docs/decisions.md` §Dedup: structural slug rules).
+7. **Collect decision — a fixed four-gate procedure. Never a holistic judgement.** Answer the
+   gates **explicitly and in order**, and record the answers in the saved `.txt`. Same ad → same
+   answers → same verdict (`engine/docs/decisions.md` §The collect decision).
 
    **Gate 0 — hard rejects.** Any one → SKIP immediately (no further gates):
    deadline strictly before today · posting confirmed removed/filled · the ad is a portal/search
    page rather than one posting · the role is outside the geography allowlist in
    `search-common.md` (US/Canada on-site counts as outside).
-   **[MODE] Your mode file may add one further hard reject.** The career track applies the user's
-   direction reject (`user/profile/search_terms.md` §Career track → *Gate 0 reject*); the skill
-   track does not, because a role rejected on direction can still be a real skills match and the
-   employability track has no direction floor.
+   **[MODE] Your mode file may add one further hard reject** (career: the user's direction reject,
+   `user/profile/search_terms.md` §Career track → *Gate 0 reject*; skill: none — no direction floor).
    *Exception — faculty:* a professor / group-leader / tenure-track call is **not** a position.
    Save it as `[groupslug]_group-profile_found-YYYY-MM-DD.txt` so it routes to the group database,
    never as a position file (`engine/docs/decisions.md` §Faculty calls).
 
    **[MODE] Gate 1 — keyword presence** (mechanical, zero judgement).
    List every qualifying term that literally appears in the ad, then apply your mode file's
-   pass rule. Record the terms found either way — the saved `.txt` has to show the working.
+   pass rule. Record the terms found either way.
 
-   **Gate 2 — placement.** For each matched term, does it appear in the **role** text
-   (responsibilities, requirements, "you will…") or only in **company** text ("about us",
-   "our platform", mission boilerplate)?
-   If *every* matched term is company-boilerplate only → **SKIP**. A protein-design company
-   advertising a finance role still says "protein design" five times on the page.
+   **Gate 2 — placement.** Does each matched term appear in the **role** text (responsibilities,
+   requirements, "you will…") or only in **company** text ("about us", "our platform", mission
+   boilerplate)? If *every* matched term is company-boilerplate only → **SKIP**.
 
-   **[MODE] Gate 3 — the decisive test.** This is where the two tracks genuinely differ, and it
-   is the only gate whose *question* changes rather than just its term list:
+   **[MODE] Gate 3 — the decisive test**, the only gate whose *question* differs:
    - **career** asks *what does the person in this role personally ship?* — a direction test.
    - **skill** asks *does this role need what I can prove I have?* — a competency test.
 
-   Take the full procedure from your mode file. Both are fixed tables with a single forced
-   choice and no holistic weighing, and both record the chosen row in the saved `.txt`.
+   Take the full procedure from your mode file: a fixed table, a single forced choice, the chosen
+   row recorded in the saved `.txt`.
 
    **Tiebreak, shared by both:** if two rows seem to fit, pick the one describing the
-   **first-listed responsibility**, or failing that the one named in the **job title**. Do not
-   weigh them holistically — that is the failure mode this whole procedure exists to remove.
+   **first-listed responsibility**, or failing that the one named in the **job title**. Never
+   weigh them holistically.
 
    **Modifier (records only, never decides):** `in_silico: yes | no | mixed`. Bench work in the
-   seat itself is neutral per `user/profile/preferences.md`, so a bench role is not disqualified — but `/inbox` needs
-   to know. Keep any ad line saying the designs are tested in house or by a named collaborator in
-   the saved text: since 2026-09-10 `/inbox` scores experimental validation as a `career_fit` check.
+   seat is neutral per `user/profile/preferences.md`, so a bench role is not disqualified. Keep any
+   ad line saying the designs are tested in house or by a named collaborator in the saved text:
+   `/inbox` scores experimental validation as a `career_fit` check.
 
    **Gate 4 — level.** Answer *before* writing anything. The user's level and the thresholds that
    follow from it are in `user/profile/search_terms.md` §Level gate. Ask **in this order**:
@@ -145,64 +123,48 @@ live there and are identical for both tracks.
       (`search_terms.md` §Level gate)? → **SKIP**.
 
    Record the answer as `Gate 4 (level): pass | skip | group-profile — {reason}`.
-   The same test is implemented as `over_level()` in `ats_sweep.py` (its terms: `[level]` in
-   `user/profile/search_terms.toml`), which demotes over-level
-   rows out of the printed sweep, and `level_sweep.py` applies it to the backlog.
+   The same test is `over_level()` in `ats_sweep.py` (its terms: `[level]` in
+   `user/profile/search_terms.toml`), which demotes over-level rows out of the printed sweep;
+   `level_sweep.py` applies it to the backlog.
 
-   > **Why this is a hard gate and not a soft one.** The measurements behind it are in
-   > `search_terms.md` §Level gate. **Never use `career_fit` to argue a level-gated role back
-   > through this gate.** `career_fit` measures desirability and nothing else — of course an
-   > on-direction senior role is desirable. `level_fit` is the field that speaks to
-   > attainability, and a `reach` here is the gate agreeing with itself, not evidence against it.
+   > **A hard gate** (measurements: `search_terms.md` §Level gate). **Never use `career_fit` to
+   > argue a level-gated role back through it** — `career_fit` measures desirability only;
+   > `level_fit` speaks to attainability, and a `reach` is the gate agreeing with itself.
 
-   *Faculty calls are already handled upstream* by the Gate 0 exception — they become
-   `_group-profile_` files, so a professorship still gets captured as an outreach lead rather
-   than being lost here.
+   Faculty calls never reach this gate: the Gate 0 exception made them `_group-profile_` files.
 
    When the gates say COLLECT, write the ad body to a `.txt` in **your own staging folder** —
-   `user/workspace/inbox/_staging/career/` or `user/workspace/inbox/_staging/skill/`, whichever
-   matches your track. **Never write to `user/workspace/inbox/` directly**; the parent command
-   reconciles the two staging folders and moves the survivors there ([[search-common]]
-   §Staging protocol). Use the
-   `Gate:` block shown in *Output format* below as the audit trail. Do not fit-score here —
-   that is `/inbox`'s job.
+   `user/workspace/inbox/_staging/career/` or `user/workspace/inbox/_staging/skill/`. **Never write
+   to `user/workspace/inbox/` directly** ([[search-common]] §Staging protocol). Use the `Gate:`
+   block in *Output format* below as the audit trail. Do not fit-score here — that is `/inbox`'s job.
 7.5 **Before writing anything to the inbox, run the dedup guard:**
    ```bash
    python engine/tools/dedup_check.py
    ```
-   It compares every `user/workspace/inbox/*.txt` against the whole vault (including `processed/archive/`) and
-   exits non-zero on a duplicate. This is not optional — eyeball dedup has demonstrably failed:
-   on 2026-07-29 a run collected `cradle-bio_scientific-advisor-antibodies` when an **exact**
-   org+role slug match was already tracked. Use `--query <org> "<role title>"` to check a single
-   candidate *before* fetching its full ad text.
+   It compares every `user/workspace/inbox/*.txt` against the whole vault (including
+   `processed/archive/`) and exits non-zero on a duplicate. Not optional — eyeball dedup has
+   demonstrably failed (`engine/docs/decisions.md` §Dedup). Use `--query <org> "<role title>"` to
+   check a single candidate *before* fetching its full ad text.
 
-   > ⚠️ **`possible-dup` does not block, and that is where the residual leak is.** The guard
-   > deliberately refuses to block on slug *containment*, because containment cannot tell a
-   > seniority variant from a genuine second req. So a `possible-dup` row is handed to **you**,
-   > not resolved for you.
-   >
-   > **Read both files and decide before writing.** A trailing word on the role slug is the
-   > signature. Same employer + same job-ad URL, or same employer + a role slug differing only by a
-   > descriptive suffix → treat as a duplicate and skip; genuinely different seniority or a different
-   > req → collect. `--query-url` settles most of these outright, so pass the URL whenever you have
-   > one. (The cases that shaped this: `engine/docs/decisions.md` §Dedup.)
-8. **Stop criteria and budget.** 30 min of runtime, or all relevant sources covered. Because the
-   source list now exceeds what one fast pass can do, **allocate the budget up front rather than
-   working top-to-bottom until time runs out** — first-come-first-served has starved the same
-   sources sixteen runs running.
+   > ⚠️ **`possible-dup` does not block** — slug *containment* cannot tell a seniority variant from
+   > a genuine second req, so the guard hands the row to **you**. **Read both files and decide
+   > before writing.** A trailing word on the role slug is the signature. Same employer + same
+   > job-ad URL, or same employer + a role slug differing only by a descriptive suffix → duplicate,
+   > skip; genuinely different seniority or a different req → collect. `--query-url` settles most
+   > of these outright (`engine/docs/decisions.md` §Dedup: `possible-dup`).
+8. **Stop criteria and budget.** 30 min of runtime, or all relevant sources covered. **Allocate
+   the budget up front rather than working top-to-bottom until time runs out** — first-come-first-
+   served starves the same sources (`engine/docs/decisions.md` §Budget).
 
-   **Start by asking the log what this run should cover.** These three are not optional and take
-   seconds:
+   **Start by asking the log what this run should cover.** These three are not optional:
    ```bash
    python engine/tools/log_run.py --starved && python engine/tools/log_run.py --next-queries 4
    python engine/tools/log_run.py --stats        # read the deep-pass line
    ```
    - `--starved` lists channels **not reached in the last 3 runs**. They get **first claim** on
-     the budget, before the usual split. A channel absent from three consecutive runs is not
-     low-yield, it is *unmeasured*.
+     the budget, before the usual split — such a channel is *unmeasured*, not low-yield.
    - `--next-queries` gives the least-used LinkedIn keywords. Issue those, plus at most one free
-     choice. Do not pick terms by feel — `protein design` ran in 15 of 16 runs while 10 of 27
-     pool terms have never run.
+     choice. Never pick terms by feel.
    - If the deep-pass line says **OVERDUE**, this run is a deep pass. Not a judgement call.
 
    Rough split for what remains:
@@ -217,12 +179,11 @@ live there and are identical for both tracks.
    - Company / research-group rotation — ~30%, oldest-`last_evaluated` first, no-tracked-lead first.
    - Regional + academic boards (the pack's `boards.md`) — ~30%.
 
-   If a category gets no time at all, name it in the report — and it will appear in `--starved`
-   next run, which is what makes the rotation real rather than aspirational.
+   If a category gets no time at all, name it in the report — it will then appear in `--starved`
+   next run.
 
-   > ⚠️ **`phd_portals` is the highest-value starved channel for this profile** (measured 2026-08-09:
-   > `engine/docs/decisions.md` §Budget). When `--starved` names it, it outranks the company rotation,
-   > and on a deep pass it is never optional.
+   > ⚠️ **`phd_portals` is the highest-value starved channel** (`engine/docs/decisions.md` §Budget).
+   > When `--starved` names it, it outranks the company rotation; on a deep pass it is never optional.
 9. Report progress: "X added this session, # of new entries found", **plus the run mode
    (fast/deep)** and which sources were checked vs. skipped. A source you did not reach is not
    a source that had nothing — say so explicitly.
@@ -231,56 +192,45 @@ live there and are identical for both tracks.
     ```bash
     python engine/tools/log_run.py run.json
     ```
-    It validates and appends to `user/workspace/logs/search_runs.jsonl`. Malformed records are rejected rather
-    than silently stored.
+    It validates and appends to `user/workspace/logs/search_runs.jsonl`; malformed records are rejected.
 
     **Record the run's configuration and its clock.** `model` (`haiku`/`sonnet`/`opus`/`fable`),
     `effort` (`low`/`medium`/`high`/`xhigh`/`max`), and both `started` and `ended` as ISO-8601 are
-    all required; `duration_min` is derived by the script, so do not write it yourself. Note the
-    start time when the run *begins*, not retroactively at the end. This is what lets
-    `python engine/tools/log_run.py --stats` say whether an Opus pass actually earns its runtime, instead of
-    guessing.
+    all required; `duration_min` is derived by the script — never write it yourself. Note the
+    start time when the run *begins*, not at the end.
 
-    **Log what you REJECTED, not only what you collected.** The `screened` array is required and
-    validation fails without it. Reason: without it, "never reached the channel" and "saw it and
-    the gate rejected it" are indistinguishable in the log — and they have opposite fixes. A
-    zero-find run is one of the *most* informative records, because it says which sources were
-    covered and came up empty.
+    **Log what you REJECTED, not only what you collected.** The `screened` array is required.
+    Without it, "never reached the channel" and "saw it and rejected it" look the same, and they
+    have opposite fixes. A zero-find run is one of the most informative records.
 
     Be exact about `channels[].status`: `skipped` ≠ `reached with no results`. `channels[].key`
     is a **closed vocabulary** (`ats_sweep` · `linkedin` · `danish_boards` · `nordic_boards` ·
-    `euraxess` · `phd_portals` · `company_rotation` · `research_groups`) and validation rejects
-    anything else — a typo would otherwise become a ninth channel that has never been reached.
+    `euraxess` · `phd_portals` · `company_rotation` · `research_groups`); validation rejects
+    anything else.
 
-    For `linkedin`, log the actual `geos` and `queries` issued — a miss cannot otherwise be
-    separated into wrong country vs. right country / source didn't return it — **and both `hits`
-    and `shortlisted`**. That pair is the triage step: 2169 logged hits became 141 evaluated
-    candidates over 16 runs and *how* was recorded nowhere, which leaves the largest miss bucket
-    (`SOURCE_INCOMPLETE`, 35%) indistinguishable from "the run skimmed past the row".
+    For `linkedin`, log the actual `geos` and `queries` issued **and both `hits` and
+    `shortlisted`** — that pair is the triage step, and without it a source miss cannot be told
+    from a skimmed row (`engine/docs/decisions.md` §Search telemetry).
 
 ---
 
 ## Why age is not a filter
 
-A tight age window only works if each run sees everything in its window, and no source here does:
-LinkedIn returns a ranked, unstable sample, so "not returned" never means "not there". An age filter
-cannot tell *known* from *merely unsampled*, so it turns a missed posting into a **permanent** miss —
-and it saves almost nothing, because the expensive stages are gated by dedup, not by age. **Its
-savings and its losses are the same set.**
+No source here sees everything in its window (LinkedIn returns a ranked, unstable sample), so an
+age filter turns a missed posting into a **permanent** miss — and saves almost nothing, because the
+expensive stages are gated by dedup, not age. **Its savings and its losses are the same set.**
 
-Hence: dedup on identity (step 6), sample cheaply on the fast pass, and sweep without an age limit on
-the monthly deep pass. The measurements and the worked example (2026-07-29): `engine/docs/decisions.md` §Why age is not a
-filter. This section exists so the old 14-day hard filter does not get reinstated.
+Hence: dedup on identity (step 6), sample cheaply on the fast pass, sweep without an age limit on
+the deep pass. Never reinstate the old 14-day hard filter (`engine/docs/decisions.md` §Why age is
+not a filter).
 
 ---
 ## Output format
 
-> ⚠️ **`POSTED:` is load-bearing — never leave it out.** It is the only field that makes recall
-> measurable: `FOUND − POSTED` is the lag, and lag is how a missed post is detected at all (see
-> *Telemetry* below). Get it from the authoritative source — `first_published` / `publishedOn` /
+> ⚠️ **`POSTED:` is load-bearing — never leave it out** ([[search-common]] §Rules both tracks
+> share). Take it from the authoritative source — `first_published` / `publishedOn` /
 > `publishedAt` from an ATS, the portal's own "posted" date, or LinkedIn's "X days ago" converted
-> to a date. Write `unknown` only when the source genuinely does not state one; a guess is worse
-> than `unknown` because it silently corrupts the measurement.
+> to a date. Write `unknown` only when the source states none; never guess.
 
 **file name:**
 
@@ -328,21 +278,9 @@ Keywords: RFdiffusion, ProteinMPNN, AlphaFold, protein engineering
 ---
 ## Geography
 
-**Defined once, in [[search-common]] §Geography — read it there.** The blocks themselves are in
-`user/settings.toml` `[[geography.block]]`; a `remote_only` block counts only for ads that state
-remote work is acceptable. Everything else is out of scope *before a single fetch*.
-
-Two things that bite specifically here:
-
-> ⚠️ **Never rely on `location=European Union` alone** (see the LinkedIn block below). It excludes
-> Switzerland, Norway, Iceland and the UK *entirely* — including Switzerland, which has always been
-> in scope. Measured 2026-07-29: identical query, `location=European Union` → 47 hits, **zero** of
-> them CH/NO/UK; `location=United Kingdom` → 60 hits; `location=Switzerland` → 8.
-
-> ⚠️ **Postings in a `remote_only` block need a remote check before the fetch, not after.** New ones
-> qualify only when the ad itself states that remote work from an allowlist country, or worldwide,
-> is acceptable. If the listing page does not say, it does not qualify — opening the ad to find out
-> is the token spend the allowlist exists to prevent. (Leads from the older, looser rule stay: `engine/docs/decisions.md`.)
+**Defined once, in [[search-common]] §Geography — read it there**, including the `remote_only`
+check before the fetch. On LinkedIn, **never rely on `location=European Union` alone** — it
+excludes Switzerland, Norway, Iceland and the UK entirely (the country loop in Group 1 below).
 
 ---
 
@@ -351,42 +289,28 @@ Two things that bite specifically here:
 **Step 1 — Check the company + research-group databases first.**
 Before hitting job boards, sweep `user/workspace/organizations/companies/` **and**
 `user/workspace/organizations/research_groups/` for new openings at orgs already in the vault.
-Academic PI labs live in `research_groups/`, not `companies/` — skip that folder and
-you structurally cannot find their postings (a lab is not a company and will never get
-its own entry there).
+Academic PI labs live only in `research_groups/` — skip it and you cannot find their postings.
 
-- **[MODE] Which orgs to sweep.** The **career** track sweeps orgs at `career_fit` 60+; the
-  **skill** track sweeps orgs at `skill_match` **or** `method_fit` 60+, plus any org with a logged
-  method sighting, in the order `python engine/tools/method_sightings.py --rotation 30` prints
-  (since 2026-10-01). Same threshold, different fields — each track rotates through the employers
-  its own question cares about. An org clearing both is swept by both, which is fine: the staging
-  reconciliation drops the duplicate.
-
-  > **Geography is not a score threshold.** The scores measure direction and competence, neither of
-  > which has anything to say about relocation; the country allowlist ([[search-common]]
-  > §Geography) decides it. The rule it replaced: `engine/docs/decisions.md` §Geography is not a score threshold.
-- **Rotate oldest-checked-first; don't re-hit the same names.** Every profile is
-  realistically always >7 days since its last check, so "was it checked >7 days ago"
-  is not a useful filter on its own — it's always true. Instead sort each folder by
-  `last_evaluated` ascending and work through a capped batch per run (~15–20 companies
-  + ~10 groups), so coverage cycles through the whole database over a few runs instead
-  of converging on the same handful of high-`career_fit` names every time.
+- **[MODE] Which orgs to sweep.** **Career**: orgs at `career_fit` 60+. **Skill**: orgs at
+  `skill_match` **or** `method_fit` 60+, plus any org with a logged method sighting, in the order
+  `python engine/tools/method_sightings.py --rotation 30` prints. An org clearing both is swept by
+  both; reconciliation drops the duplicate. **Geography is not a score threshold** — the country
+  allowlist decides it (`engine/docs/decisions.md` §Geography is not a score threshold).
+- **Rotate oldest-checked-first; don't re-hit the same names.** Sort each folder by
+  `last_evaluated` ascending and work a capped batch per run (~15–20 companies + ~10 groups), so
+  coverage cycles through the whole database. ("Checked >7 days ago" is always true, so it is no filter.)
 - **Within that batch, check orgs with NO tracked lead first; only then break ties by
-  oldest `last_evaluated`.** An org that already has a lead in the vault has, by
-  definition, been mined — re-checking mostly resurfaces duplicates. One with
-  nothing tracked yet is structurally more likely to yield a genuinely new find.
+  oldest `last_evaluated`** — an org with a lead has been mined already.
   - **"Has a tracked lead" = a matching file in `user/workspace/positions/{open,applied,closed}/`,
-    NOT the company profile's own `open_positions:` field.** That field is frequently
-    stale/empty even when leads exist; trusting it would sort exactly the over-mined names to the
-    *front*. Instead glob `user/workspace/positions/` for the org slug, normalising aliases
-    (`user/workspace/organizations/aliases.toml`; a group vs its parent). The cases: `engine/docs/decisions.md` §Org rotation.
+    NOT the profile's `open_positions:` field**, which is often stale or empty. Glob
+    `user/workspace/positions/` for the org slug, normalising aliases
+    (`user/workspace/organizations/aliases.toml`; a group vs its parent). Cases:
+    `engine/docs/decisions.md` §Org rotation.
 - Find keywords to target the search at `user/profile/preferences.md` -> Job ad Keywords.
-- **Hit the org's ATS endpoint before any job board** — see *Group 0* below. One call returns that
-  employer's complete open-role list with authoritative publish dates, which is strictly better than
-  any aggregator and needs no age filter at all.
-- **If a domain 403s or cert-errors on `WebFetch`, don't retry the same URL.** Pivot
-  straight to `WebSearch` for `"<org name>" careers <role keyword>` — the search-result
-  snippet usually surfaces the posting even when the direct fetch is blocked.
+- **Hit the org's ATS endpoint before any job board** (*Group 0* below): one call returns the
+  employer's complete open-role list with authoritative publish dates, no age filter needed.
+- **If a domain 403s or cert-errors on `WebFetch`, don't retry the same URL.** Pivot to
+  `WebSearch` for `"<org name>" careers <role keyword>` — the snippet usually surfaces the posting.
 
 **Step 2 — Job boards.**
 Run 5–10 distinct queries across as many sources as needed. Prioritise sources where
@@ -400,62 +324,53 @@ python engine/tools/ats_sweep.py
 ```
 
 `ats_sweep.py` fetches **every** confirmed employer board in one pass (~2 min, pure HTTP, **zero
-LLM tokens**), normalises the postings, and prints a ranked TSV — newest and most relevant first —
-to `user/workspace/logs/ats_sweep_latest.tsv`. Read that table and make the collect/skip calls from it. Do **not**
-check companies one at a time by hand; that is what caused only 5 of 93 companies to be swept on
-2026-07-29.
+LLM tokens**) and prints a ranked TSV — newest and most relevant first — to
+`user/workspace/logs/ats_sweep_latest.tsv`. Make the collect/skip calls from that table. **Never**
+check companies one at a time by hand (`engine/docs/decisions.md` §The ATS sweep enumerates).
 
 Columns: `tier` · `age_d` · `published` · `org` · `fit` · `status` · `title` · `location` · `url`
 
 - **`tier`** — `T1` / `T2` from the relevance gate, matched on the **title**;
-  **`T1b` / `T2b`** mean the term is in the ad **body**, not the title — a real lead the title
-  hides, but Gate 2 (placement) still has to be answered when you open it;
-  **`T2?`** means the *title* alone is generic but the *employer* is a small good-fit
-  protein-design shop. Treat `T2?` as worth opening: it is how "Machine Learning Scientist @
-  Latent Labs" surfaces at all.
-  **`M` / `Mb`** are the **skill track's method lane** and only ever fill a row the tiers above
+  **`T1b` / `T2b`** = the term is in the ad **body**, not the title (Gate 2 still has to be
+  answered when you open it); **`T2?`** = a generic title at a small good-fit employer — worth
+  opening.
+  **`M` / `Mb` / `M?`** are the **skill track's method lane** and only fill a row the tiers above
   left at `-`: `M` = the title names a method-building seat (research software / research
-  engineer …), `Mb` = the role text says the seat builds tools, pipelines or methods *for
-  scientists*, **`M?`** = a software/engineering title (whole word, corporate functions excluded)
-  at an employer with a logged method sighting, on a board of at most 100 postings — the
-  employer route, for build seats worded in ways `M`/`Mb` miss (since 2026-10-10). Terms:
+  engineer …); `Mb` = the role text says the seat builds tools, pipelines or methods *for
+  scientists*; `M?` = a software/engineering title (whole word, corporate functions excluded) at
+  an employer with a logged method sighting, on a board of at most 100 postings. Terms:
   `[sweep.method]` in `user/profile/search_terms.toml`. The career track ignores them; the skill
   track reads them per [[search-positions-skill]] §Method lane.
 - **`status`** — `tracked` (org+role already in the vault, skip) · `new-role` (known org, new role —
   collect if it clears the gate) · `NEW-ORG` (no lead anywhere yet — highest value).
 - **`age_d`** is information, not a filter. The script applies **no age limit** by design.
-- **Only tiered rows are printed**; the untiered remainder still goes to `user/workspace/logs/ats_sweep_latest.tsv`.
-  Measured 2026-08-08: 74 of 97 printed rows were tier `-`, roughly three quarters of this
-  channel's token cost, carrying nothing the tier column had not already said.
+- **Only tiered rows are printed**; the untiered remainder still goes to the TSV.
 - Flags: `--show-all` (also print tier `-`) · `--all-geo` (include non-European) ·
-  `--all-roles` (skip the title prefilter — checked, it costs no recall) · `--no-body`
+  `--all-roles` (skip the title prefilter — it costs no recall) · `--no-body`
   (title-only tiering) · `--max-age N` (opt-in only).
 - The footer reports **per-board posting counts**, boards returning **zero**, and boards that
-  **failed**. A failed or empty board is not a board with no roles — say so in the run report
-  rather than treating it as "nothing found". A board that halves between runs is a paging
-  regression, not an employer that stopped hiring.
+  **failed**. A failed or empty board is not a board with no roles — say so in the run report.
+  A board that halves between runs is a paging regression, not an employer that stopped hiring.
 
-**The sweep enumerates; it does not sample.** Workday and SmartRecruiters are paged in full, because
-Workday's `searchText` is fuzzy relevance ranking, not keyword filtering — a sampled sweep sees close
-to arbitrary rows (`engine/docs/decisions.md` §The ATS sweep enumerates).
+**The sweep enumerates; it does not sample.** Workday and SmartRecruiters are paged in full
+(Workday's `searchText` is fuzzy relevance ranking, not a keyword filter).
 
-Coverage as of 2026-08-08: **36 of 96 boards** have a working endpoint. The other 60 are mostly
-big pharma and Danish biotech whose tenant+site cannot be guessed, and still need a
-manual/WebSearch check — they are *not* covered by the sweep. To extend coverage:
+Boards without a working endpoint (mostly big pharma and Danish biotech whose tenant+site cannot
+be guessed) are *not* covered by the sweep and still need a manual/WebSearch check. To extend
+coverage:
 
 ```bash
 python engine/tools/ats_discover.py            # probe companies not yet cached; retries past failures
 python engine/tools/ats_discover.py --refresh  # re-probe everything (~5 min)
 ```
 
-It writes `user/workspace/cache/ats_slugs.tsv`. Rows marked `review` use a collision-prone short slug and are excluded
-from the sweep until confirmed by hand — a real hazard: `ashby:novo` is a New York fintech, not
-Novo Nordisk, and `ashby:nabla` is the French health-AI company, not Nabla Bio. Confirm a board
-belongs to the right employer before promoting it into `[confirmed_by_hand]` in the pack's `ats_seeds.toml`.
+It writes `user/workspace/cache/ats_slugs.tsv`. Rows marked `review` use a collision-prone short
+slug and are excluded from the sweep until confirmed by hand (`ashby:novo` is not Novo Nordisk).
+Confirm a board belongs to the right employer before promoting it into `[confirmed_by_hand]` in the
+pack's `ats_seeds.toml`.
 
-**Blind slug guessing does not work for these** — probing 63 companies across 5 ATSs × 3 slug
-variants resolved *zero* on 2026-08-08. What works is reading the ATS host off the employer's own
-careers page and registering it:
+**Blind slug guessing does not work for these** (`engine/docs/decisions.md` §The ATS sweep
+enumerates). What works is reading the ATS host off the employer's own careers page and registering it:
 
 ```bash
 python - <<'EOF'
@@ -467,24 +382,17 @@ print(sorted(set(RX.findall(h)))[:6])
 EOF
 ```
 
-That found Bavarian Nordic (`bavariannordic/BavarianNordic/**103**` — a pod number no guess list
-would reach), AGC Biologics, and Ascendis Pharma (Workable) in one pass.
-
 Add a Workday tenant to `[workday]`, an Oracle ORC host to `[oracle]`, or a Workable account to
-`[workable]`, in the selected pack's `ats_seeds.toml` (`engine/packs/<pack>/`), whenever you discover
-one by hand — that is the cheapest way to grow coverage over the big-pharma and Danish-biotech tail.
-`ats_discover.py` seeds them straight into `user/workspace/cache/ats_slugs.tsv`, so an entry does
-**not** need a `user/workspace/organizations/companies/` file: DTU is a university, not a company profile.
-
-Employer-specific notes on boards the pack's seeds cover (for the life-science pack: why DTU is
-swept on every run and how its sub-org slugs fold into one board) are in the pack's `boards.md`
-§ATS notes.
+`[workable]`, in the selected pack's `ats_seeds.toml` (`engine/packs/<pack>/`), whenever you
+discover one by hand. `ats_discover.py` seeds them straight into `user/workspace/cache/ats_slugs.tsv`,
+so an entry needs **no** `user/workspace/organizations/companies/` file (DTU is a university, not a
+company profile). Employer-specific board notes: the pack's `boards.md` §ATS notes.
 
 ---
 
 **Reference — the raw endpoint patterns** (for employers not in the cache, or one-off checks).
-These are the **only sources that enumerate completely**, and they carry authoritative publish
-dates. Prefer them over every aggregator; apply **no age filter** here.
+The **only sources that enumerate completely**, with authoritative publish dates. Prefer them over
+every aggregator; apply **no age filter** here.
 
 | ATS | Pattern | Date field |
 |---|---|---|
@@ -500,11 +408,9 @@ dates. Prefer them over every aggregator; apply **no age filter** here.
 **Oracle Recruiting Cloud (ORC)** — one **GET**, no browser, no body. Response shape:
 `items[0].requisitionList[]`, each with `Title` · `PostedDate` (already `YYYY-MM-DD`) ·
 `PrimaryLocation` · `Id`. Public job link: `https://{host}/hcmUI/CandidateExperience/en/sites/`
-`{site}/job/{Id}`. Common in **European academia and the public sector** — this is how DTU is
-covered.
-- `{host}` is `{tenant}.fa.{pod}.oraclecloud.com` — an opaque 4-char tenant id, **not guessable**
-  from the employer name. Read it off the employer's real careers URL once (or off the redirect
-  target of a vanity careers domain), then it is permanent.
+`{site}/job/{Id}`. Common in **European academia and the public sector**.
+- `{host}` is `{tenant}.fa.{pod}.oraclecloud.com` — an opaque 4-char tenant id, **not guessable**. Read
+  it off the employer's real careers URL (or a vanity domain's redirect target) once; it is permanent.
 - `{site}` does **not** filter the result set (any value returns the whole tenant), but it is
   needed for working job links. Given a host, resolve it automatically:
   ```bash
@@ -514,12 +420,10 @@ covered.
   prints the line to paste into `[oracle]` in the pack's `ats_seeds.toml`.
 
 - **Workday: leave `searchText` empty and page on `offset`.** `limit` is hard-capped at 20 (25 →
-  HTTP 400) and the first page's `total` is the board size — page until `offset >= total` rather
-  than stopping on a short page, because Workday returns short intermediate pages (two full sweeps
-  ten minutes apart gave 9781 and 6779 postings before this was fixed). Never filter server-side:
-  `searchText` is relevance ranking, not a keyword filter.
-- **Trust `first_published`, never `updated_at`.** Valence Labs showed a July `updated_at` on roles
-  first published in April — a periodic re-sync, not a new posting. Aggregators surface the wrong one.
+  HTTP 400) and the first page's `total` is the board size — page until `offset >= total`, never
+  stop on a short page (Workday returns short intermediate pages). Never filter server-side.
+- **Trust `first_published`, never `updated_at`** — a periodic re-sync bumps `updated_at` without
+  a new posting, and aggregators surface the wrong one.
 - Confirmed working slugs for the pack's employers: the pack's `boards.md` §ATS notes.
 - Work through the `user/workspace/organizations/companies/` batch this way each run — it is roughly one call per org.
 
@@ -539,54 +443,40 @@ build the URL with LinkedIn's own recency filter and `WebFetch` it directly:
 `https://www.linkedin.com/jobs/search/?keywords=<terms>&location=<COUNTRY>&f_TPR=r1814400`
 
 - `f_TPR=r1814400` = 21 days in seconds (fast pass). Drop `f_TPR` entirely on a deep pass.
-- **Read three pages, one country at a time.** A single fetch is one ranked page, and LinkedIn
-  "reached but not returned" is the largest single miss on strong leads (17 of 93 miss-events,
-  2026-10-01, `analyze_misses.py`). The guest
-  endpoint pages cleanly, 10 cards per page:
+- **Read three pages, one country at a time** — "reached but not returned" is the largest LinkedIn
+  miss on strong leads (`engine/docs/decisions.md` §Recall on strong leads). The guest endpoint
+  pages cleanly, 10 cards per page:
   `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=<terms>&location=<COUNTRY>&f_TPR=r1814400&start=0`
   then `start=10` and `start=20`. **Three pages per query in every country you run, fast or deep.**
-  There are exactly two reasons to stop early, and both are facts about the page just read, not a
-  judgement about the next one:
+  Exactly two reasons to stop early, both facts about the page just read:
   - `exhausted` — the page returned fewer than 10 cards; there is no next page.
-  - `no_shortlist` — not one card on the page made the shortlist. Relevance falls off fast (page 3
-    of `protein design` / UK on 2026-10-01 was macroalgae and metabolomics), so a page that
-    shortlists nothing ends that query in that country.
+  - `no_shortlist` — not one card on the page made the shortlist; that ends the query in that country.
 
-  "Relevance had fallen off" is not a reason unless the page you just read shortlisted nothing.
-  On 2026-10-10 both fast tracks paged short on that judgement: the career track fetched 41 of 90
-  pages, most queries stopping after page 1, and the skill track two of three. If the run is
-  time-boxed, **drop a query, not a page** — the same rule as countries, for the same reason: a
-  query run to page 1 everywhere looks like coverage and is not.
-  `sortBy=DD` has **no effect** on this endpoint (measured 2026-10-01: identical order with and
-  without it), so page, don't sort. Log every page fetched in `hits`, the page count in `pages`,
-  and every query × country that stopped short in `short_pages` (`engine/docs/LOG_SCHEMA.md`);
-  `log_run.py` warns when the pages do not add up.
+  "Relevance had fallen off" is not a reason unless the page you just read shortlisted nothing. If
+  the run is time-boxed, **drop a query, not a page** — a query run to page 1 everywhere looks like
+  coverage and is not (`engine/docs/decisions.md` §Judging the 2026-10-01 fixes).
+  `sortBy=DD` has **no effect** on this endpoint, so page, don't sort. Log every page fetched in
+  `hits`, the page count in `pages`, and every query × country that stopped short in `short_pages`
+  (`engine/docs/LOG_SCHEMA.md`); `log_run.py` warns when the pages do not add up.
 - **One recruiter query per pass.** `log_run.py --next-queries` prints it last, marked
   `<- recruiter query` (`recruiter_queries` in `user/profile/search_terms.toml`). Agencies post
-  strong roles under generic titles, so the agency name in the keywords is what surfaces them.
-  Run it in the required countries like any other query.
-- **`location` MUST be looped over countries, in the configured order.** The loop is ordered by
-  measured yield, and **the first `linkedin_required` entries are not optional** — if the run is
-  time-boxed, drop keyword variants, not countries. On 2026-07-29 three consecutive runs ended with
-  "remaining geography loop not reached", and the country skipped every time was the highest-yielding one.
-
-  The order and the required count are the user's: `linkedin_loop` and `linkedin_required` in
-  `user/settings.toml` `[geography]` (the measured yields behind the current order are noted there).
-  > ⛔ `location=European Union` does **not** cast the full geography net: LinkedIn treats these
-  > tokens as *disjoint* sets, not nested — the EU token returns **zero** CH/NO/UK and under-samples
-  > Denmark and Sweden. Measured 2026-07-29: `engine/docs/decisions.md` §LinkedIn geography tokens.
-- **LinkedIn is a sampler, not a source of truth.** Its unauthenticated result set is ranked and
-  unstable: a *wider* 30-day window returned **fewer** results (10) than the 14-day one (47). So:
-  - Never conclude "nothing new" from a LinkedIn query returning nothing. It is not evidence of absence.
+  strong roles under generic titles. Run it in the required countries like any other query.
+- **`location` MUST be looped over countries, in the configured order** (ordered by measured
+  yield). **The first `linkedin_required` entries are not optional** — if the run is time-boxed,
+  drop keyword variants, not countries. Order and required count are the user's: `linkedin_loop`
+  and `linkedin_required` in `user/settings.toml` `[geography]`.
+  > ⛔ `location=European Union` does **not** cast the full net: LinkedIn treats country tokens as
+  > *disjoint* sets — the EU token returns **zero** CH/NO/UK and under-samples Denmark and Sweden
+  > (`engine/docs/decisions.md` §LinkedIn geography tokens).
+- **LinkedIn is a sampler, not a source of truth** — its result set is ranked and unstable
+  (`engine/docs/decisions.md` §Why age is not a filter). So:
+  - Never conclude "nothing new" from a LinkedIn query returning nothing.
   - Never treat a repeat run of the same query as verification — it is a second random sample.
   - Cross-check anything interesting against the employer's ATS endpoint (Group 0).
-- **Do not choose `keywords` by feel — ask the log.** `python engine/tools/log_run.py --next-queries 4` ranks
-  the rotation pool by how many runs have covered each term and prints the most overdue. Measured
-  2026-08-08: `protein design` ran in 15 of 16 runs, `protein engineering` in 12, and 10 of the
-  27 pool terms had never run once. The pool is the user's: `query_pool` in
-  `user/profile/search_terms.toml` (`search_terms.md` §LinkedIn queries says which term groups it
-  spans, and lists the PhD queries).
-  Compound queries count: `A OR B OR C` credits all three pool terms.
+- **Never choose `keywords` by feel — ask the log.** `python engine/tools/log_run.py --next-queries 4`
+  prints the most overdue terms of the rotation pool (`query_pool` in
+  `user/profile/search_terms.toml`; `search_terms.md` §LinkedIn queries lists its term groups and
+  the PhD queries). Compound queries count: `A OR B OR C` credits all three pool terms.
   One fetch per combination returns a dated list (title, org, location, "X days ago") — filter that
   list against the tiers and dedup directly, rather than searching one posting at a time.
 
@@ -604,28 +494,23 @@ The pack's `boards.md` §Known stale-prone sources lists the aggregators and scr
 dead postings as current in this field. Use them only to *discover* a lead, then confirm against
 the employer's own site or ATS before collecting.
 
-> ⛔ **LinkedIn `ad-library/job/detail/<id>` returns HTTP 200 for dead postings.** This belongs with
-> the stale-prone sources and is the worst offender in the vault, because it fails *silently* — the fetch
-> succeeds, so nothing looks wrong. Measured 2026-08-16: of 24 collected LinkedIn leads that all
-> returned 200, **16 were dead**. Never treat a 200 from that surface as evidence a posting is
-> live. The canonical `linkedin.com/jobs/view/<id>` page is authoritative — it redirects with
-> `trk=expired_jd_redirect` or renders "No longer accepting applications". When collecting from
-> LinkedIn, **store the `/jobs/view/<id>` form in `url:`**, not the ad-library form.
+> ⛔ **LinkedIn `ad-library/job/detail/<id>` returns HTTP 200 for dead postings** — the worst
+> offender, because it fails silently (`engine/docs/decisions.md` §Link health). Never treat a 200
+> from that surface as evidence a posting is live. The canonical `linkedin.com/jobs/view/<id>` page
+> is authoritative — it redirects with `trk=expired_jd_redirect` or renders "No longer accepting
+> applications". When collecting from LinkedIn, **store the `/jobs/view/<id>` form in `url:`**.
 
 ### Link-health pass — run this, don't hand-roll it
-
-Verifying open leads is `link_check.py`'s job, not a per-run improvisation:
 
 ```bash
 python engine/tools/link_check.py            # report only, writes user/workspace/logs/link_check_latest.tsv
 python engine/tools/link_check.py --apply    # stamp url_status/url_checked, retire the dead
 ```
 
-It checks every open lead reaching `thresholds.min_score_shown` (`user/settings.toml`) on **any** of `career_fit`, `method_fit` or
-`skill_match`, re-checks
-LinkedIn leads against the canonical job
+It checks every open lead reaching `thresholds.min_score_shown` (`user/settings.toml`) on **any** of
+`career_fit`, `method_fit` or `skill_match`, re-checks LinkedIn leads against the canonical job
 view, and refuses to archive a bare 404 (reported as `DEAD_UNCONFIRMED` — confirm in a browser,
-then re-run with `--trust-404`). Full rationale and the measurement behind it: `engine/docs/LINK_HEALTH.md`.
+then re-run with `--trust-404`). Rationale: `engine/docs/LINK_HEALTH.md`.
 
 Recruiter-fronted listings (Hays, Barrington James, VRS, SRG) are often real but anonymised and
 sometimes speculative — collect only if the actual employer or a concrete role spec can be confirmed.
@@ -641,10 +526,8 @@ PhD-specific portals a general job search structurally misses, and niche boards:
 ---
 ## Telemetry — how we find out what the search misses
 
-We cannot know how many matching posts exist on the internet, so recall cannot be measured
-directly. It does not need to be. **When a run finds a post that was already live during an
-earlier run, that earlier run missed it** — and the telemetry says why. Late discoveries are the
-ground truth.
+Recall cannot be measured directly, and need not be: **when a run finds a post that was already
+live during an earlier run, that earlier run missed it** — and the telemetry says why.
 
 ```bash
 python engine/tools/analyze_misses.py        # attribution report
@@ -659,16 +542,12 @@ that *should* have caught it (posted before the run, found after) and assigns a 
 `engine/docs/LOG_SCHEMA.md`. The two sweep causes need each run's sweep output, which `log_run.py`
 archives when it logs the run.
 
-**The cause histogram is the deliverable.** "62% `GEO_GAP`" is an instruction; "we missed 8 things"
-is not. Read it as: lots of `CHANNEL_SKIPPED` → the run budget is the bottleneck, not the method ·
-lots of `GATED_OUT` → precision was bought with recall, re-read the Gate 3 buckets · lots of
-`SOURCE_INCOMPLETE` → stop tuning that source, add an independent one · lots of `UNTIERED` → the
-sweep returned it and its tier rules hid it, so fix the tiering · any `AGE_EXCLUDED` → an
-age filter has crept back in.
-
-**The last measured attribution** (16 runs, 94 miss-events, 2026-08-09) and how its shape changed:
-`engine/docs/decisions.md` §Search telemetry. Re-run `analyze_misses.py` for today's numbers rather than trusting a
-snapshot.
+**The cause histogram is the deliverable.** Read it as: lots of `CHANNEL_SKIPPED` → the run budget
+is the bottleneck · lots of `GATED_OUT` → precision was bought with recall, re-read the Gate 3
+buckets · lots of `SOURCE_INCOMPLETE` → stop tuning that source, add an independent one · lots of
+`UNTIERED` → the sweep returned it and its tier rules hid it, so fix the tiering · any
+`AGE_EXCLUDED` → an age filter has crept back in. Re-run `analyze_misses.py` for today's numbers
+(the last snapshot: `engine/docs/decisions.md` §Search telemetry).
 
 `analyze_misses.py` also excludes **redundant collections** — a lead re-collected under a different
 slug — from the miss counts, and reports them separately. They are dedup failures, not misses.
@@ -677,28 +556,18 @@ slug — from the miss counts, and reports them separately. They are dedup failu
 
 ## Model and effort
 
-**Do not treat the recommended model as settled — it is not measured yet.** `log_run.py --stats`
-groups yield by `model/effort/mode` precisely so this can be answered from data. What the log
-said on 2026-08-09 — the table, the withdrawn "never run at low effort" finding, the power
-calculation — is in `engine/docs/decisions.md` §Model and effort. In short:
-
-- **No configuration is distinguishable on `coll/run`.** The within-config spread is larger than
-  every between-config gap.
-- **Screening volume tracks channel breadth, not model or effort**, while collections stay flat at
-  ~2.0/run across every breadth band — widening the channels found no additional leads.
-- **This question is not settleable by A/B testing at this run rate — stop planning to settle it.**
+**The recommended model is not settled — it is not measured yet** (`engine/docs/decisions.md`
+§Model and effort). In short: no configuration is distinguishable on `coll/run`; screening volume
+tracks channel breadth, not model or effort, while collections stay flat; and **this is not
+settleable by A/B testing at this run rate — stop planning to settle it.**
 
 What to do instead:
 
-- **Decide the setting on cost and on qualitative grounds, not on `coll/run`.** The honest position
-  is that the model/effort choice is probably a second-order effect swamped by weekly variation in
-  what is posted.
-- **Keep logging `model` and `effort` anyway.** It costs nothing per run, it is unrecoverable if
-  skipped (13 of 16 runs are permanently `?`), and it is the only thing that would reveal an effect
-  large enough to see.
-- **Put measurement effort where the events are.** Per-run outcomes are too rare to compare;
-  per-*candidate* facts are not. The `screened` reason histogram (243 events) and the
-  channel→conversion table already say more per run than the yield table ever will.
+- **Decide the setting on cost and on qualitative grounds, not on `coll/run`.**
+- **Keep logging `model` and `effort` anyway.** It costs nothing, is unrecoverable if skipped, and
+  is the only thing that would reveal a large effect.
+- **Put measurement effort where the events are** — per-*candidate* facts (the `screened` reason
+  histogram, the channel→conversion table), not per-run outcomes.
 
 ---
 

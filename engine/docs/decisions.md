@@ -62,6 +62,14 @@ pass, and each was then counted as a *late discovery*, inflating the miss statis
 Re-checked over the whole vault, the structural rule catches 12 historical duplicates the
 old one let through, with zero false merges.
 
+### Dedup: the guard is mandatory (2026-07-29)
+
+*Rule: search-positions-common.md step 7.5; CLAUDE.md "Before writing anything to the inbox"*
+
+Eyeball dedup failed in practice: on 2026-07-29 a run collected
+`cradle-bio_scientific-advisor-antibodies` when an **exact** org+role slug match was already
+tracked. Hence `dedup_check.py` runs before every inbox write.
+
 ### Dedup: `possible-dup` is yours to decide (2026-07-30, 2026-08-08)
 
 *Rule: search-positions-common.md step 7.5*
@@ -91,6 +99,9 @@ Basecamp Research roles as *"ML infra/data curation, not protein design output"*
 Answer the gates below **explicitly and in order**, and record the answers in the saved
 `.txt`. Same ad → same answers → same verdict.
 
+Gate 2 (placement) exists because company boilerplate repeats the field's words: a protein-design
+company advertising a finance role still says "protein design" five times on the page.
+
 ### Faculty calls become group profiles (2026-07-30)
 
 *Rule: search-positions-common.md step 7, Gate 0 exception*
@@ -108,6 +119,11 @@ and hold **12 of the vault's 23 strong (≥75) leads**. That channel was reached
 runs and absent from the log entirely in 11. When `--starved` names it, it outranks the
 company rotation.
 
+Why the budget is allocated up front: working top-to-bottom until time ran out had starved the
+same sources sixteen runs running. Why queries come from `--next-queries`, not feel: measured
+2026-08-08, `protein design` ran in 15 of 16 runs, `protein engineering` in 12, and 10 of the 27
+pool terms had never run once.
+
 ### Geography is not a score threshold (2026-08-17)
 
 *Rule: search-positions-common.md §How and Where to Search, step 1*
@@ -116,7 +132,9 @@ company rotation.
 used the blended `fit_score` as a proxy for "is this worth the relocation". That proxy was
 dropped on 2026-08-17 — the scores now measure direction and competence, neither of which
 has anything to say about relocation, and an explicit country allowlist ([[search-common]]
-§Geography) does the job the proxy was doing badly.
+§Geography) does the job the proxy was doing badly. Kept, the old rule would have meant demanding
+*more on-direction work from a foreign lab than a Danish one* — not a preference the user holds.
+Geography is a collection budget, so it is spent as one, explicitly.
 
 ### Remote-only regions: leads from the older, looser rule stay
 
@@ -139,6 +157,11 @@ Same keywords, same day: `European Union` → 47 hits with **zero** CH/NO/UK;
 GSK's *Molecular Design Engineer* (Stevenage) was invisible to the EU query and sat at the top
 of the UK one. Running `Denmark` and `Sweden` separately is also worth it — the regional token
 under-samples them.
+
+Why required countries come before keyword variants: on 2026-07-29 three consecutive runs ended
+with "remaining geography loop not reached", and the country skipped every time was the
+highest-yielding one. The measured yields behind the current loop order are noted in the user's
+`settings.toml` `[geography]`.
 
 ### Org rotation: a tracked lead is a file, not `open_positions:`
 
@@ -168,6 +191,27 @@ live requisitions; Zealand Pharma (Copenhagen, peptides) returns 0 for `protein`
 not keyword filtering — `peptide` at Zealand returns *UX Designer* — so those 60 rows were close
 to arbitrary. Workday and SmartRecruiters are now paged in full: **900 → 8300 postings** per run
 at the same token cost.
+
+Cases behind the rest of Group 0:
+- **One command, not company by company.** Checking employers one at a time by hand swept only 5
+  of 93 companies on 2026-07-29.
+- **Only tiered rows are printed.** Measured 2026-08-08: 74 of 97 printed rows were tier `-`,
+  roughly three quarters of the channel's token cost, carrying nothing the tier column had not
+  already said. `T2?` exists for titles that say nothing on their own — it is how "Machine Learning
+  Scientist @ Latent Labs" surfaced at all.
+- **Coverage.** As of 2026-08-08, 36 of 96 boards had a working endpoint; the other 60 were mostly
+  big pharma and Danish biotech whose tenant+site cannot be guessed.
+- **Blind slug guessing fails.** Probing 63 companies across 5 ATSs × 3 slug variants resolved
+  *zero* on 2026-08-08. Reading the ATS host off the careers page found Bavarian Nordic
+  (`bavariannordic/BavarianNordic/103` — a pod number no guess list would reach), AGC Biologics and
+  Ascendis Pharma (Workable) in one pass.
+- **`review` slugs.** Short slugs collide: `ashby:novo` is a New York fintech, not Novo Nordisk, and
+  `ashby:nabla` is the French health-AI company, not Nabla Bio.
+- **Workday paging.** Before paging to `total`, two full sweeps ten minutes apart gave 9781 and 6779
+  postings, because Workday returns short intermediate pages.
+- **`first_published`, not `updated_at`.** Valence Labs showed a July `updated_at` on roles first
+  published in April — a periodic re-sync, not a new posting.
+- **Oracle ORC** is how DTU is covered.
 
 ### Method lane: find build seats through employers, not titles (2026-10-01)
 
@@ -231,6 +275,11 @@ slug — from the miss counts, and reports them separately. Three of this vault'
 single run on 2026-08-08. They are dedup failures, not misses, and counting them as late
 discoveries had been inflating the miss statistics.
 
+Why the histogram is the deliverable: "62% `GEO_GAP`" is an instruction; "we missed 8 things" is
+not. Why LinkedIn logs both `hits` and `shortlisted`: 2169 logged hits became 141 evaluated
+candidates over 16 runs and *how* was recorded nowhere, which left the largest miss bucket
+(`SOURCE_INCOMPLETE`, 35%) indistinguishable from "the run skimmed past the row".
+
 ### Model and effort: what the log could and could not say (2026-08-09)
 
 *Rule: search-positions-common.md §Model and effort*
@@ -283,6 +332,47 @@ A/B to catch a 2× effect and well over a year for anything subtler. `screened/r
 (CV 1.08). An earlier version of this section proposed "two runs, then re-read `--stats`" — those
 two runs would have produced numbers that look like an answer and are not one.
 
+The honest position: the model/effort choice is probably a second-order effect swamped by weekly
+variation in what is posted. Logging `model` and `effort` still matters because skipping it is
+unrecoverable (13 of 16 runs are permanently `?`). Per-candidate facts — the `screened` reason
+histogram (243 events on 2026-08-09) and the channel→conversion table — already say more per run
+than the yield table ever will.
+
+### Two tracks, and the `track: career` default (2026-08-17)
+
+*Rule: inbox-eval.md §Input format (`TRACK:`); search-common.md §The two-track model*
+
+Every kind has been searched twice, by a career and a skill track, since 2026-08-17. A file with
+no `TRACK:` header gets `track: career` because every record predating 2026-08-17 was collected by
+the direction search — the only one that existed.
+
+Overlap between the tracks is the common case: a protein-design role that also names Snakemake and
+HPC passes the career output gate *and* the skill competency gate, so both agents collect it, and
+staging reconciliation (career wins) exists for exactly that. Since `method_fit` landed
+(2026-09-29) the skill track is the only route by which a `career_fit` 30 · `method_fit` 90 role
+gets collected at all; since 2026-10-01 it looks for such roles on purpose (§Method lane).
+
+### Skill track: a competency counts only when central (2026-08-18)
+
+*Rule: search-common.md §Skill track: the competency gate*
+
+Added after the first two-track run. The gate used to pass on a competency being *named anywhere*
+in the role text — far looser than `skill_match` — and it showed: Latent Labs' Forward Deployed AI
+Engineer passed on `{C1: "data pipelines", C4: "API, CI/CD pipelines"}` and then scored **35**.
+Three of six collections scored ≤35. Naming a competency is not the same as the role being about it.
+The same rule was written out in all three skill-track files until 2026-11-20, when it moved into
+search-common.md once.
+
+### Org collectors: dedup coverage gap
+
+*Rule: search-common.md §Org collectors: dedup*
+
+When the gap was written down, `dedup_check.py` covered the 95 existing company profiles and the
+47 group profiles only indirectly, through the processed `.txt` each was built from. Of the four
+slug collisions in ten days (§Dedup: structural slug rules), `kuleuven-dewilde` vs `ku-leuven` —
+split-vs-joined spellings of one institution — is a *group*-collection failure mode specifically;
+each collision cost a fetch, an inbox write and a full Opus scoring pass.
+
 ---
 
 ## Scoring (`engine/skills/inbox-eval.md`)
@@ -297,7 +387,8 @@ scored **83** and was still never a realistic application (see [[level_sweep]]).
 never a scoring error: it is a genuinely on-direction role the user is underqualified for.
 The two-score model says so out loud — `career_fit 92 · skill_match 55 · level_fit reach`
 — instead of averaging the tension away. `fit_score` and `verdict` were deleted in the
-same change; never reintroduce a blended score.
+same change; never reintroduce a blended score. A `scoring: v1` or unstamped record predates
+this change, which is why a merge also rescores its `skill_match` and deletes those two fields.
 
 ### Scoring v3: band + checks, and the org floor (2026-09-10)
 
@@ -311,7 +402,11 @@ and an organisation must never
 score below its best position. The trigger: a research group scored **85** while its own
 PhD call scored **92** because "the group is broader", and a scan that day found ~15 orgs
 below their best role, the widest Sanofi at **55** against a **95**. Records stamped `v2`/`v2.1`
-still carry the old number until `/rescore` re-judges them.
+still carry the old number until `/rescore` re-judges them. Every record was re-judged under v3
+by 2026-10-01 (§`/rescore` below). Ties between records in the lookup table were agreed as
+acceptable the same day v3 was adopted (2026-09-10), since `skill_match` sits beside every row.
+Since v3, experimental validation is a `career_fit` check, which is why the position collectors keep
+any ad line saying designs are tested in house or by a named collaborator.
 
 ### Score the role, not the employer (2026-08-18)
 
@@ -338,6 +433,10 @@ which score near zero on `career_fit` and were therefore invisible to `/search-*
 dashboard. `method_fit` makes them visible **without touching `career_fit`**, which keeps its
 exact v3 meaning. The identity behind it: *the user builds the methods a research team runs on* — the
 analyst who improves how the team trains, not the specialist competing head-on.
+
+`method_fit` is not part of the v2 → v3 `career_fit` migration, so a merge scores it on any record
+that lacks it, whatever its `scoring:` stamp. Salary was a stated goal of the rebrand, but it is
+rarely stated in Danish ads, so it stays under *Logistics & Salary* and out of every score.
 
 ### Logistics and prestige score nothing (2026-08-17)
 
@@ -381,7 +480,10 @@ Both CLAUDE.md and `engine/docs/LINK_HEALTH.md` require the canonical form, but 
 there and not in `/inbox` — which is why **26 of 37 open LinkedIn leads were still stored in
 ad-library form on 2026-08-29**. It matters because `ad-library/job/detail/<id>` **returns HTTP
 200 for expired postings** — on 2026-08-16 that concealed 16 dead leads out of 24. Seven
-surviving pre-fix `working` stamps were corrected on 2026-08-29.
+surviving pre-fix `working` stamps were corrected on 2026-08-29. `link_check.py` normalises the
+URL internally, so its verdicts were never affected — the stored `url:` matters because it is the
+link a human clicks and `/cv` pre-flights. Since the 2026-08-16 fix `link_check.py` returns only
+`DEAD` or `UNVERIFIED` for a LinkedIn lead.
 
 ### `org_profile:` — the matches the automatic link gets wrong
 
@@ -419,6 +521,46 @@ send, and the check costs one search.
 
 This is how the Novonesis opener was settled on 2026-08-16 and it worked; a reworded near-duplicate wastes a round.
 The Novonesis "enzymes rather than chemistry" false opposition also sat in the Style B closing rung and had to be removed there too.
+
+### Smaller CV rules and their reasons
+
+*Rule: cv-generate.md Steps 0, 3, 4c*
+
+- **No entry is ever split across pages** — a user rule, set 2026-10-03.
+- **Pre-flight the link first** because it is the cheapest place to catch a dead posting — far
+  better than after the CV is made, on deadline day.
+- **Never guess an email address**: a corporate pattern (`first.last@org.com`) can send a real
+  application to the wrong person or nowhere. The postal address is a factual claim in a document
+  that leaves the building, so it is verified like a job-ad `url`.
+- **One covering email, not one per style**: the email is largely style-neutral, so doubling it
+  would only add noise to the A/B comparison.
+
+---
+
+## Dashboard (`engine/skills/dashboard.md`)
+
+*Rule: dashboard.md §Workflow, §Statistics tab, §Display rules*
+
+- **The deadline sweep is not enough.** On 2026-08-16 the deadline sweep retired 2 leads while the
+  link check retired 20 — a posting pulled early stays in `open/` looking healthy, so
+  `link_check.py` runs about weekly.
+- **Belt and braces.** Before `expire_sweep.py` existed, 22 of 130 "open" leads were already dead
+  — a 17% overstatement of the active pipeline — even though the display filter hid them.
+- **On-direction counts shown records only (2026-08-29).** It used to count every record in the
+  vault, including expired and closed leads: 125 when just 79 were visible. The lifetime figure
+  survives as `positive_all`.
+- **One `_sent_evidence()`.** Until 2026-08-18 the CVs-sent tile had its own looser set treating
+  every `closed` record as sent, so it read 28 while the org rows read 22 — the 6-record gap was
+  entirely leads closed `withdrawn` and never submitted. Two definitions is how this drifted.
+- **The position→profile join needs direction and rarity.** Token overlap alone put a Digital
+  Biotechnology Lab role under **Büll Lab** on the shared tokens `{dtu, bioengineering}`.
+- **`min_score_shown` keeps a row if any score clears it**, because the old blended `fit_score`
+  would have buried a `career_fit 88 · skill_match 40` stretch role and flattered a
+  `career_fit 45 · skill_match 85` fallback.
+- **Dates of the current layout.** Timeline and To-do tabs, and removal of the deadline bar and of
+  Best Match: 2026-10-02. Statistics tab replaced the Overview stat tiles: 2026-10-10. Wet-lab
+  column and toggle: 2026-10-26. Interviews on the Timeline: 2026-11-07. OS-style Home page
+  replaced the Overview top-5 tables: 2026-11-20. Each at the user's request.
 
 ---
 
@@ -476,13 +618,15 @@ dead leads out of 24, and 20 of 50 open leads overall turned out dead.
 
 *Rule: CLAUDE.md §Link & status hygiene; implemented by `expire_sweep.py`.*
 
-**Exception, added 2026-08-29 on the user's explicit instruction — age retirement.** A lead with
+**Exception, added 2026-08-29 on the user's explicit instruction — age retirement.** The trigger:
+`biohub_computational-biologist-cellxstate_2026-06` was found in `open/` at 83 days. A lead with
 `deadline: null` could never be retired by the rule above, and 78% of open leads had no deadline, so
 they accumulated indefinitely. `expire_sweep.py` now retires deadline-less leads **older than `thresholds.stale_days`
 (`user/settings.toml`, 45 when introduced) on age alone**, stamping `expired_reason: stale_no_deadline` plus a dated Notes line saying the
 posting was *not* confirmed removed. This knowingly trades accuracy for a manageable active set:
 some retired leads are still live. It is a decision, not a bug — do not revert it. First run moved
-**39** leads (open/ 85 → 46), including `career_fit` 95 and 93. Undo the whole set with
+**39** leads (open/ 85 → 46), including `hzdr_postdoc-generative-ai-denovo-protein-design`
+(`career_fit` 95), `latent-labs_computational-protein-designer` (93) and three at 90. Undo the whole set with
 `grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`; skip it for one run with
 `--keep-stale`. See `engine/docs/LINK_HEALTH.md`.
 
@@ -552,7 +696,11 @@ AGE_EXCLUDED 8%. PhD portals skipped or never run account for 15 of the 93.
 
 What changed:
 - **Deep pass weekly, not monthly**, with `phd_portals` mandatory on it. Deep passes yield 1.2 strong
-  leads per run against 0.4 for a fast pass (sonnet/medium, 9 vs 22 runs).
+  leads per run against 0.4 for a fast pass (sonnet/medium, 9 vs 22 runs). PhD portals had the best
+  strong-lead rate of any channel (3 of 6) while being skipped in 22 of 48 runs.
+- **LinkedIn "reached but not returned"** was the largest single miss on strong leads (17 of the 93
+  miss-events). Relevance falls off fast: page 3 of `protein design` / UK that day was macroalgae
+  and metabolomics, hence the `no_shortlist` stop.
 - **Five required LinkedIn countries on both tracks** — UK, Denmark, Germany, Netherlands,
   Switzerland — with Germany and the Netherlands given their own tokens, because the EU token
   under-samples single countries. `log_run.py` warns when a run skips one.
