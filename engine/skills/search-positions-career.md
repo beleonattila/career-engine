@@ -1,7 +1,7 @@
 ---
 name: search-positions-career
 cssclasses: [skill]
-recommended_model: Sonnet medium — provisional, never low (see search-positions-common §Model and effort)
+recommended_model: Sonnet medium — provisional (see search-positions-common §Model and effort)
 description: >
   CAREER track position collector. Searches for open positions on the user's preferred
   direction (user/profile/preferences.md). Run as a sub-agent by /search-positions,

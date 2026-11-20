@@ -15,7 +15,7 @@ Set the model before running (capability buys judgment; effort buys care):
 ----------------------------------------------------------------
 /dashboard      Haiku low                      (pure mechanics)
 /track          Haiku low  (Sonnet if plain-language target)
-/search-positions   Sonnet med  (PROVISIONAL - never low; see below)
+/search-positions   Sonnet med  (PROVISIONAL - not settled; see below)
 /search-companies   Sonnet low-med  (unmeasured; telemetry covers positions only)
 /search-groups      Sonnet low-med  (unmeasured; telemetry covers positions only)
 /cv             Sonnet med  (high for cover letter)

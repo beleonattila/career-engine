@@ -1,7 +1,7 @@
 ---
 name: search-positions-skill
 cssclasses: [skill]
-recommended_model: Sonnet medium — provisional, never low (see search-positions-common §Model and effort)
+recommended_model: Sonnet medium — provisional (see search-positions-common §Model and effort)
 description: >
   SKILL (employability) track position collector. Searches for open positions the user could
   realistically get and do, judged purely on evidenced competencies — direction is irrelevant

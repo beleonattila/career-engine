@@ -2,7 +2,7 @@
 name: search-positions-common
 cssclasses:
   - skill
-recommended_model: Sonnet medium — provisional, never low (see "Model and effort" below)
+recommended_model: Sonnet medium — provisional (see "Model and effort" below)
 description: >
   Shared machinery for both position collectors (search-positions-career and
   search-positions-skill). Not invoked directly. Owns everything the two tracks do
@@ -258,19 +258,28 @@ in_silico: yes | no | mixed
 ---
 ## Output example
 
+A career-track file. The skill track writes its own Gate 1 and Gate 3 lines (its mode file).
+
 **file name:**
 
-Protein Design and Biophysics Specialist - DTU Bioengineering_found-2026-06-13.txt
+`dtu-bioengineering_protein-design-biophysics-specialist_found-2026-05-29.txt`
 
 **file content:**
 ```
 SOURCE: https://www.linkedin.com/jobs/view/4426747303/
+POSTED: 2026-05-22
 FOUND: 2026-05-29
 
 Title: Protein Design and Biophysics Specialist - DTU Bioengineering
 Org: DTU Bioengineering
 Location: Lyngby, Denmark
 Keywords: RFdiffusion, ProteinMPNN, AlphaFold, protein engineering
+
+Gate 1 (terms found): T1: RFdiffusion, ProteinMPNN, protein engineering | T2: none
+Gate 2 (placement): role
+Gate 3 (output): a — the person runs design campaigns and ships the designed proteins
+Gate 4 (level): pass — none
+in_silico: mixed
 
 [full verbatim text of the job ad]
 ```
@@ -313,9 +322,10 @@ Academic PI labs live only in `research_groups/` — skip it and you cannot find
   `WebSearch` for `"<org name>" careers <role keyword>` — the snippet usually surfaces the posting.
 
 **Step 2 — Job boards.**
-Run 5–10 distinct queries across as many sources as needed. Prioritise sources where
-results can be filtered to the **past 2 weeks** (14 days) — this is the hard freshness
-window; discard anything older. Work through groups in order.
+Run 5–10 distinct queries across as many sources as needed. Prefer sources with a recency
+filter: set it to **~21 days** on a fast pass and drop it on a deep pass (Task step 2). The filter
+only narrows what a source returns; never discard a lead you found on age alone (Task step 3).
+Work through groups in order.
 
 #### Group 0 — Employer ATS endpoints ⭐ **do this first — it is one command**
 
@@ -432,7 +442,7 @@ every aggregator; apply **no age filter** here.
 | Source        | URL                         | Notes                                   |
 | ------------- | --------------------------- | --------------------------------------- |
 | LinkedIn Jobs | linkedin.com/jobs           | A **sampler, not an enumeration** — see the block below. Use the direct search URL, not a generic web search. |
-| Indeed        | indeed.com                  | Set the date filter to "Last 14 days"   |
+| Indeed        | indeed.com                  | Fast pass: date filter "Last 14 days" (its widest preset; there is no 21). Deep pass: no date filter. |
 
 **LinkedIn — fetch the dated search URL directly; don't `WebSearch` for
 `site:linkedin.com/jobs/view ...`.** A generic web search ranks by relevance/authority,
