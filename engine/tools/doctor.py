@@ -71,7 +71,14 @@ STALE = [
 PATH_RE = re.compile(r"(?<![\w/.-])((?:user|engine)/[\w./@-]*[\w/])")
 TEMPLATED = re.compile(r"[\[\]{}*<>|]|YYYY|\.\.\.")
 ON_DEMAND = {"user/workspace/trash", "user/workspace/trash/_trash_log.md",   # created by /track
-             "user/workspace/logs/method_sightings.tsv"}                     # by method_sightings.py add
+             "user/workspace/logs/method_sightings.tsv",                     # by method_sightings.py add
+             # outputs the tools write on first use, so absent in a new install
+             "user/workspace/artifacts/dashboard.html", "user/workspace/plan/plan.json",
+             "user/workspace/logs/search_runs.jsonl", "user/workspace/logs/ats_sweep_latest.tsv",
+             "user/workspace/logs/link_check_latest.tsv", "user/workspace/cache/ats_slugs.tsv",
+             "user/workspace/linkedin/linkedin_stats.csv"}
+# The engine cites a few of the owner's own notes as rationale; another install will not have them.
+NOTES = "user/workspace/notes/"
 
 results = []  # (status, check, message, details)
 
@@ -92,7 +99,7 @@ def read(p):
 def check_layout():
     missing = [r for r in REQUIRED if not (USER / r).exists()]
     if not USER.exists():
-        report("FAIL", "layout", f"{USER} does not exist — nothing to run on")
+        report("FAIL", "layout", f"{USER} does not exist — nothing to run on. Run: python engine/tools/init_user.py")
         return
     report("FAIL" if missing else "PASS", "layout",
            f"{len(REQUIRED) - len(missing)}/{len(REQUIRED)} required user/ paths present",
@@ -217,7 +224,7 @@ def check_search_terms():
 
 
 def check_paths():
-    stale, dangling = [], []
+    stale, dangling, notes = [], [], []
     for p in PROSE:
         if not p.exists():
             continue
@@ -227,13 +234,17 @@ def check_paths():
                     stale.append(f"{rel(p)}:{n}  [{label}]  {line.strip()[:110]}")
             for m in PATH_RE.finditer(line):
                 path = m.group(1).rstrip("./")
-                if TEMPLATED.search(path) or path in ON_DEMAND:
+                if TEMPLATED.search(path) or path in ON_DEMAND or \
+                        (path.startswith("user/") and not USER.is_dir()):  # layout reports that
                     continue
                 if not (REPO / path).exists():
-                    dangling.append(f"{rel(p)}:{n}  {path}")
+                    (notes if path.startswith(NOTES) else dangling).append(f"{rel(p)}:{n}  {path}")
     report("FAIL" if stale else "PASS", "paths", f"{len(stale)} stale pre-restructure reference(s)", stale)
     report("FAIL" if dangling else "PASS", "paths",
            f"{len(dangling)} path(s) named in the engine that do not exist", sorted(set(dangling)))
+    if notes:
+        report("WARN", "paths", f"{len(set(notes))} cited personal note(s) not in this user/ (normal in a "
+               "new install)", sorted(set(notes)))
 
 
 def check_tools():
@@ -269,6 +280,8 @@ def check_git():
              [f"tracked in the engine repo: {t}" for t in tracked]
     report("FAIL" if issues else "PASS", "git", "engine repo keeps user/ out", issues)
 
+    if not USER.is_dir():
+        return  # check_layout already reports it missing
     code, top = git(USER, "rev-parse", "--show-toplevel")
     if code or Path(top).resolve() != USER.resolve():
         report("WARN", "git", "user/ is not its own git repo — it has no history or undo")
@@ -333,7 +346,7 @@ def check_records():
 
 def private_terms():
     terms = {w for w in user_name().split() if len(w) > 2}
-    code, email = git(USER, "config", "user.email")
+    code, email = git(USER if USER.is_dir() else REPO, "config", "user.email")
     if not code and email:
         terms.update({email, email.split("@")[0]})
     extra = PROFILE / "private_terms.txt"

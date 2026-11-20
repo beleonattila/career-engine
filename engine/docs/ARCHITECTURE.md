@@ -22,6 +22,8 @@ career-engine/
 │   │                             synonyms.md · prestige.md · ats_seeds.toml
 │   ├── hooks/                  ← pre-commit (doctor.py --share); install once per clone with
 │   │                             `git config core.hooksPath engine/hooks`
+│   ├── templates/user/         ← starter user/ (placeholder profile, example settings, LaTeX
+│   │                             templates, empty workspace); copied by init_user.py
 │   └── tools/                  ← stdlib-only Python, run from the repo root (index below)
 │       └── web/                ← plan.js · plan.css (Timeline + To-do) and stats.js · stats.css
 │                                 (Statistics tab), inlined into dashboard.html by dashboard.py
@@ -81,6 +83,7 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | Tool | What it does |
 |---|---|
 | `paths.py` | The one place that knows where `user/` and its folders are (override: `CAREER_USER_DIR`) |
+| `init_user.py` | New clone: creates `user/` from `engine/templates/user/`, git-inits it and installs the pre-commit guard. Never overwrites; `--add-missing` fills gaps in an existing `user/`, `--dry-run` previews |
 | `doctor.py` | Read-only health check: layout, settings.toml keys, stale or dangling paths, tools, git safety (incl. the pre-commit guard), records and their `schema_version`, and personal terms in any file the engine tracks or has staged (`--share` makes that last one fail; the pre-commit hook runs it). Terms come from `user/profile/private_terms.txt` |
 | `schema.py` | The record format version: `SCHEMA_VERSION`, a report of records per version, and `--apply` to migrate them (`engine/docs/RECORD_SCHEMA.md`) |
 | `dashboard.py` | → `user/workspace/artifacts/dashboard.html` |

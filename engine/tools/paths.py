@@ -45,7 +45,7 @@ def settings():
     global _settings
     if _settings is None:
         if not SETTINGS.exists():
-            raise SystemExit(f"missing {SETTINGS} — the tools need your personal settings file")
+            raise SystemExit(f"missing {SETTINGS} — the tools need your personal settings file (new clone? run: python engine/tools/init_user.py)")
         with open(SETTINGS, "rb") as f:
             _settings = tomllib.load(f)
     return _settings

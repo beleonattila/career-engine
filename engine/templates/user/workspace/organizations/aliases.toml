@@ -1,0 +1,4 @@
+# Org aliases: only for renames and acquisitions, which string normalisation cannot derive.
+# Read by dedup_check.py, org_match.py and the dashboard.
+# variant-slug = "canonical-slug"
+[aliases]

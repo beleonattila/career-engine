@@ -1,0 +1,4 @@
+# Words that must never appear in the engine repo: one per line. doctor.py --share (and the
+# pre-commit hook) fails a commit that contains any of them. Your name (from snapshot.md) and your
+# git email are added automatically. Add: your city, employer names, contacts, application IDs...
+# Lines starting with # are ignored.

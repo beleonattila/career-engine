@@ -81,7 +81,7 @@ Set the model before running (capability buys judgment; effort buys care):
 /cv [profile]       Generate a targeted CV + cover letter (solicited position, or
                     unsolicited company/group). Compiles PDFs.            [Sonnet med]
                     e.g.  /cv user/workspace/positions/open/symphogen_...md
-                          /cv user/workspace/organizations/companies/skape-bio.md
+                          /cv user/workspace/organizations/companies/<org-slug>.md
 
 /dashboard          Retire past-deadline leads (expire_sweep.py), then rebuild
                     user/workspace/artifacts/dashboard.html (tiles, funnel, ranked tabs).           [Haiku low]

@@ -1,0 +1,41 @@
+# What the engine's tools search for. The prose version of the same gates — the one the search
+# agents read — is search_terms.md next to this file: change a term in one, change it in the other.
+# Patterns are Python regular expressions, matched case-insensitively. They are TOML literal
+# strings ('...'), so backslashes are literal. The [sweep] and [linkedin] values are EXAMPLES for a
+# protein-design search — replace them with your field's terms.
+
+[sweep]
+# ats_sweep.py relevance tiers, on the posting title. tier1: one match qualifies a lead.
+# tier2: two distinct matches qualify.
+tier1 = 'protein design|protein engineer|machine learning scientist'
+tier2 = 'structural bioinform|computational biolog|deep learning|data scien'
+# Broad title prefilter: anything a human might want to eyeball.
+maybe = 'scientist|research|engineer|analyst|bioinformat|computational|machine learning|\bml\b|\bai\b'
+# A generic computational title; only counts at an employer whose career_fit is high enough.
+computational = 'machine learning|deep learning|\bml\b|\bai\b|computational|data scien|algorithm|modell?ing|simulation'
+# career_fit an employer needs for that generic-title tier.
+t2q_min_employer_fit = 60
+
+[sweep.method]
+# The skill track's method lane: seats that BUILD tools others use. Domain-agnostic; usually fine
+# as is. title_strong: a title that names a method-building seat on its own. title: titles allowed
+# into the body check. body_build + body_users must both match the ad text.
+title_strong = 'research software|scientific software|research engineer|methods? develop|method development|bioinformatics (software )?engineer|computational (methods|tools)|scientific (tools|tooling)|research data engineer'
+title = 'engineer|developer|software|platform|pipeline|tooling|data scien|data engineer|mlops'
+body_build = '(develop|build|implement|create|maintain|own)\w*\s+(and\s+\w+\s+)?((new|novel|our|the|a|an|robust|scalable|reusable|internal|open[- ]source)\s+)?((computational|analysis|analytical|scientific|bioinformatics?|ml|machine[- ]learning|statistical|data|software|in[- ]silico)\s+)?(methods?|tools?|tooling|pipelines?|platforms?|frameworks?|algorithms?|benchmarks?|workflows?|libraries|packages?)|(computational|bioinformatics?|statistical|ml|machine[- ]learning|algorithmic|in[- ]silico|analytical software)\s+methods?\s+development'
+body_users = '\b(scientists?|researchers?|biologists?|chemists?|clinicians?|wet[- ]lab|laborator(y|ies)|experimental (teams?|data)|assay|r&d teams?|research teams?)\b'
+
+[level]
+# Gate 4: titles above your level. Tune overlevel to what you hold (profile/background.md §Level).
+overlevel = '\b(principal|staff|lead|leader|director|vice president|vp|head of|chief|founding|founder|group leader|professor|cto|cso)\b'
+# In a PhD advert the level word describes the supervisor, not the vacancy.
+phd_call = '\b(phd|ph\.d|doctoral|doctorate|graduate school|stipend)\b'
+# "(Senior) Scientist": the employer takes either level — strip the marker and judge the rest.
+optional_level = '\(\s*(senior|sn?r\.?|principal|staff|lead)\s*\)'
+
+[linkedin]
+# The LinkedIn keyword rotation (log_run.py --next-queries ranks it by how often each ran).
+query_pool = ["protein design", "protein engineering", "computational biologist",
+              "machine learning scientist biology", "PhD computational biology"]
+# Recruiter-agency queries, one per pass. Optional; leave empty if you have none.
+recruiter_queries = []

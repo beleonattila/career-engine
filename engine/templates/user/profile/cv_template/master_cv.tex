@@ -1,0 +1,143 @@
+% !TEX program = xelatex
+%% Master CV — the visual and structural template /cv copies and fills per application.
+%% Compile with: latexmk -xelatex master_cv.tex
+%% Replace every [bracketed] placeholder. Keep the macros: /cv relies on \cvrow, \cvskill,
+%% \cvjob and the cvbullets environment. Variants and optional lines: NOTES.md next to this file.
+\documentclass[a4paper, 10pt]{article}
+\usepackage{fontspec}
+\usepackage[a4paper, top=1.8cm, bottom=2.2cm, left=2cm, right=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{needspace}   % \needspace{len} — forces page break if < len remains
+
+%% ── Font ────────────────────────────────────────────────────────
+%  fontspec's default (Latin Modern) always works. For a sans font, uncomment one you have
+%  installed, e.g. TeX Gyre Heros or Calibri.
+% \setmainfont{TeX Gyre Heros}
+
+%% ── Colours ─────────────────────────────────────────────────────
+\definecolor{accent} {HTML}{2B5BA8}   % blue for section headings
+\definecolor{body}   {HTML}{1A1A1A}   % near-black for body text
+\definecolor{subtle} {HTML}{555555}   % grey for org names, footer
+
+%% ── Hyperlinks ──────────────────────────────────────────────────
+\hypersetup{colorlinks=true, urlcolor=accent, linkcolor=body}
+
+%% ── Global spacing ──────────────────────────────────────────────
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+%% ── Page style / footer ─────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[L]{\small\color{subtle}[phone]\quad \href{mailto:you@example.com}{you@example.com}}
+\fancyfoot[C]{\small\color{subtle}[City, Country]}
+\fancyfoot[R]{\small\color{subtle}\thepage\,/\,\pageref{LastPage}}
+
+%% ── Section heading style ───────────────────────────────────────
+\titleformat{\section}
+  {\large\bfseries\color{accent}}{}{0em}{}
+  [\color{accent}\vspace{1pt}\hrule height 0.7pt]
+\titlespacing*{\section}{0pt}{12pt}{5pt}
+
+%% ── Two-column layout constants ─────────────────────────────────
+%  \leftcol  : width of the date / category label column
+%  \rightcol : remaining content column (auto-calculated)
+%  \colsep   : gap between the two columns
+\newlength{\leftcol}  \setlength{\leftcol}{2.8cm}
+\newlength{\colsep}   \setlength{\colsep}{1em}
+\newlength{\rightcol}
+\setlength{\rightcol}{\dimexpr\textwidth - \leftcol - \colsep\relax}
+
+%% ── CV primitives ───────────────────────────────────────────────
+
+% \cvrow{LEFT COLUMN}{RIGHT COLUMN}
+% Generic two-column row. All other commands build on this.
+\newcommand{\cvrow}[2]{%
+  \noindent
+  \begin{minipage}[t]{\leftcol}\raggedright\small #1\end{minipage}%
+  \hspace{\colsep}%
+  \begin{minipage}[t]{\rightcol}\raggedright #2\end{minipage}%
+  \par\vspace{5pt}%
+}
+
+% \cvskill{Category label}{bullet \item lines}
+% Used for Competencies section.
+\newcommand{\cvskill}[2]{%
+  \cvrow{\textbf{#1}}{%
+    \begin{itemize}[nosep, topsep=1pt, leftmargin=1.1em, itemsep=1.5pt,
+                   label=\textbullet]
+      #2
+    \end{itemize}%
+  }%
+  \vspace{10pt}%   % gap between competency groups — increase/decrease to taste
+}
+
+% \cvjob{dates}{Title}{Organisation line}{body — use cvbullets or leave empty}
+% Used for Experience and Education entries.
+\newcommand{\cvjob}[4]{%
+  \cvrow{\textbf{#1}}{%
+    \textbf{#2}\\[-1pt]
+    {\small\itshape\color{subtle}#3}%
+    #4%
+  }%
+}
+
+% cvbullets environment — indented bullet list inside a cvjob
+\newenvironment{cvbullets}{%
+  \begin{itemize}[nosep, topsep=3pt, leftmargin=1.1em, itemsep=2pt,
+                 label=\textbullet]
+}{%
+  \end{itemize}%
+}
+
+%% ================================================================
+\begin{document}
+\color{body}
+
+{\fontsize{26}{26}\selectfont\textbf{[Your Name]}}\par\vspace{3pt}
+%% Change this subtitle to match the target role.
+{\large [Role you are targeting \textbar{} Your two core strengths]}\par
+\vspace{12pt}
+
+\section{Profile}
+[Four to six sentences: who you are, what you build or do, the evidence, what you want next.]
+
+\section{Competencies}
+\cvskill{[Area 1]}{
+  \item [Skill, with the tool or project that proves it]
+  \item [Skill]
+}
+\cvskill{[Area 2]}{
+  \item [Skill]
+}
+
+\section{Experience}
+\cvjob{[2023--2025]}{[Job title]}{[Organisation, City]}{%
+  \begin{cvbullets}
+    \item [What you did and the result, with a number if you have one]
+    \item [Another result]
+  \end{cvbullets}
+}
+
+\section{Education}
+\cvjob{[2023--2025]}{[Degree, Programme]}{[University, City]}{%
+  \begin{cvbullets}
+    \item [Thesis title; grade exactly as on the transcript]
+  \end{cvbullets}
+}
+
+\section{Publications}
+%% Pick from publications.md (its Selection Guide says which to show where).
+\cvrow{[Year]}{[Authors]. [Title]. \textit{[Journal]}. \href{https://doi.org/10.0000/example}{doi:[doi]}}
+
+\section{Languages}
+\cvrow{\textbf{[Language]}}{[Level]}
+
+\end{document}

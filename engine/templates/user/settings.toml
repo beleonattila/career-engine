@@ -1,0 +1,56 @@
+# Personal settings the engine reads — its tools through engine/tools/paths.py, its skills by
+# reading this file. Prose preferences live in profile/preferences.md. The engine keeps no
+# defaults of its own: a missing key stops the tool that needs it. Every value below is an
+# EXAMPLE — change it to yours. python engine/tools/doctor.py checks the keys and ranges.
+
+[search]
+# The domain pack: engine/packs/<pack>/ holds the job boards, ATS seeds and term synonyms for one
+# field. Only life_science ships today; for another field, copy that folder and edit it.
+pack = "life_science"
+
+[thresholds]
+# A lead stays visible on the dashboard (and is re-checked by link_check.py) when ANY of
+# career_fit / method_fit / skill_match reaches this.
+min_score_shown = 50
+# Days after which expire_sweep.py retires a lead with no deadline on age alone.
+stale_days = 45
+# A deadline-less lead confirmed live within this many days is kept despite its age.
+verified_days = 14
+# career_fit at or above which a record counts as on-direction (dashboard tile, stats).
+on_direction = 75
+
+# Where a role may be. ats_sweep.py keeps only postings it can place in a listed country; country
+# names must be ones PLACES in engine/tools/ats_sweep.py knows (doctor.py warns otherwise).
+# A block with remote_only = true is collected only when the ad says remote work is fine.
+# How the blocks are used: engine/skills/search-common.md §Geography.
+[geography]
+# LinkedIn's location= tokens for the position search, in order; the first `linkedin_required`
+# are never skipped when a run is time-boxed.
+linkedin_loop = ["Denmark", "European Union", "United Kingdom"]
+linkedin_required = 2
+
+[[geography.block]]
+name = "Home"
+countries = ["Denmark"]
+note = "Preferred — no relocation"
+
+[[geography.block]]
+name = "Rest of EU/EEA"
+countries = ["Sweden", "Norway", "Finland", "Germany", "Netherlands", "Belgium", "France",
+             "Austria", "Spain", "Italy", "Ireland", "Portugal", "Switzerland"]
+note = "Relocation, no visa barrier"
+
+[[geography.block]]
+name = "Remote from abroad"
+countries = ["United States", "Canada"]
+remote_only = true
+note = "Collect ONLY when the ad states EU-remote or worldwide-remote is acceptable"
+
+[career_fit.checks]
+# The yes/no checks that place a record inside its career_fit band. What each one means for you
+# goes in profile/preferences.md §Scoring → Checks. Value = units. A check that can be met halfway
+# gets a second entry "<name>-half" worth half. Rename these to your own checks.
+application = 1.0
+validation = 1.0
+package = 1.0
+package-half = 0.5

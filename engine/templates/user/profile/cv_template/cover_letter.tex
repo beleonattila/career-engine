@@ -1,0 +1,54 @@
+% !TEX program = xelatex
+%% Cover-letter template /cv fills per application. Put your own sender header in once;
+%% /cv replaces the [bracketed] parts. Compile with: latexmk -xelatex cover_letter.tex
+\documentclass[a4paper, 11pt]{article}
+\usepackage{fontspec}
+\usepackage[a4paper, top=2.8cm, bottom=2.8cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{microtype}
+% \setmainfont{TeX Gyre Heros}   % optional: any installed font
+\definecolor{accent}{HTML}{2B5BA8}
+\definecolor{body}  {HTML}{1A1A1A}
+\definecolor{subtle}{HTML}{555555}
+\hypersetup{colorlinks=true, urlcolor=accent, linkcolor=body}
+\setlength{\parindent}{0pt}
+\begin{document}
+\color{body}
+
+% ── Sender header ─────────────────────────────────────────────────────
+{\large\textbf{[Your Name]}}\par
+{\small\color{subtle}
+  [City, Country]\quad
+  \href{mailto:you@example.com}{you@example.com}\quad
+  [phone]
+}\par
+\vspace{18pt}
+
+% ── Date + addressee ──────────────────────────────────────────────────
+{\small [YYYY Month DD]}\par
+\vspace{10pt}
+{\small [Organisation name]\\{}
+[Department, if known]\\{}
+[City, Country]}\par
+\vspace{18pt}
+
+% ── Subject line ──────────────────────────────────────────────────────
+\textbf{Re: [Role Title]}
+
+\vspace{14pt}
+
+% ── Body ──────────────────────────────────────────────────────────────
+[Paragraph 1 — Opening]
+
+[Paragraph 2 — Technical match]
+
+[Paragraph 3 — What makes this application different]
+
+[Paragraph 4 — Close]
+
+\vspace{20pt}
+[Your Name]
+
+\end{document}

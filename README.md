@@ -3,12 +3,42 @@
 A Claude Code project for running a job search: collect positions, score them against a personal
 profile, and generate tailored CVs and cover letters.
 
-**Status: private.** Everything personal lives in `user/` (gitignored, its own local repo);
-`python engine/tools/doctor.py --share` finds no personal terms left in the engine. Onboarding for
-a new user comes next.
+Everything personal lives in `user/`, which this repo ignores; it is its own local git repo.
+The engine (`engine/`, `CLAUDE.md`, `.claude/`) is generic.
 
-**Once per clone:** `git config core.hooksPath engine/hooks` — installs the pre-commit guard that
-refuses a commit putting personal content into the engine.
+## First run
+
+Needs: [Claude Code](https://claude.com/claude-code), Python 3.11+ (stdlib only), git, and a
+XeLaTeX install with `latexmk` (MiKTeX or TeX Live) for the CVs. Built and tested on Windows.
+
+1. Clone, then from the repo root make your personal folder:
+
+   ```
+   python engine/tools/init_user.py
+   ```
+
+   It copies the starter template (`engine/templates/user/`) to `user/`, makes `user/` its own git
+   repo, and installs the pre-commit guard (`git config core.hooksPath engine/hooks`) that refuses a
+   commit putting personal content into the engine.
+
+2. Fill in your profile. The README inside your new `user/` folder lists the files in order. The easy way: open Claude Code
+   in this folder, drop your old CV into `user/personal_data/`, and ask it to interview you and fill
+   the `user/profile/` files from it. Put your name on the **Name:** line of
+   `user/profile/snapshot.md`.
+
+3. Edit `user/settings.toml` (geography, thresholds) and `user/profile/search_terms.toml` +
+   `search_terms.md` (what to search for). The values shipped are examples.
+
+4. Check it: `python engine/tools/doctor.py` must end with 0 fail.
+
+5. Use the commands in Claude Code: `/search-positions` → `/inbox` → `/cv`, and `/dashboard`.
+   `engine/docs/CHEATSHEET.txt` has the one-page guide.
+
+**Domain:** only one domain pack ships, `engine/packs/life_science/` (job boards, ATS seeds and term
+synonyms for life science). For another field, copy that folder, edit it, and point `search.pack`
+in `user/settings.toml` at it.
+
+## Docs
 
 - `CLAUDE.md` — session instructions
 - `engine/docs/ARCHITECTURE.md` — layout and tools

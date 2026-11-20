@@ -1,0 +1,11 @@
+# Raw uploads and secrets stay out of this repo too.
+/personal_data/
+/secrets/
+__pycache__/
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.xdv
+*.synctex.gz
