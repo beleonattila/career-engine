@@ -18,7 +18,7 @@ A group profile is a cold-outreach target: a PI to email, not a job to apply for
 scores it on both axes — `career_fit` (is this the science) and `skill_match` (could the user be
 useful in that lab).
 
-**Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp.
+**Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp, org dedup.
 
 Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to `user/workspace/inbox/`.
 
@@ -32,36 +32,11 @@ Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to 
 4. **Read the lab's research / about / publications pages** and match the user's direction terms
    (`user/profile/search_terms.md` §Career track → *Direction terms*).
 5. **Collect iff ≥3 direction terms** appear in the lab's own description of its research.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md).**
+6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+   collectors: dedup (`--query <groupslug> "group-profile"`; mind the PI / lab / parent aliases).
 7. **Report** collections, screened count, channels.
 
 **Stop criteria:** 3 minutes of runtime.
-
-## Dedup guard — mandatory before any write
-
-```bash
-python engine/tools/dedup_check.py
-python engine/tools/dedup_check.py --query <groupslug> "group-profile"
-```
-
-Step 1's name list is **eyeball dedup, and eyeball dedup has demonstrably failed** — four
-org-slug collisions in ten days (2026-07-29 … 08-08). The one that matters most here is
-`kuleuven-dewilde` vs `ku-leuven`: split-vs-joined spellings of the same institution, which is a
-*group*-collection failure mode specifically. Those are now handled structurally.
-
-> ⚠️ **Known coverage gap.** `SEARCH_GLOBS` in `dedup_check.py` indexes `user/workspace/inbox/`,
-> `user/workspace/inbox/processed/`, `processed/archive/` and `user/workspace/positions/{open,applied,closed}/` — it does
-> **not** index `user/workspace/organizations/research_groups/` or `user/workspace/organizations/companies/`. Coverage of the 47 existing
-> group profiles is indirect, via the processed `.txt` each was built from, and a group whose
-> source `.txt` has been pruned will read as new. Keep the step 1 name-list check **as well**.
->
-> A group can also arrive under its PI, its lab name, or its parent institution
-> (`nnf-cpd-ku` ≡ `ku-cpd` ≡ `university-of-copenhagen-cpd`). Renames and parent/child pairs are
-> the one thing no string rule derives — those live in the alias table
-> (`user/workspace/organizations/aliases.toml`), so add one when you meet a new pair.
->
-> ⚠️ **The guard cannot see the skill track's staging folder.** An overlap is expected and the
-> parent resolves it, career winning. Do not try to check the other folder.
 
 ---
 
@@ -85,8 +60,6 @@ Geography block: {the block's name in user/settings.toml [[geography.block]]}
 
 {descriptive text from the lab's research / about / publications pages}
 ```
-
-`TRACK:` is stamped by the parent during reconciliation — do not write it yourself.
 
 ---
 

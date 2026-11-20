@@ -18,7 +18,7 @@ The company database is what unsolicited applications are sent from, so a profil
 cold-outreach target, not a job lead. `/inbox` scores it on both axes: `career_fit` (is this
 the work) and `skill_match` (could the user be useful there).
 
-**Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp.
+**Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp, org dedup.
 
 Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to `user/workspace/inbox/`.
 
@@ -33,7 +33,8 @@ Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to 
 4. **Read its science / research / platform / pipeline / publications pages** and match against
    the user's direction terms (below).
 5. **Collect iff ≥3 direction terms appear** in the company's own description of its work.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md).**
+6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+   collectors: dedup (`--query <org> "company-profile"`).
 7. **Report** collections, screened count, and channels queried.
 
 ## Direction terms (the collect test)
@@ -42,34 +43,6 @@ The terms are the user's: `user/profile/search_terms.md` §Career track → *Dir
 terms (any one is a strong signal), adjacent terms (count, but a company needs more than these
 alone) and off-direction terms (never collect on these alone). The skill track will pick an
 off-direction company up if its *stack* matches, which is a different question.
-
-## Dedup guard — mandatory before any write
-
-```bash
-python engine/tools/dedup_check.py
-```
-
-Step 1's name list is **eyeball dedup, and eyeball dedup has demonstrably failed** — four
-org-slug collisions in ten days (2026-07-29 … 08-08), each costing a fetch, an inbox write and a
-full Opus scoring pass. Org-type words are stripped structurally, so `cradle` ≡ `cradle-bio` and
-`cranfield` ≡ `cranfield-university` without anyone having to spot the collision first. Check a
-single candidate before fetching its pages:
-
-```bash
-python engine/tools/dedup_check.py --query <org> "company-profile"
-```
-
-> ⚠️ **Known coverage gap — do not rely on the guard alone here.** `SEARCH_GLOBS` in
-> `dedup_check.py` indexes `user/workspace/inbox/`, `user/workspace/inbox/processed/`, `processed/archive/` and
-> `user/workspace/positions/{open,applied,closed}/` — it does **not** index `user/workspace/organizations/companies/` or
-> `user/workspace/organizations/research_groups/`. Coverage of the 95 existing company profiles is therefore
-> indirect, via the processed `.txt` each was built from, and a company whose source `.txt` has
-> been pruned will read as new. Keep doing step 1's name-list check **as well**, and treat the
-> guard as the backstop rather than the whole test.
-
-> ⚠️ **The guard cannot see the skill track's staging folder.** Both sub-agents run at once. A
-> company found by both is expected; the parent reconciles and career wins. Do not try to check
-> the other folder.
 
 ---
 
@@ -92,8 +65,6 @@ Geography block: {the block's name in user/settings.toml [[geography.block]]}
 
 {descriptive text from the company's about / science / mission / pipeline pages}
 ```
-
-`TRACK:` is stamped by the parent during reconciliation — do not write it yourself.
 
 ---
 

@@ -15,25 +15,19 @@ description: >
 
 The **produce** stage. Generates a targeted CV and cover letter from a vault profile,
 applies language-pattern mirroring, modifies the master CV LaTeX, writes a matching
-cover letter, and compiles both to PDF.
-
-**Recommended model:** Sonnet, medium effort — high for the cover letter (it's the real
-writing). The profile (built by `/inbox`) supplies the keywords, angle, and fit; this
-skill applies the writing rules and the LaTeX template. Not a Haiku task.
+cover letter, and compiles both to PDF. The profile (built by `/inbox`) supplies the keywords,
+angle and fit; this skill applies the writing rules and the LaTeX template. Not a Haiku task.
 
 ## Input modes
 
-`/cv` accepts two profile shapes. Detect which from the `type`/frontmatter of the file
-passed in.
+`/cv` accepts two profile shapes. Detect which from the frontmatter of the file passed in.
 
 | Input | Source | Application kind |
 |---|---|---|
 | **Position profile** (`user/workspace/positions/open/*.md`, has `role_title` + `skill_match` + Key Requirements) | solicited | apply to a specific advertised role |
 | **Company / group profile** (`user/workspace/organizations/companies/*.md` or `user/workspace/organizations/research_groups/*.md`, no `role_title`) | **unsolicited** | speculative application / cold outreach to an org or lab |
 
-The workflow below is written for the position (solicited) path. The
-**Unsolicited path** section near the end says what changes when the input is a
-company or research-group profile.
+The workflow below is the solicited path; **Unsolicited path** near the end says what changes.
 
 ---
 
@@ -59,8 +53,7 @@ Verify these exist. Stop and report if any are missing.
 
 ### Step 0 — Pre-flight: verify the application link is live
 
-Before doing any work, confirm the posting is still applyable — this is the cheapest place
-to catch a dead link (far better than after the CV is made, on deadline day).
+Before doing any work, confirm the posting is still applyable.
 
 1. Check the profile's `url`. Verify it opens and shows the posting:
    - **Workday host** (`*.myworkdayjobs.com`): query the ATS JSON
@@ -76,7 +69,7 @@ to catch a dead link (far better than after the CV is made, on deadline day).
    - **Moved** (found at a new URL) → update `url`, proceed.
    - **Confirmed removed** → **stop. Do not generate.** Tell the user the posting is gone,
      set `url_status: dead`; apply the status-discipline rule (expired only if deadline is
-     strictly past or posting removed) and close it. Saves a wasted CV.
+     strictly past or posting removed) and close it.
 3. Skip Step 0 only for the **unsolicited** path (company/group profile — no single posting).
 
 ### Step 1 — Parse the position profile
@@ -87,11 +80,9 @@ Read the target `.md` file. Extract:
   `skill_match`, `level_fit`, `deadline`, `salary`
 - **Fit Assessment** section: matched strengths, gaps, recommended angle
 
-> **`skill_match` is the number that shapes the letter; `career_fit` is not.** `career_fit`
-> says how much the user wants the work — useful for deciding *whether* to apply, irrelevant to
-> *how* to write. `skill_match` and the gaps behind it tell you how much framing the letter
-> has to do. A low `skill_match` means lead harder on the transferable evidence and the
-> matched strengths; it never means inventing coverage (see *Factual grounding*, CLAUDE.md).
+> **`skill_match` shapes the letter; `career_fit` does not** (it decides *whether* to apply, not
+> *how* to write). A low `skill_match` means lead harder on transferable evidence and matched
+> strengths; it never means inventing coverage (*Factual grounding*, CLAUDE.md).
 - **Gaps can be stale.** The Fit Assessment was written on the profile's `last_evaluated` date.
   Before framing a gap in the letter, check `user/profile/competencies.md` and
   `user/profile/background.md` for evidence added since. A gap that has closed is a strength to
@@ -168,33 +159,25 @@ with a large gap above the footer).
   experience, academic CV with full course list), **ask the user for permission before
   generating** — do not produce a 3-page CV without explicit approval.
 
-**Filling without padding — content is king, spacing is the dial.** When the genuine content
-lands at ~1.5–1.8 pages (common for an early-career CV), the failure mode is compressing
-everything to the top of each page and leaving a big bottom gap (especially on page 1). Fix it
-in this order:
+**Filling without padding — content is king, spacing is the dial.** When genuine content lands
+at ~1.5–1.8 pages, never leave it compressed to the top with a big bottom gap. Fix it in this order:
 1. **Add genuine, traceable content first** (the priority list in NOTES.md) — never invent.
-2. **Then use generous, even spacing** so the real content breathes out to fill both pages.
-   Spacing is a legitimate dial: raise inter-section (`\titlespacing`), inter-entry
-   (`\vspace`), inter-block (`\cvskill` trailing gap), and list `itemsep` rather than leaving
-   whitespace pooled at one page bottom. Note which elements live on which page — e.g. all
-   `\cvskill` competency blocks usually sit together, so their spacing tunes that page
-   specifically without disturbing the other.
-3. **Order sections so the page break falls inside flowable content.** A breakable list
-   (Publications `enumerate`, or a run of `\cvskill` blocks) straddles a page boundary cleanly;
-   two atomic blocks butted against the boundary leave a gap. For academic/PhD CVs, placing
-   **Publications right after Experience** both foregrounds the papers and gives the
-   page-1→page-2 break a breakable section to flow through.
+2. **Then use generous, even spacing**: raise inter-section (`\titlespacing`), inter-entry
+   (`\vspace`), inter-block (`\cvskill` trailing gap) and list `itemsep` rather than pooling
+   whitespace at one page bottom. Spacing of elements that sit together (e.g. the `\cvskill`
+   blocks) tunes that page without disturbing the other.
+3. **Order sections so the page break falls inside flowable content** (Publications
+   `enumerate`, or a run of `\cvskill` blocks), not between two atomic blocks. For academic/PhD
+   CVs, place **Publications right after Experience**.
 
-**Verify actual fill after compiling — don't trust the estimate.** Page count from the
-compile log (`[1][2]`) only tells you it's 2 pages, not whether they're well-filled. Confirm
-by rendering the pages and checking where content ends, e.g.:
+**Verify actual fill after compiling — don't trust the estimate.** `[1][2]` in the log only
+says 2 pages. Render the pages and check where content ends:
 ```bash
 pdftoppm -png -r 90 CV_[Name]_[OrgSlug].pdf _pg   # then view _pg-1.png / _pg-2.png
 ```
-If a page's content ends well short (more than ~15% empty above the footer) while the CV is
-under two pages, it is over-compressed: apply the spacing/reorder steps above and recompile.
-Iterate until both pages read as deliberately filled. (`pdftoppm`/`pdfinfo` are from poppler;
-if unavailable, open the PDF to eyeball it.)
+If a page ends well short (more than ~15% empty above the footer), apply the steps above and
+recompile until both pages read as deliberately filled. (`pdftoppm` is from poppler; if
+unavailable, open the PDF to eyeball it.)
 
 #### 2h — Soft skills / research approach block
 Using bullets selected in Step 1 from `user/profile/soft_skills.md`:
@@ -228,40 +211,28 @@ profile, publications) is filled from the source `.md` files, not copied from th
 
 Apply the modifications planned in Step 2 by editing the LaTeX source directly.
 
-**Section orphan rule:** Prevent a `\section{}` header from stranding alone at the bottom
-of a page (header on one page, its content on the next) by preceding each section after
-the first (Profile) with a `\needspace` guard. **Size the guard to the section's first
-atomic unit — do not use a flat 5cm on everything.** A flat `\needspace{5cm}` on every
-section backfires whenever the CV is under two pages: it bumps whole sections to the next
-page and leaves large mid-document gaps (a header that "needs 5cm" but only has 3cm jumps,
-stranding the space above it). Use:
+**Section orphan rule:** precede each section after the first (Profile) with a `\needspace`
+guard so a header never strands alone at a page bottom. **Size the guard to the section's first
+atomic unit — never a flat 5cm on everything** (it bumps whole sections and leaves mid-document gaps):
 
-- **Sections whose first entry is a multi-line block** (an Experience job, an Education
-  entry): `\needspace{2.5cm}`–`3cm` — enough to keep the header with the start of the first
-  entry.
-- **Short final sections** (Languages: header + a few one-line items): size to the
-  section's own height (`~2cm`) so the whole section stays together without reserving space
-  it doesn't need. A 5cm guard here is the classic cause of a near-empty final page.
-- **Competency lists built from atomic `\cvskill` minipages**: a smaller guard (`~2cm`)
-  lets the section start wherever there's room and its blocks flow across the page break,
-  filling the page — each `\cvskill` block is internally unbreakable and breaks only
-  *between* blocks, so flow is clean.
+- **First entry is a multi-line block** (an Experience job, an Education entry):
+  `\needspace{2.5cm}`–`3cm`.
+- **Short final sections** (Languages: header + a few one-line items): the section's own height
+  (`~2cm`). A 5cm guard here is the classic cause of a near-empty final page.
+- **Competency lists of atomic `\cvskill` minipages**: `~2cm`, so the blocks flow across the break.
 
-Never let a guard be large enough to force a whole section onto a fresh page while half a
-page sits empty above it. The goal is orphan prevention, not fixed gaps.
+Never let a guard force a whole section onto a fresh page while half a page sits empty above it.
 
-**No entry is ever split across pages** (user rule, 2026-10-03). A page break may fall *between*
-entries (two publications, two jobs, two `\cvskill` blocks), never *inside* one. `\cvjob` and
-`\cvskill` are minipages and already atomic; a list whose items are plain paragraphs is not. Put
-`\interlinepenalty=10000` right after `\begin{enumerate}` in the Publications list (and in any
-other multi-line list) so each item moves whole. When verifying page fill (Step 2i), check every
-page break for a split entry as well as for gaps.
+**No entry is ever split across pages** (a user rule). A page break may fall *between* entries
+(two publications, two jobs, two `\cvskill` blocks), never *inside* one. `\cvjob` and `\cvskill`
+are minipages and already atomic; a list of plain-paragraph items is not — put
+`\interlinepenalty=10000` right after `\begin{enumerate}` in the Publications list (and any other
+multi-line list). When verifying page fill (Step 2i), check every page break for a split entry too.
 
 Output path: `user/workspace/applications/[OrgSlug]_[YYYY-MM]/CV_[Name]_[OrgSlug].tex`
 
 > **Filename convention (all generated artefacts).** Every file a recruiter or PI ever sees
-> must carry **both the candidate name and the organisation**, because it lands in someone
-> else's inbox next to fifty other attachments called `CV.pdf`:
+> carries **both the candidate name and the organisation**:
 >
 > - `CV_[Name]_[OrgSlug].tex` / `.pdf`
 > - `CoverLetter_[Name]_[OrgSlug].tex` / `.pdf` / `.txt`
@@ -289,17 +260,15 @@ Preservation rules — these lines must never be changed:
 
 ### Step 4 — Generate the cover letter (Style A)
 
-> **Two letters are generated on every run.** Style A is specified in
-> `user/profile/writing/cover_letter_style_A.md`; Style B in `user/profile/writing/cover_letter_style_B.md`,
-> generated in **Step 4b**. Both are produced, compiled, and reported so the user can compare them
-> on real targets. Neither is the default yet; the trial ends when the user decides. Do not skip one,
-> and do not merge them into a single hybrid letter — the whole point is that they differ.
+> **Two letters are generated on every run** — Style A here, Style B in **Step 4b** — and both are
+> compiled and reported so the user can compare them. Neither is the default until the user
+> decides. Never skip one, and never merge them into a hybrid.
 >
-> **The voice directives in `cover_letter_style_A.md` govern both styles.** So does the Writing Style
-> Guide. Only structure and emphasis differ.
+> **The voice directives in `cover_letter_style_A.md` and the Writing Style Guide govern both
+> styles.** Only structure and emphasis differ.
 
-Write a new cover letter as a LaTeX file. Use the **Cover Letter Template** below.
-Apply writing rules (see **Writing Style Guide**).
+Write a new cover letter as a LaTeX file, using the **Cover Letter LaTeX Template** below and the
+**Writing Style Guide**.
 
 **Read `user/profile/writing/cover_letter_style_A.md` and follow it.** It holds the user's voice
 directives (authoritative: they override any conflicting rule in this skill), the paragraph
@@ -307,32 +276,26 @@ structure, and the phrase banks for the opening. Do not improvise a structure fr
 
 Output paths: `user/workspace/applications/[OrgSlug]_[YYYY-MM]/CoverLetter_[Name]_[OrgSlug]_A.tex`
 **and** `user/workspace/applications/[OrgSlug]_[YYYY-MM]/CoverLetter_[Name]_[OrgSlug]_A.txt`
-(mandatory plain-text companion — see HARD RULE #2 in the Writing Style Guide; each paragraph
-one unbroken line, LaTeX stripped, for pasting into web application forms).
+(the mandatory plain-text companion — Writing Style Guide, HARD RULE #2).
 
-> **`_A` / `_B` are working suffixes for the comparison trial only.** Once the user picks the
-> letter to send, rename that one to the clean `CoverLetter_[Name]_[OrgSlug].tex/.pdf/.txt`
-> and delete or archive the other. **Never send a file with `_A` or `_B` in the name** — it tells
-> the reader the letter was one of two drafts. The filename convention in Step 3 still governs
-> everything that leaves the folder.
-
+> **`_A` / `_B` are working suffixes for the trial only.** Once the user picks a letter, rename it
+> to the clean `CoverLetter_[Name]_[OrgSlug].tex/.pdf/.txt` and delete or archive the other.
+> **Never send a file with `_A` or `_B` in the name.**
 
 ---
 
 ### Step 4b — Generate the cover letter (Style B)
 
-Read `user/profile/writing/cover_letter_style_B.md` and follow it. It is the authoritative spec
-for this letter; do not improvise a structure from the Style A rules above.
+Read `user/profile/writing/cover_letter_style_B.md` and follow it — the authoritative spec for
+this letter (forward-facing, organisation-centred: the CV is the history, the letter is the plan).
+Do not improvise a structure from the Style A rules.
 
-Style B is the forward-facing, organisation-centred variant: the CV is the history, so the
-letter is the plan. Its paragraphs are defined in the file.
-
-Constraints that carry over unchanged from Step 4:
+Carried over unchanged from Step 4:
 - **All the voice directives in `cover_letter_style_A.md`**, in full (the logic checks included).
 - The **Writing Style Guide**, including one paragraph = one unbroken source line and the
   mandatory `.txt` companion.
-- **Factual grounding.** B's forward tense ("I can", "I would") makes unevidenced claims
-  easier to write. Every capability claim still needs backing in `user/profile/competencies.md`,
+- **Factual grounding.** B's forward tense ("I can", "I would") makes unevidenced claims easy.
+  Every capability claim still needs backing in `user/profile/competencies.md`,
   `user/profile/cv_template/publications.md`, `user/profile/soft_skills.md`, or `user/profile/background.md`.
 - One page maximum. Five paragraphs is more structure, not more words.
 
@@ -343,34 +306,30 @@ Output paths:
 `user/workspace/applications/[OrgSlug]_[YYYY-MM]/CoverLetter_[Name]_[OrgSlug]_B.tex`
 **and** `..._B.txt` (same plain-text companion rule as Style A).
 
-**Same target, same facts, different letter.** Both styles draw on the same position profile,
-the same matched strengths, and the same evidence. B is not a second attempt at A and must not
-reuse A's sentences: if a paragraph could be dropped into either letter unchanged, it is not
-doing Style B's job.
+**Same target, same facts, different letter.** B must not reuse A's sentences: a paragraph that
+could be dropped into either letter unchanged is not doing Style B's job.
 
 ---
 
 ### Step 4c — Generate the covering email (always, never optional)
 
-Most applications go out as an **email with PDFs attached**, so the email body is a real
-deliverable, not an afterthought. Generate it on every run, solicited or unsolicited.
+Most applications go out as an **email with PDFs attached**, so generate the email body on every
+run, solicited or unsolicited.
 
 Output: `user/workspace/applications/[OrgSlug]_[YYYY-MM]/Email_[Name]_[OrgSlug].txt`
 
-**The email is a wrapper, not a second cover letter.** The cover letter is attached as a PDF
-and says the full thing. If the email repeats its arguments, the reader reads the same case
-twice and the attachment becomes redundant. Compress, do not restate.
+**The email is a wrapper, not a second cover letter.** The attached letter says the full thing;
+compress, never restate its arguments.
 
-**One email only, not one per style.** The email is a wrapper and is largely style-neutral, so
-doubling it would only add noise to the comparison. Write it from whichever letter's strongest
-beat compresses best, and say in the Step 6 report which one it was drawn from. Re-check it
-against the chosen letter before sending.
+**One email only, not one per style.** Write it from whichever letter's strongest beat compresses
+best, and say in the Step 6 report which one it was drawn from. Re-check it against the chosen
+letter before sending.
 
 **Hard constraints**
 - **120–150 words in the body**, greeting and sign-off excluded. If it is longer, cut.
 - **Three short paragraphs maximum.** One idea per paragraph.
 - Plain text only. **Each paragraph is one unbroken line**, paragraphs separated by a blank
-  line (same rule as the `.txt` letter, and for the same reason).
+  line (as for the `.txt` letter).
 - **All of the user's cover-letter voice directives apply in full**
   (`user/profile/writing/cover_letter_style_A.md` §Voice directives).
 
@@ -405,26 +364,24 @@ The sign-off's name, phone and email are exactly those in the sender header of
 one exists (research groups almost always have one). Fall back to `Dear Hiring Team,` only when
 the profile names nobody. Never `To Whom It May Concern`.
 
-**Recipient block (`To:`) is mandatory.** The file must carry who it goes to and where, so the
-email can be addressed without reopening the profile. Rules:
-- **Never invent an email address.** Guessing a corporate pattern (`first.last@org.com`) can
-  send a real application to the wrong person or nowhere. If the vault does not record one,
+**Recipient block (`To:`) is mandatory**, so the email can be addressed without reopening the
+profile. Rules:
+- **Never invent an email address** (no guessed `first.last@org.com`). If the vault records none,
   write `[EMAIL NOT FOUND — do not guess]` and add a short note at the end of the file naming
   the fallback channel (LinkedIn message, public contact form, a general recruitment address).
-- **Verify the postal address before writing it**, the same standard as a job-ad `url`. It is a
-  factual claim in a document that leaves the building. Confirm it, or write only the city.
+- **Verify the postal address before writing it**, to the same standard as a job-ad `url`.
+  Confirm it, or write only the city.
 - **Confirm the named contact still works there** when the profile's contact line is more than
-  a few weeks old; a cold application to someone who has left is a wasted send.
+  a few weeks old (`engine/docs/decisions.md` §Covering email).
 - Any bracketed placeholder or trailing note is scaffolding: say plainly in the Step 6 report
   that it must be deleted before sending.
 
-**Subject line.** It is the only part guaranteed to be read. Name the specific role or
-programme and include the user's name, e.g.
-`PhD application, computational track (EDBB November intake) — [Full name]`.
-Do not use a bare `Application` or `CV and cover letter`.
+**Subject line** — the only part guaranteed to be read. Name the specific role or programme and
+include the user's name, e.g. `PhD application, computational track (EDBB November intake) — [Full name]`.
+Never a bare `Application` or `CV and cover letter`.
 
-**Attachment line.** State plainly what is attached, in P1, using the real filenames so the
-reader can match them: "I have attached my CV and cover letter."
+**Attachment line.** State plainly in P1 what is attached, matching the real filenames: "I have
+attached my CV and cover letter."
 
 ---
 
@@ -437,21 +394,17 @@ latexmk -xelatex -interaction=nonstopmode CoverLetter_[Name]_[OrgSlug]_A.tex
 latexmk -xelatex -interaction=nonstopmode CoverLetter_[Name]_[OrgSlug]_B.tex
 ```
 
-Three PDFs, not two, for as long as the style trial runs. If either letter fails to compile,
-fix it — do not report a run as complete with only one letter.
+Three PDFs for as long as the style trial runs. If either letter fails to compile, fix it —
+never report a run complete with only one letter.
 
-> **latexmk caches aggressively.** After editing a `.tex` to fix page fill, an identical output
-> byte count across two runs means it did not actually rebuild. Force it with `latexmk -C`
-> before recompiling, otherwise you will iterate on layout changes that never took effect.
+> **latexmk caches aggressively.** An identical output byte count after an edit means it did not
+> rebuild. Force it with `latexmk -C` before recompiling.
 
 Verify page count in compilation output (e.g. `[1][2]` = 2 pages). If the CV compiled
 to 1 page, return to Step 2i and add content before proceeding.
 
-Use `latexmk` — it handles multi-pass compilation automatically, which is required
-for page-number references (`\pageref{LastPage}`) to resolve correctly. Running
-xelatex only once produces `??` in the page footer.
-
-If latexmk is not available, fall back to running xelatex **twice** per file:
+Always `latexmk` (multi-pass, so `\pageref{LastPage}` resolves; one xelatex pass leaves `??` in
+the footer). If latexmk is not available, run xelatex **twice** per file:
 ```bash
 xelatex -interaction=nonstopmode CV_[Name]_[OrgSlug].tex
 xelatex -interaction=nonstopmode CV_[Name]_[OrgSlug].tex
@@ -524,8 +477,7 @@ Review before sending. Run /cv [path] again with feedback to revise.
 
 **Style-trial line.** After the block, add one short line naming the sharpest difference
 between the two letters on *this* target (e.g. "B leads on the screening-pipeline
-contribution; A leads on the thesis toolchain"). It gives the user something concrete to react
-to instead of reading both cold.
+contribution; A leads on the thesis toolchain").
 
 **Send-ready summary.** After the block, state in one line how the application is sent: which
 address it goes to, which files attach, and anything the target asked for that is not in the
@@ -541,31 +493,24 @@ any modified bullet points.
 ### Rules
 
 **HARD RULE — one paragraph = one line in the source, AND always emit a plain-text cover letter.**
-Two separate things, both required:
+Both required:
 
-1. **Source formatting.** Every generated paragraph of prose must be a **single unbroken line**
-   in the `.tex` source: the **CV Profile paragraph**, every **cover-letter body paragraph**, and
-   any other flowing prose. Do **not** hard-wrap a paragraph across multiple source lines.
-   Separate paragraphs with a single blank line only. This applies even though the master CV
-   template ships its Profile paragraph hard-wrapped — flatten it to one line when you generate.
-   (Line breaks *inside* bracketed LaTeX structures — bullet `\item`s, `\cvskill` blocks,
-   addresses — are fine; this rule is about flowing prose paragraphs only.)
+1. **Source formatting.** Every generated paragraph of prose is a **single unbroken line** in the
+   `.tex` source: the **CV Profile paragraph**, every **cover-letter body paragraph**, and any
+   other flowing prose. Never hard-wrap a paragraph; separate paragraphs with one blank line. This
+   holds even though the master CV template ships its Profile paragraph hard-wrapped — flatten
+   it. (Line breaks *inside* LaTeX structures — `\item`s, `\cvskill` blocks, addresses — are fine.)
 
-2. **Plain-text companion (this is what actually fixes copy-paste).** Source formatting alone
-   does **not** make text copy cleanly out of the *compiled PDF*: LaTeX reflows each paragraph
-   into several visual lines, and PDF viewers copy a newline at every visual line break, so a
-   PDF copy always comes out fragmented regardless of source. Therefore, whenever a cover letter
-   is generated, also write its `.txt` next to the `.tex` (`..._A.txt` and `..._B.txt` while the
-   style trial runs) — the
-   full letter as plain text with **each paragraph on one unbroken line**, paragraphs separated
-   by a blank line (strip all LaTeX: `\&`→`&`, drop `\textit{}`/`\textbf{}`/`\href{}` wrappers,
-   no `---`). This `.txt` is what the user pastes into web application forms that want the letter
-   inline; the PDF is for attaching. Do not skip it.
+2. **Plain-text companion.** A PDF copy always comes out fragmented (viewers copy a newline at
+   every visual line break), so whenever a cover letter is generated, also write its `.txt` next
+   to the `.tex` (`..._A.txt` and `..._B.txt` while the style trial runs): the full letter as
+   plain text, **each paragraph on one unbroken line**, paragraphs separated by a blank line,
+   all LaTeX stripped (`\&`→`&`, drop `\textit{}`/`\textbf{}`/`\href{}` wrappers, no `---`). The
+   user pastes it into web forms; the PDF is for attaching. Never skip it.
 
-3. **Covering email.** Separately from the `.txt` letter, every run also produces
-   `Email_[Name]_[OrgSlug].txt` (Step 4c) — the short body for the email that carries the
-   PDFs. The `.txt` letter and the email are **not** the same artefact and must not have the
-   same content: the letter is the full case, the email is a 120–150 word wrapper.
+3. **Covering email.** Every run also produces `Email_[Name]_[OrgSlug].txt` (Step 4c). It is
+   **not** the `.txt` letter and must not share its content: the letter is the full case, the
+   email a 120–150 word wrapper.
 
 **The voice and tone rules are the user's: `user/profile/writing/writing_style.md`.** CV and
 cover-letter registers, banned punctuation and phrasing, the upsell mandate and its hard limit,
@@ -596,10 +541,8 @@ from what the profile *does* contain. Everything else (writing rules, LaTeX temp
 compile, report) is unchanged.
 
 **Step 1 — parse differently.** There is no `role_title`, `level_fit`, `deadline`, or
-**Key Requirements** — but an org profile *does* carry both scores. `skill_match` here means
-"how much of what this org works on could the user do", scored from its stated stack rather than
-from requirements, so it sizes the letter's framing exactly as it does for a position.
-Instead extract:
+**Key Requirements**, but the org's `skill_match` (scored from its stated stack) sizes the
+letter's framing exactly as for a position. Extract:
 - frontmatter: `name`, `type`, `location`, `prestige_tier`, `career_fit`, `skill_match`, `url`
 - **Summary** and **Why Relevant** — these define the angle
 - **Language Patterns** — same role as before (identity words + technical keywords)

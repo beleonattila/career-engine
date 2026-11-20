@@ -142,7 +142,9 @@ a smaller, colder active set beats a large one nobody can verify.
 Safeguards, so it stays reversible:
 - nothing is deleted; records move `open/` → `closed/` exactly as a deadline expiry does;
 - every age-retirement is stamped **`expired_reason: stale_no_deadline`** — a deadline expiry has no
-  such field, so the whole set is one `grep -l` away from being restored;
+  such field, so the whole set is one `grep -l` away from being restored:
+  `grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`, then move the
+  files back and reset `status:` / `expired_on:` / `expired_reason:`;
 - each record gets a dated Notes line stating it was retired on age and **not** confirmed dead;
 - `--keep-stale` disables it for a run; `--stale-days N` retunes the threshold for one run, and
   `thresholds.stale_days` in `user/settings.toml` sets it for good.

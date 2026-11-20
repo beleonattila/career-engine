@@ -26,8 +26,6 @@ COLLECT (Sonnet)         THINK — this skill (Opus)        PRODUCE (Sonnet)
                                 └─► user/workspace/inbox/processed/
 ```
 
-**Recommended model:** Opus, high effort
-
 ---
 
 ## Prerequisites
@@ -38,9 +36,8 @@ Verify before processing. Stop and tell the user if any is missing.
 - `user/profile/competencies.md` — ranked, evidence-backed **technical** competencies
 - `user/profile/soft_skills.md` — evidence-backed **soft** skills
 
-`user/profile/competencies.md` and `user/profile/soft_skills.md` are the ground truth for what the user
-actually has. All scoring and every "matched strength" must trace to them — this is the
-same evidence base `/cv` writes from, so the two stages stay consistent.
+The last two are the ground truth for what the user has. All scoring and every "matched strength"
+must trace to them — the same evidence base `/cv` writes from.
 
 ---
 
@@ -66,27 +63,20 @@ collectors are merged. Copy it into the profile's frontmatter, translating the n
 | `TRACK: skill` | `track: employability` | Found by the competency search — direction irrelevant, skills fit |
 
 A file with **no** `TRACK:` header is a legacy collection or a manual drop: write
-`track: career`. Every record predating 2026-08-17 was collected by the direction search, since
-it was the only one that existed.
+`track: career` (`engine/docs/decisions.md` §Two tracks).
 
-**`track` is provenance, not a verdict.** It records which question found the lead, and nothing
-else — it must never influence `career_fit` or `skill_match`. A record found by the skill track
-can still score high on direction, and often will: the two searches overlap heavily, and the
-career track simply won the collision at reconciliation time.
+**`track` is provenance, not a verdict.** It must never influence any score. A skill-track record
+can still score high on direction: the searches overlap, and career wins collisions.
 
-**Routing is driven by the filename** — each search skill produces a distinct pattern.
-If a filename matches no pattern and the file is not obviously a job ad, treat it as
-non-pipeline content: move it to `user/workspace/inbox/processed/misc/` and flag it. Never guess from junk.
+**Routing is driven by the filename.** If a filename matches no pattern and the file is not
+obviously a job ad, move it to `user/workspace/inbox/processed/misc/` and flag it. Never guess from junk.
 
 | Filename contains | Kind | Output |
 |---|---|---|
 | `_company-profile_` | companies | `user/workspace/organizations/companies/[slug].md` — durable company entry |
 | `_group-profile_` | groups | `user/workspace/organizations/research_groups/[slug].md` — durable group entry |
 | neither (a position file) | positions | `user/workspace/positions/open/[slug].md` — persistent lead (status + deadline) |
-| neither, role is PhD / doctoral / fellowship | phd | `user/workspace/positions/open/[slug].md` with `type: phd` |
-
-For position files, decide positions vs phd from the role title (PhD / doctoral /
-fellowship → phd).
+| neither, role title is PhD / doctoral / fellowship | phd | `user/workspace/positions/open/[slug].md` with `type: phd` |
 
 ---
 
@@ -95,21 +85,17 @@ fellowship → phd).
 ### Step 0 — Archive stale processed files (run first, every time)
 
 **Before anything else**, move every `.txt` in `user/workspace/inbox/processed/` whose collection date is
-**older than 2 weeks** (14 days before today) into `user/workspace/inbox/processed/archive/`. This keeps the
-active `processed/` folder small. `archive/` and `misc/` are subfolders and are never touched by
-this step.
+**older than 2 weeks** (14 days before today) into `user/workspace/inbox/processed/archive/`.
+The subfolders `archive/` and `misc/` are never touched by this step.
 
-> ⚠️ **Archiving is folder hygiene only — it does NOT retire a file from dedup.** The deep pass
-> collects at any age, so `archive/` is live dedup surface: `/search-positions` must glob it
-> alongside `processed/`, `user/workspace/inbox/` and `user/workspace/positions/{open,applied,closed}/`.
-> Never restore the old "no need to check archive" wording, and never re-add an age filter to make it
-> true again (`engine/docs/decisions.md` §Archiving is not retirement).
+> ⚠️ **Archiving is folder hygiene only — it does NOT retire a file from dedup.** `archive/` is live
+> dedup surface: `/search-positions` globs it alongside `processed/`, `user/workspace/inbox/` and
+> `user/workspace/positions/{open,applied,closed}/`. Never restore "no need to check archive", and
+> never re-add an age filter to make it true (`engine/docs/decisions.md` §Archiving is not retirement).
 
-Use the **`FOUND:` date written inside each file** as the collection date — every collector
-writes a `FOUND: YYYY-MM-DD` header, so this is the authoritative age, independent of any later
-file-copy or edit that would reset the modified-time. Fall back to the file's last-modified time
-only for a legacy file that has no `FOUND:` header. Concrete command (PowerShell, from the
-repo root):
+The collection date is the **`FOUND:` header inside each file** (a copy or edit resets the
+modified-time). Fall back to last-modified time only for a legacy file with no `FOUND:` header.
+Command (PowerShell, from the repo root):
 
 ```powershell
 $cutoff = (Get-Date).AddDays(-14)
@@ -131,15 +117,12 @@ If none (after Step 0): report "Inbox is empty." and stop.
 
 ### Step 2 — Load profile once
 
-Read `user/profile/background.md`, `user/profile/preferences.md`, `user/profile/competencies.md`, and `user/profile/soft_skills.md`. Hold all four for
-the whole run — they are the evidence base for every score and matched-strength bullet.
+Read the four prerequisite files once and hold them for the whole run.
 
 ### Step 3 — Process files one at a time
 
 **Process each file independently: read it, evaluate it, write/update its profile,
-archive it, then move to the next.** Do not load all inbox files into context at once —
-a large batch (dozens of company snapshots) must not sit in one window. Each `.txt` is
-self-contained, so per-file processing keeps token use bounded and predictable.
+archive it, then move to the next.** Never load all inbox files into context at once.
 
 For each file:
 
@@ -163,38 +146,31 @@ For each file:
 ### Step 4 — Ranked summary
 
 After all files, print one summary grouped by kind, **sorted by `career_fit` descending**
-(format at the end of this file). Sorting by direction, not by winnability, is deliberate:
-the list should read as "what is most worth wanting", with `method_fit`, `skill_match` and
-`level_fit` shown alongside so the shape and the cost of each is visible.
+(format at the end of this file) — "what is most worth wanting", with `method_fit`, `skill_match`
+and `level_fit` shown alongside.
 
 ### Step 5 — Apply the org floor, then refresh the dashboard (always, every run)
 
 **First run `python engine/tools/org_floor.py --apply`** from the repo root. It lifts any company or
-group scoring below its best linked position (see *Step 4 — the org floor* under Scoring), and it
-must run before the dashboard reads the scores. Report its LIFTED / RELEASED lines, if any, under
-the summary. A new position can lift an org this run created or never touched — that is intended.
+group scoring below its best linked position (*Step 4 — the org floor* under Scoring) and must run
+before the dashboard reads the scores. Report its LIFTED / RELEASED lines, if any. A new position
+can lift an org this run never touched — that is intended.
 
 **Then `python engine/tools/method_sightings.py --apply`**, which writes `method_roles_seen` /
 `last_method_role` onto the org profiles from the sightings log (derived fields — never edit them by
-hand). Run it after the org profiles of this batch exist, so a sighting for a newly created org
-lands on it. Report any org it lists as having no profile.
+hand). Run it after this batch's org profiles exist. Report any org it lists as having no profile.
 
-**Then always run `/dashboard`** (invoke the dashboard skill —
-`engine/skills/dashboard.md`) so the newly written/updated profiles and positions are
-immediately reflected in `user/workspace/artifacts/dashboard.html`. Do this on every `/inbox` run, even when
-the inbox was empty or nothing changed — a no-op refresh is harmless and keeps the dashboard in
-lockstep with the vault. The only exception: if `/inbox` aborted before writing anything (e.g. a
-missing prerequisite in the Prerequisites section), skip the refresh and say why.
+**Then always run `/dashboard`** (`engine/skills/dashboard.md`), on every `/inbox` run, even when
+the inbox was empty or nothing changed. The only exception: if `/inbox` aborted before writing
+anything (e.g. a missing prerequisite), skip the refresh and say why.
 
 ---
 
 ## Scoring — the one place it lives
 
 Scoring for **all** kinds happens here and nowhere else (`/search` does not score).
-**Three independent numbers, never blended.** They answer different questions, and a record
-can be high on one and low on another — that combination is information, not a
-contradiction. Collapsing them into a single number is exactly what the old `fit_score` got
-wrong.
+**Three independent numbers, never blended.** A record high on one and low on another is
+information, not a contradiction.
 
 | Field | Question | Applies to |
 |---|---|---|
@@ -209,25 +185,20 @@ read off a lookup table** — still direction only, and bounded inside its band 
 outvote the method. Write each number, then one sentence of justification naming the band
 (and, for `career_fit`, the checks).
 
-> **Why separate scores:** a blended score hides an on-direction role the user is underqualified
-> for (`engine/docs/decisions.md` §Why two scores, 2026-08-17). `fit_score` and `verdict` were deleted; never
-> reintroduce a blended score.
+`fit_score` and `verdict` were deleted; never reintroduce a blended score (why:
+`engine/docs/decisions.md` §Why two scores).
 
 ### `career_fit` — direction: a band, then three checks (0–100)
 
-> **Scoring v3 (2026-09-10)** — a band plus the user's checks, and the org floor — replaced four v2
-> rules on the user's instruction (`engine/docs/decisions.md` §Scoring v3). Every record was re-judged
-> under v3 by 2026-10-01.
-
-The number is built in four steps. Only step 1 is a judgement; steps 2–3 are yes/no checks and a
+Rubric: **scoring v3** — a band, the user's checks, and the org floor (`engine/docs/decisions.md`
+§Scoring v3). The number is built in four steps. Only step 1 is a judgement; steps 2–3 are yes/no checks and a
 table lookup; step 4 is a script.
 
 #### Step 1 — the band (the one judgement)
 
-**What the bands mean is the user's, not the engine's.** Read `user/profile/preferences.md`
-§Scoring → *Bands*: the direction question, its two pillars (the **method** and the
-**deliverable**), the A–E anchors, and which variations score alike within a band. This file keeps
-only how bands are used. The scale is fixed for every user:
+**What the bands mean is the user's.** Read `user/profile/preferences.md` §Scoring → *Bands*: the
+direction question, its two pillars (the **method** and the **deliverable**), the A–E anchors, and
+which variations score alike within a band. The scale is fixed for every user:
 
 | Band | Range | Shape — the anchors in preferences.md decide |
 |---|---|---|
@@ -242,10 +213,8 @@ the band of its most on-direction **stated, active** line of work — a named te
 programme, publication stream or posting. Breadth never lowers it (examples in `user/profile/preferences.md` §Scoring). A *token*
 mention (one sentence on a careers page, no team, no output) is not a line.
 
-> ⚠️ **Score the role, not the employer.** *(Added 2026-08-18 after this rubric caused four
-> misscores; the case is in `engine/docs/decisions.md` §Score the role.)* The employer's direction
-> is already carried by its own profile; scoring it again on the position double-counts it and
-> buries genuinely on-direction roles beneath support seats at famous companies.
+> ⚠️ **Score the role, not the employer** (`engine/docs/decisions.md` §Score the role). The
+> employer's direction is already carried by its own profile; scoring it again double-counts it.
 >
 > So: **a support, infrastructure, deployment, platform, advisory or customer-facing seat scores
 > what the seat ships**, wherever it sits. Ships integrations, pipelines or tooling → **30–49**.
@@ -275,10 +244,9 @@ units × band width), where the maximum is the sum of the full checks in `user/s
 **Do the lookup with the script, never by hand:** `python engine/tools/career_fit.py A "<checks>"`
 prints the number; `python engine/tools/career_fit.py` prints the whole table for your checks.
 
-Ties are expected and accepted (agreed 2026-09-10) — `skill_match` sits beside every row.
+Ties are expected and accepted — `skill_match` sits beside every row.
 
-Record both inputs in frontmatter, so any score can be re-derived and a future re-weighting is a
-script rather than a rescore:
+Record both inputs in frontmatter, so any score can be re-derived by script:
 
     career_fit: 97
     career_band: A
@@ -289,11 +257,10 @@ Justification format (a worked example is in preferences.md §Scoring):
 
 #### Step 4 — the org floor (mechanical)
 
-**An organisation never scores below its best linked position** — open, applied *or closed*: an
-expired posting still proves the org does the work, and an org must not drop when an ad expires.
-Nobody judges this. `python engine/tools/org_floor.py --apply` (from the repo root) enforces it; it runs
-in Step 5 of every `/inbox`. Positions are linked to profiles by
-`org_match.py` — the same matcher the dashboard uses — and a position's `org_profile:` overrides it.
+**An organisation never scores below its best linked position** — open, applied *or closed* (an
+expired posting still proves the org does the work). Nobody judges this:
+`python engine/tools/org_floor.py --apply` enforces it in Step 5. Positions are linked to profiles by
+`org_match.py` (the dashboard's matcher); a position's `org_profile:` overrides it.
 
 When the floor binds, the script sets `career_fit` to the position's score and keeps the org's own
 judgement beside it (`career_fit_own`, `career_fit_floor`, `career_fit_floor_from`) plus a History
@@ -305,9 +272,8 @@ employer has no profile yet.
 The floor only runs upward: a position is never lifted toward its employer — that is the *score
 the role* rule above.
 
-**Nothing else enters this number.** Not location, not salary, not prestige, not seniority,
-not company size, not funding. `prestige_tier` already carries organisation standing as its
-own field and the dashboard shows it as a column — do not double-count it here. No check is ever a
+**Nothing else enters this number.** Not location, salary, prestige, seniority, company size or
+funding. `prestige_tier` carries standing as its own field — do not double-count it. No check is a
 back door for prestige: checks read the work, never the employer's standing.
 
 ### `skill_match` — evidenced overlap only (0–100)
@@ -331,32 +297,24 @@ reported unscored under *Logistics & Salary*, standing is `prestige_tier`.
 **Grounding is mandatory.** Every point of `skill_match` must trace to a specific entry in
 `user/profile/competencies.md` (technical) or `user/profile/soft_skills.md` (soft) — name the competency or
 the evidence, do not invent. A requirement counts against the score only if it is genuinely
-absent from both files. This is the same evidence base `/cv` writes from, so a strength
-claimed here is one `/cv` can defend.
+absent from both files.
 
 #### `skill_match` for companies and research groups
 
-An org advertises no requirements, so the question changes shape but not substance:
-**how much of what this organisation actually works on could the user do today?** Score the
-org's *stated technical work* — the methods, tools and outputs named on its science /
-research / platform / publications pages — against `user/profile/competencies.md`. Same 0–100 bands.
+An org advertises no requirements, so the question becomes: **how much of what this organisation
+actually works on could the user do today?** Score the org's *stated technical work* — the methods,
+tools and outputs named on its science / research / platform / publications pages — against
+`user/profile/competencies.md`. Same 0–100 bands. This is the cold-outreach question ("could I be
+useful here"); worked examples: `user/profile/preferences.md` §Scoring → *Worked examples: org scores*.
 
-This exists because the company and group databases are what unsolicited applications are
-sent from. "Is this somewhere I could walk in and be useful" is the whole question a
-cold-outreach target has to answer, and `career_fit` alone cannot answer it. The two vary
-independently for an org; the four cases that define the space for the current profile are in
-`user/profile/preferences.md` §Scoring → *Worked examples: org scores*.
-
-**Score only what the source states.** An org whose pages describe the science but never the
-stack gets a `skill_match` from what the science *necessarily* implies (a structure-prediction
-group uses structure-prediction tools) and no further. Do not infer a stack from the sector,
-and do not let a big name inflate it — that is `prestige_tier`'s job.
+**Score only what the source states.** If the pages describe the science but never the stack,
+score what the science *necessarily* implies (a structure-prediction group uses structure-prediction
+tools) and no further. Never infer a stack from the sector or a big name.
 
 ### `method_fit` — does the seat build methods? (0–100)
 
-> **Added 2026-09-29** so that methods-building roles outside the direction are visible **without
-> touching `career_fit`**, which keeps its exact v3 meaning. Why, and the identity behind it:
-> `engine/docs/decisions.md` §method_fit (and `user/workspace/notes/rebrand_plan.md` §SPEC C).
+Makes methods-building roles outside the direction visible **without touching `career_fit`**
+(why: `engine/docs/decisions.md` §method_fit; `user/workspace/notes/rebrand_plan.md` §SPEC C).
 
 The one question: **is the deliverable a method, tool, pipeline, platform or benchmark that other
 people then use — or is the deliverable results produced by running something that already exists?**
@@ -371,26 +329,23 @@ people then use — or is the deliverable results produced by running something 
 
 **Signals that raise it:** "develop methods/tools", "build a pipeline/platform/framework",
 benchmark or evaluation work, heterogeneous unharmonised data from different sources, **domain
-scientists as the end users** (he would build it *and* teach them), frontier or unowned tooling,
-first/only technical hire.
+scientists as the end users** (the user would build it *and* teach them), frontier or unowned
+tooling, first/only technical hire.
 **Signals that lower it:** "run the standard pipeline", "respond to requests from scientists",
 "deliver reports/dashboards", fixed SOPs, a large team where the method is already owned by someone
 else.
 
-**Score the seat, not the employer** — the same discipline as `career_fit`. A methods-heavy company
-whose advertised seat runs its existing product scores low; a small group where nobody owns the
-tooling scores high even if it publishes no software. *"But the company builds tools"* in a
-justification is a reliable sign the number above it is too high.
+**Score the seat, not the employer** — as for `career_fit`. A methods-heavy company whose seat runs
+its existing product scores low; a small group where nobody owns the tooling scores high even if it
+publishes no software. *"But the company builds tools"* in a justification means the number is too high.
 
-**Independence.** `method_fit` is about the **nature of the work**, never the domain and never
-the user's ability. Do not let protein content raise it (that is `career_fit`) and do not let a
-familiar stack raise it (that is `skill_match`). A genomics pipeline-engineering role can be
-`career_fit` 35 · `method_fit` 92; a dead-centre design seat that only runs campaigns can be
-`career_fit` 97 · `method_fit` 45. **Both are worth seeing, and neither is a contradiction.**
+**Independence.** `method_fit` is the **nature of the work**, never the domain (that is
+`career_fit`) and never a familiar stack (that is `skill_match`). A genomics pipeline-engineering
+role can be `career_fit` 35 · `method_fit` 92; a dead-centre design seat that only runs campaigns
+can be `career_fit` 97 · `method_fit` 45. **Both are worth seeing; neither is a contradiction.**
 
-**Nothing else enters this number.** Not location, not salary, not prestige, not seniority, not
-company size. Salary is a stated goal of the rebrand but is rarely stated in Danish ads — record it
-under *Logistics & Salary*, never in a score.
+**Nothing else enters this number.** Not location, salary, prestige, seniority or company size.
+Record salary under *Logistics & Salary*, never in a score.
 
 #### `method_fit` for companies and research groups
 
@@ -398,13 +353,11 @@ An org advertises no seat, so the question becomes: **would the user be the meth
 the org's stated technical work — does it build its own methods and tools, and is there room for
 someone to own them? An org that visibly needs technical ownership (a tool whose developer left, a
 group whose science outgrew its tooling) scores **high**; an org whose methods are mature, owned and
-staffed scores lower even when the science is excellent. This is the cold-outreach question, exactly
-as `skill_match` is for orgs.
+staffed scores lower even when the science is excellent.
 
 ### `level_fit` — a badge, not a score
 
-`level_fit: realistic | reach | below`. Non-numeric, contributes **nothing** to either
-number, and exists so attainability is visible without polluting them.
+`level_fit: realistic | reach | below`. Non-numeric; contributes **nothing** to any score.
 
 | Value | When |
 |---|---|
@@ -412,10 +365,9 @@ number, and exists so attainability is visible without polluting them.
 | `reach` | The ad requires something not held today: a degree the user lacks (a PhD, while they have none — this includes every postdoc call), more years of experience than they have, or a title above their level. |
 | `below` | Beneath the qualification — internships, student assistantships, technician roles. |
 
-**While the user holds no PhD, postdocs are `reach`, without exception.** A postdoc requires a completed PhD; the badge
-reports today's reality, not the situation after a future doctorate. `reach` is not a
-rejection — `career_fit 95 · level_fit reach` is a perfectly good record to see. Never soften
-the badge to make a lead look better.
+**While the user holds no PhD, postdocs are `reach`, without exception** — the badge reports
+today, not after a future doctorate. `reach` is not a rejection (`career_fit 95 · level_fit reach`
+is a good record to see). Never soften the badge to make a lead look better.
 
 Produce for every item: **`career_fit`**, **`method_fit`** and **`skill_match`**, plus **`level_fit`** for
 positions/phd; **matched** (2–3 bullets), **gaps** (1–2 bullets, no softening), **angle**
@@ -423,10 +375,9 @@ positions/phd; **matched** (2–3 bullets), **gaps** (1–2 bullets, no softenin
 
 ### Logistics reference — reported, never scored
 
-> ⚠️ **Logistics scores nothing.** Geography is a decision the user makes when reading the record,
-> not a number the record should carry. Report location and pay plainly under
-> **Logistics & Salary** and let the user weigh them. Never let either move `career_fit` or
-> `skill_match`. (`engine/docs/decisions.md` §Logistics and prestige.)
+> ⚠️ **Logistics scores nothing.** Report location and pay plainly under **Logistics & Salary**
+> and let the user weigh them. Never let either move any score
+> (`engine/docs/decisions.md` §Logistics and prestige).
 
 Work-arrangement preference, how to describe each situation, and the country salary ranges for
 the user's level: `user/profile/preferences.md` §Logistics & salary. For the prose only.
@@ -435,9 +386,8 @@ the user's level: `user/profile/preferences.md` §Logistics & salary. For the pr
 not stated, give the country-typical range as context.
 
 **Bench load** (positions/phd only) — `bench_load:` how much **wet-lab work the seat itself**
-requires, read off the ad's duties and requirements. **Reported, never scored**: it moves none of
-the three scores. It exists so the user sees the bench share of a role at a glance; how the user
-feels about bench work lives in `user/profile/preferences.md`.
+requires, read off the ad's duties and requirements. **Reported, never scored** (moves no score).
+How the user feels about bench work lives in `user/profile/preferences.md`.
 
 | Value | When |
 |---|---|
@@ -455,9 +405,8 @@ Tiers: `elite` (1) · `strong` (2) · `established` (3) · `early_stage` (4). Wh
 user's field is the domain pack's `prestige.md` (`engine/packs/<pack>/`, `<pack>` = `search.pack`
 in `user/settings.toml`).
 
-> ⚠️ **Prestige scores nothing.** `prestige_tier` is already its own frontmatter field and its own
-> dashboard column, so folding it into a score would double-count it. Record the tier; do not let
-> it move `career_fit`. (`engine/docs/decisions.md` §Logistics and prestige.)
+> ⚠️ **Prestige scores nothing.** `prestige_tier` is its own field and dashboard column; never let
+> it move `career_fit` (`engine/docs/decisions.md` §Logistics and prestige).
 
 Record the tier, 2–3 concrete signals (funding, revenue, h-index, journal tier, grants),
 and a one-line rationale. Look up signals with WebSearch/WebFetch when the raw text is thin.
@@ -480,11 +429,9 @@ Every profile carries a **Language Patterns** block — the fuel `/cv` uses for 
 - **Technical keywords** — domain and tool terms ("structural", "pipeline",
   "antibody", "RFdiffusion", "GPCR").
 
-**Frequency counts:** include `×N` counts **only** when the source is actual ad or
-posting text where terms genuinely repeat (positions/phd, and dense company careers
-copy). For narrative snapshots (most company/group descriptive text), do **not**
-fabricate counts — list the term with a short context phrase instead. Factual grounding
-applies to keyword counts too.
+**Frequency counts:** include `×N` **only** when the source is real ad or posting text where terms
+genuinely repeat (positions/phd, dense careers copy). For narrative snapshots (most company/group
+text), never fabricate counts — list the term with a short context phrase instead.
 
 Minimum 4 entries per list where the source supports it.
 
@@ -492,11 +439,9 @@ Minimum 4 entries per list where the source supports it.
 
 ## Dedup, merge & freshness
 
-`/search` rotates its company/group batches oldest-`last_evaluated`-first and dedups by
-**identity, not age** — there is no staleness skip (see *Why age is not a filter* in
-[[search-positions-common]] and `engine/docs/decisions.md`). So a
-file arriving here is either new, a new role at a known org, or a deliberate refresh. Inbox is the
-**authority** on merging.
+`/search` dedups by **identity, not age** — there is no staleness skip (`engine/docs/decisions.md`
+§No staleness skip). A file arriving here is new, a new role at a known org, or a deliberate
+refresh. Inbox is the **authority** on merging.
 
 1. Check `user/workspace/organizations/companies/`, `user/workspace/organizations/research_groups/`, `user/workspace/positions/open/`,
    `user/workspace/positions/applied/`, and `user/workspace/inbox/processed/` for an existing entry.
@@ -504,21 +449,20 @@ file arriving here is either new, a new role at a known org, or a deliberate ref
 3. **If one exists:** **merge, do not overwrite.**
    - Update factual frontmatter (location, funding, prestige, `career_fit`, `method_fit`,
      `skill_match`, and for positions/phd `level_fit` and `bench_load`) and refresh `last_evaluated` to today.
-   - If the file has no `method_fit`, add it (introduced 2026-09-29) — it is not part of the
-     v2->v3 `career_fit` migration and must be scored for every record that lacks it.
+   - If the file has no `method_fit`, score and add it (whatever its `scoring:` stamp).
    - Leave `method_roles_seen` / `last_method_role` alone on an org: `method_sightings.py --apply`
      owns them (Step 5).
    - If the existing file carries anything but `scoring: v3`, re-judge `career_fit` under the v3
      rubric (band + checks, writing `career_band` / `career_checks`) and stamp `scoring: v3`. A
-     `scoring: v1` or unstamped file predates 2026-08-17: rescore `skill_match` too and delete its
-     `fit_score` and `verdict`. Never carry an older number forward as if it were a v3 one. On an
-     org, delete any `career_fit_own` / `career_fit_floor` / `career_fit_floor_from` before
-     writing — Step 5's `org_floor.py` restores the floor.
+     `scoring: v1` or unstamped file: also rescore `skill_match` and delete its `fit_score` and
+     `verdict`. Never carry an older number forward as a v3 one. On an org, delete any
+     `career_fit_own` / `career_fit_floor` / `career_fit_floor_from` before writing — Step 5's
+     `org_floor.py` restores the floor.
    - Append newly found roles to `open_positions`; never drop existing ones.
    - `schema_version` is the record *format* (`engine/tools/schema.py` `SCHEMA_VERSION`; the
-     templates below write the current one), separate from `scoring:`, the rubric. If an
-     existing file's stamp is missing or older, run `python engine/tools/schema.py --apply`
-     before merging — never edit the stamp by hand.
+     templates below write the current one), separate from `scoring:`. If an existing file's stamp
+     is missing or older, run `python engine/tools/schema.py --apply` before merging — never edit
+     the stamp by hand.
    - **Preserve the `## Notes` / manual sections verbatim** — only auto-generated
      sections may be rewritten.
    - Add a one-line entry to `## History` describing what changed.
@@ -526,14 +470,10 @@ file arriving here is either new, a new role at a known org, or a deliberate ref
    rather than creating a duplicate. Different role at the same org = new file.
 
 **Org-name aliases (normalise before the dedup check).** The same employer can arrive under
-different slugs (an acquisition, or a group vs its parent org), which defeats slug-based dedup and
-produces duplicate profiles/positions plus a wasted scoring pass. Before checking for an existing
-entry, resolve the org to a canonical slug with the alias table in
-`user/workspace/organizations/aliases.toml` — the same table `dedup_check.py`, `org_match.py` and
-the dashboard read. When you meet a new rename or acquisition, add it there.
-
-When a new file's canonical org + role matches an existing profile/position, **merge or skip** — never
-create a second file under the alias.
+different slugs (an acquisition, a group vs its parent). Resolve the org to a canonical slug with
+`user/workspace/organizations/aliases.toml` — the table `dedup_check.py`, `org_match.py` and the
+dashboard read — and add any new rename or acquisition there. When the canonical org + role matches
+an existing profile/position, **merge or skip** — never create a second file under the alias.
 
 ---
 
@@ -602,11 +542,10 @@ schema_version: 2
 
 ### groups → `user/workspace/organizations/research_groups/[GroupSlug].md`
 
-Score `career_fit`, `method_fit` **and** `skill_match` (see *Scoring* above — a lab is a
-cold-outreach target the same way a company is).
-**Faculty filter:** if the source is an
-Assistant Professor / Professor / Group-Leader *recruitment call* (a faculty opening,
-not a PhD/postdoc), do not create a group profile — flag and skip; that is years away.
+Score `career_fit`, `method_fit` **and** `skill_match`, as for a company.
+**Faculty filter:** if the source is an Assistant Professor / Professor / Group-Leader
+*recruitment call* (a faculty opening, not a PhD/postdoc), do not create a group profile — flag and
+skip; that is years away.
 
 ```markdown
 ---
@@ -735,12 +674,10 @@ schema_version: 2
 <!-- manual -->
 ```
 
-**`org_profile:` — leave it blank almost always.** `/dashboard` shows, on each company and
-research-group row, the date a CV was last *sent* to that employer. It works out which positions
-belong to which profile automatically, reusing `dedup_check.py`'s alias table and org-token rules.
-Since 2026-09-10 `org_floor.py` reads the same link to floor each org's `career_fit` (see *Step 4 —
-the org floor*), so a wrong match inflates a score as well as mis-dating a CV.
-Set this field only to correct a match it gets wrong:
+**`org_profile:` — leave it blank almost always.** The position→profile link is automatic
+(`dedup_check.py`'s alias table and org-token rules). `/dashboard` uses it to date the last CV sent
+to each employer, and `org_floor.py` uses it to floor each org's `career_fit`, so a wrong match
+inflates a score as well as mis-dating a CV. Set this field only to correct a wrong match:
 
 - **A sibling group in the same department.** A posting naming its lab but not its PI is
   indistinguishable from its neighbours. Point it at the right group: `org_profile: <group-slug>`.
@@ -753,28 +690,22 @@ Set this field only to correct a match it gets wrong:
 The cases from this vault that produced these four: `engine/docs/decisions.md` §org_profile.
 
 **`url:` — normalise LinkedIn to the canonical form before writing it.** A collector's `SOURCE:`
-is whatever surface it was found on, and for LinkedIn that is often
-`linkedin.com/ad-library/job/detail/<id>`. **Rewrite it to `https://www.linkedin.com/jobs/view/<id>`**,
-keeping the numeric id. Both CLAUDE.md and `engine/docs/LINK_HEALTH.md` require the canonical form
-(why `/inbox` states it too: `engine/docs/decisions.md` §LinkedIn URLs). The id is the same; only the surface differs.
+for LinkedIn is often `linkedin.com/ad-library/job/detail/<id>`. **Rewrite it to
+`https://www.linkedin.com/jobs/view/<id>`**, keeping the numeric id. The ad-library surface
+**returns HTTP 200 for expired postings**, and `url:` is the link a human clicks and `/cv`
+pre-flights (`engine/docs/decisions.md` §LinkedIn URLs).
 
-It matters because `ad-library/job/detail/<id>` **returns HTTP 200 for expired postings**
-(`engine/docs/decisions.md` §LinkedIn URLs). `link_check.py` normalises internally so its
-verdicts are unaffected, but `url:` is the link a human clicks and the one `/cv` pre-flights, and an
-ad-library link looks alive when it is not.
-
-`url_status` values, for reference: `unchecked` (never verified) · `working` (verified live — **never
-valid for a LinkedIn lead**, see below) · `unverified` (a page was served but liveness cannot be
-established; the normal LinkedIn outcome) · `unresolved` (the stored URL is a search page or board
-root and can never confirm anything) · `dead` (confirmed removed).
+`url_status` values: `unchecked` (never verified) · `working` (verified live — **never valid for a
+LinkedIn lead**) · `unverified` (a page was served but liveness cannot be established; the normal
+LinkedIn outcome) · `unresolved` (the stored URL is a search page or board root and can never
+confirm anything) · `dead` (confirmed removed).
 
 > ⚠️ **Never write `url_status: working` for a LinkedIn URL.** LinkedIn renders its expiry banner
-> client-side, so an unauthenticated fetch of a dead posting is indistinguishable from a live one.
-> `link_check.py` has returned only `DEAD` or `UNVERIFIED` for LinkedIn since 2026-08-16;
-> `expire_sweep.py` reports any `working` stamp that reappears under `⚠ unproven`.
+> client-side, so an unauthenticated fetch cannot tell dead from live. `link_check.py` returns only
+> `DEAD` or `UNVERIFIED` for LinkedIn; `expire_sweep.py` reports any `working` stamp under `⚠ unproven`.
 
-Write the slug bare (`some-group-slug`), with no inline `#` comment — the frontmatter
-parser takes everything after the colon as the value.
+Write the `org_profile:` slug bare (`some-group-slug`), with no inline `#` comment — the
+frontmatter parser takes everything after the colon as the value.
 
 ### phd → `user/workspace/positions/open/[OrgSlug]_[RoleSlug]_[DateSlug].md` with `type: phd`
 

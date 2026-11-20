@@ -99,28 +99,26 @@ or organisation (full rubric and anchor bands: `engine/skills/inbox-eval.md` §S
 - `career_fit` **0–100 — is this the science I want?** Direction only, **scoring v3**: a **band**
   for how close the work is to the direction, then yes/no **checks** read off a lookup table that
   place the record *inside* its band, never out of it. What the bands and checks mean is personal:
-  `user/profile/preferences.md` §Scoring (check names and units: `user/settings.toml`). Orgs are banded by their most on-direction line, and an org **never scores below
-  its best linked position** (`python engine/tools/org_floor.py --apply`). Nothing else enters: not location,
+  `user/profile/preferences.md` §Scoring (check names and units: `user/settings.toml`). Orgs are
+  banded by their most on-direction line, and an org **never scores below its best linked
+  position** (`python engine/tools/org_floor.py --apply`). Nothing else enters: not location,
   salary, prestige, seniority or company size. Every kind of record carries this.
 - `method_fit` **0–100 — is this the work I want?** Does the seat **build** methods, tools,
   pipelines, platforms or benchmarks that others then use, or only **operate** what already exists?
-  Judged against anchor bands, no lookup table. **Independent of domain and of ability** — the
-  domain belongs to `career_fit`, a familiar stack to `skill_match`, so a low `career_fit` with a
-  high `method_fit` (`career_fit` 35 · `method_fit` 92) is a lead worth seeing, not noise. Carried
-  by every kind of record; for an org the question is *"would I be the methods person here?"*. Why
-  it exists: `engine/docs/decisions.md` §`method_fit`.
+  Judged against anchor bands, no lookup table. **Independent of domain** (that is `career_fit`)
+  **and of ability** (that is `skill_match`), so `career_fit` 35 · `method_fit` 92 is a lead worth
+  seeing, not noise. Every kind of record; for an org: *"would I be the methods person here?"*
+  (why: `engine/docs/decisions.md` §`method_fit`).
 - `skill_match` **0–100 — can I do this?** Evidenced overlap with `user/profile/competencies.md` /
-  `user/profile/soft_skills.md` and nothing else. On **every** kind of record: for a position it
-  reads the ad's requirements; for a company or research group it reads the org's *stated
-  technical work* — "could I be useful here", which is the question a cold-outreach target
-  has to answer, since the org databases are what unsolicited applications are sent from.
+  `user/profile/soft_skills.md` and nothing else. On **every** kind of record: a position's ad
+  requirements; an org's *stated technical work* ("could I be useful here" — the cold-outreach
+  question).
 - `level_fit` **badge, scores nothing** — `realistic | reach | below`, against what the user holds
-  today (`user/profile/background.md` §Level). **Positions and PhD calls only** — an org profile
-  advertises no seniority, so there is nothing for the badge to describe.
-- **Never average them or reintroduce a single score.** A high-`career_fit`, low-`skill_match`
-  record is a stretch worth seeing, not a contradiction to smooth over; a low-`career_fit`,
-  high-`method_fit` one is the right kind of work in the wrong field, which is also worth seeing.
-  A blended score hides exactly that (`engine/docs/decisions.md` §Why two scores).
+  today (`user/profile/background.md` §Level). **Positions and PhD calls only** (an org advertises
+  no seniority).
+- **Never average them or reintroduce a single score.** High `career_fit` + low `skill_match` is a
+  stretch worth seeing; low `career_fit` + high `method_fit` is the right work in the wrong field,
+  also worth seeing. A blended score hides both (`engine/docs/decisions.md` §Why two scores).
 
 **Before applying to any position** — Check `user/workspace/positions/` to see if
 a profile already exists. If it does, update it rather than creating a duplicate. Check
@@ -132,33 +130,27 @@ a dated line to it after the exchange.
 **Before writing anything to the inbox** — Run `python engine/tools/dedup_check.py`.
 This is mandatory, not optional; eyeball dedup has demonstrably failed.
 
-**Link & status hygiene** — A position's `url` must be verified before it's relied on.
-`/cv` checks the link before generating; `python engine/tools/link_check.py --apply`
-re-validates every open lead reaching `thresholds.min_score_shown` (`user/settings.toml`) on **any** of `career_fit`,
-`method_fit` or `skill_match`, and retires the dead ones.
-A link an automated fetch refuses (404/ECONNREFUSED) is *unverified, not dead* — confirm with
-a real browser (the built-in browser pane: `engine/docs/LINK_HEALTH.md` §Browser pass). **The converse also holds: HTTP 200 is not proof a posting is live.** LinkedIn's
-`ad-library/job/detail/<id>` returns 200 for expired jobs (measured: `engine/docs/LINK_HEALTH.md`).
-Check LinkedIn against the canonical
-`linkedin.com/jobs/view/<id>` page and store *that* form in `url:`. See `engine/docs/LINK_HEALTH.md`.
-For Workday ATSs
-(`*.myworkdayjobs.com`, very common), the JSON endpoint
-`POST /wday/cxs/{tenant}/{site}/jobs` with `{"searchText":"…","limit":20}` authoritatively
-lists live postings without a browser. Mark a position `expired` **only** if its `deadline`
-is strictly before today **or** the posting is confirmed removed — never on the deadline
-day itself.
-**Exception — age retirement.** A lead with `deadline: null` could never be retired by the rule
-above, so `expire_sweep.py` retires deadline-less leads **older than `thresholds.stale_days`
-(`user/settings.toml`) on age alone**, stamping `expired_reason: stale_no_deadline` plus a dated
-Notes line saying the posting was *not* confirmed removed. This knowingly trades accuracy for a
-manageable active set: some retired leads are still live. It is a decision, not a bug — do not
-revert it (the case: `engine/docs/decisions.md` §Age retirement). Undo the whole set with
-`grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`; skip it for one run with
-`--keep-stale`. **Exemption (2026-11-18):** a deadline-less lead **confirmed live within
-`thresholds.verified_days`** (`user/settings.toml`, 14) is kept and reported, never retired on age —
-a fresh liveness verdict is the evidence age stands in for. It is narrow by design: `url_status:
-working` only, **never** a LinkedIn `working`, and a window far shorter than `stale_days`.
-`--verified-days -1` disables it for one run. See `engine/docs/LINK_HEALTH.md`.
+**Link & status hygiene** — verify a position's `url` before relying on it. `/cv` checks the link
+before generating; `python engine/tools/link_check.py --apply` re-validates every open lead reaching
+`thresholds.min_score_shown` (`user/settings.toml`) on **any** of `career_fit`, `method_fit` or
+`skill_match`, and retires the dead ones. Details and measurements: `engine/docs/LINK_HEALTH.md`.
+- A link an automated fetch refuses (404/ECONNREFUSED) is *unverified, not dead* — confirm in a
+  real browser (the built-in browser pane: `engine/docs/LINK_HEALTH.md` §Browser pass).
+- **HTTP 200 is not proof a posting is live.** LinkedIn's `ad-library/job/detail/<id>` returns 200
+  for expired jobs: check LinkedIn against the canonical `linkedin.com/jobs/view/<id>` page and
+  store *that* form in `url:`.
+- Workday (`*.myworkdayjobs.com`): `POST /wday/cxs/{tenant}/{site}/jobs` with
+  `{"searchText":"…","limit":20}` authoritatively lists live postings without a browser.
+- Mark a position `expired` **only** if its `deadline` is strictly before today **or** the posting
+  is confirmed removed — never on the deadline day itself.
+- **Exception — age retirement. A decision, not a bug: never revert it.** `expire_sweep.py` retires
+  deadline-less leads older than `thresholds.stale_days` (`user/settings.toml`) on age alone,
+  stamping `expired_reason: stale_no_deadline` plus a dated Notes line saying the posting was *not*
+  confirmed removed; some retired leads are still live. **Exempt:** a lead confirmed live within
+  `thresholds.verified_days` (14) — `url_status: working` only, **never** a LinkedIn `working`, a
+  window far shorter than `stale_days`. Undo the set, skip a run (`--keep-stale`) or disable the
+  exemption (`--verified-days -1`): `engine/docs/LINK_HEALTH.md`; the case:
+  `engine/docs/decisions.md` §Age retirement.
 
 **Grades** — extract precisely from transcripts; never round or paraphrase.
 
@@ -175,9 +167,8 @@ working` only, **never** a LinkedIn `working`, and a window far shorter than `st
 > → **Sonnet**; the scoring stage (`/inbox`) → **Opus**. Per-command guide (with effort
 > levels) in `engine/docs/CHEATSHEET.txt`.
 >
-> ⚠️ **The model for `/search-*` is provisional.** The yield telemetry cannot settle it yet
-> (`engine/skills/search-positions-common.md` §Model and effort; the numbers: `engine/docs/decisions.md`). Whatever
-> setting you pick, record `model` and `effort` honestly — an unlabelled run answers nothing.
+> ⚠️ **The model for `/search-*` is provisional** (`engine/skills/search-positions-common.md`
+> §Model and effort). Whatever setting you pick, record `model` and `effort` honestly.
 
 **The commands:** `/inbox` · `/cv` · `/search-positions` · `/search-companies` ·
 `/search-groups` · `/dashboard` · `/track` · `/linkedin`. Each is defined by its skill file in
@@ -191,10 +182,10 @@ line, so read the skill rather than duplicating its contract here.
 > is stamped `TRACK:`, and everything moves to `user/workspace/inbox/`. Shared rules live in
 > `engine/skills/search-common.md` (geography, staging, TRACK) and `engine/skills/search-positions-common.md`;
 > only the keyword pass and Gate 3 differ per track. **The skill track has no direction floor
-> by design** — it will surface roles built on the user's strongest competencies, whatever their
-> field. Never add a direction filter to it. Since 2026-10-01 it also runs the **method lane** —
-> build seats found through ad text and through employers that have posted them before
-> (`method_sightings.py`), never through method-title queries (`engine/docs/decisions.md` §Method lane).
+> by design** — it surfaces roles built on the user's strongest competencies, whatever their
+> field. Never add a direction filter to it. It also runs the **method lane** — build seats found
+> through ad text and through employers that have posted them before (`method_sightings.py`),
+> never through method-title queries (`engine/docs/decisions.md` §Method lane).
 >
 > ⚠️ `/linkedin` runs in the desktop app's **built-in browser pane**, signed in to LinkedIn by the user by hand
 > (never automate the login form). Fallbacks are Claude in Chrome, then agent-browser; see the skill. If

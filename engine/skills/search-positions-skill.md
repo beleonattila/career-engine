@@ -15,17 +15,12 @@ description: >
 do it?* — evidenced competence, and nothing else. Whether the work is on-direction is the other
 track's problem, and `career_fit` records it at scoring time anyway.
 
-> **This track will surface roles built on the user's strongest competencies, whatever their
-> field. That is correct.** Those need not be the stated direction — `user/profile/search_terms.md`
-> §Skill track says what that means for this profile. A search that maximises skill match can
-> point away from the direction; that is the honest shape of the profile, and seeing it is the
-> reason this track exists. **Never add a direction filter here.** `/inbox` scores `career_fit` on
-> everything, so how off-direction a lead is stays visible without being suppressed at collection time.
+**Never add a direction filter here** ([[search-common]] §The two-track model).
 
 ## Read these first, in order
 
-1. **[[search-common]]** — geography allowlist, staging protocol, `TRACK:` stamp. Identical
-   for both tracks.
+1. **[[search-common]]** — geography allowlist, staging protocol, `TRACK:` stamp, the competency
+   gate. Identical for both tracks.
 2. **[[search-positions-common]]** — everything else: run modes, dedup, Gates 0/2/4, sources,
    output format, telemetry, model guidance.
 3. **This file** — supplies the three **[MODE]** steps that common file leaves open.
@@ -36,9 +31,9 @@ Write every collection to **`user/workspace/inbox/_staging/skill/`**. Never to `
 
 ## [MODE] Step 5 — keyword pass
 
-There are no direction tiers here. Normalise variants (the domain pack's `synonyms.md`), then simply
-note every term matching the competency triggers in the user's table (Gate 3 below).
-a cheap pre-filter; Gate 3 is the real test, and they read the same vocabulary.
+There are no direction tiers here. Normalise variants (the domain pack's `synonyms.md`), then
+note every term matching the competency triggers in the user's table — a cheap pre-filter; Gate 3
+is the real test, and they read the same vocabulary.
 
 Skip an ad at this step only when **nothing at all** in the competency table appears anywhere
 in it. Anything else goes through to the gates.
@@ -65,35 +60,11 @@ Record as: `Gate 1 (terms found): {C1: terms | C2: terms | ...}` or `none`
 *Does this role need what the user can prove they have?* Mechanical: for each competency in the
 user's table — `user/profile/search_terms.md` §Skill track → *Competency table — positions* — mark
 **PRESENT** iff the **role text** (responsibilities, requirements, "you will…") names at least
-one trigger term or an unambiguous synonym. Gate 2 has already discarded company boilerplate, so
-only role text counts.
+one trigger term or an unambiguous synonym, **and** the competency is central —
+[[search-common]] §Skill track: the competency gate. Gate 2 has already discarded company
+boilerplate, so only role text counts.
 
-> ### A competency counts only when it is CENTRAL
->
-> **Added 2026-08-18, after the first two-track run.** The gate previously passed on a
-> competency being *named anywhere* in the role text. That is far looser than `skill_match`
-> and it showed: Latent Labs' Forward Deployed AI Engineer passed on `{C1: "data pipelines",
-> C4: "API, CI/CD pipelines"}` and then scored **35**. Three of six collections scored ≤35.
->
-> A competency is **PRESENT** only if it describes **what the person does**, not what the
-> employer would like them to have heard of. Concretely:
->
-> | Counts | Does not count |
-> |---|---|
-> | Named in the primary responsibilities — "you will build/own/maintain X" | Buried in a requirements laundry list of a dozen technologies |
-> | The role is organised around it (a section, a repeated theme) | Mentioned once in passing |
-> | Named in the job title | Under "nice to have", "a plus", "what sets you apart" |
-> | The daily work is unimaginable without it | Listed as an acceptable degree field |
->
-> When a term appears only in a "bonus" or "differentiator" section, **record it and move on** —
-> note it in the Gate 3 line as `(noted, not counted)` so the decision stays auditable, but do
-> not let it reach the threshold. Naming a competency is not the same as the role being about it.
-
-**COLLECT iff ≥2 distinct counting competencies are PRESENT** — the table marks the Tier-3 rows,
-which are recorded but never count. One competency alone is not enough — nearly every
-computational biology ad names Python or Linux, and a single generic overlap says nothing about
-employability. A Tier-3 row never counts, for the same reason Tier 3 never qualifies a lead in the
-career track.
+**COLLECT iff ≥2 distinct counting competencies are PRESENT** (Tier-3 rows never count).
 
 Record as: `Gate 3 (competencies): {C1, C6, C7} — 3 present`
 
@@ -103,12 +74,10 @@ competencies + a BUILD SIGNAL → COLLECT.** Record as
 
 ## [MODE] Method lane
 
-> **Added 2026-10-01.** `/inbox` scores `method_fit` — *does the seat build methods, tools and
-> systems, or only operate them?* ([[inbox-eval]] §`method_fit`) — and the user wants those seats
-> in any domain. They rarely say so in a title: the build hides under "Scientist" or
-> "Bioinformatician", in the responsibilities. So the engine does **not** query job boards for
-> method titles. It finds them two cheaper ways — the ad text of employers it already sweeps, and
-> the employers that have posted such seats before. Why: `engine/docs/decisions.md` §Method lane.
+> `/inbox` scores `method_fit` ([[inbox-eval]] §`method_fit`) and the user wants build seats in
+> any domain. They rarely say so in a title, so **never query job boards for method titles**. Find
+> them through the ad text of employers already swept, and the employers that have posted such
+> seats before (`engine/docs/decisions.md` §Method lane).
 
 **Where the candidates come from.**
 - **ATS sweep `M` / `Mb` / `M?` rows** — open every one that is not `tracked`. `M` = the title names
@@ -169,19 +138,15 @@ parent drops the duplicate.
 
 ## What this track does NOT change
 
-Everything below stays exactly as the career track runs it — do not re-derive or relax any of it:
+Everything below stays exactly as the career track runs it — never re-derive or relax any of it:
 
-- **Gate 2 (placement)** — a company that mentions Snakemake in its "about us" while advertising
-  a finance role still fails. Terms must be in the role text.
-- **Gate 4 (level)** — the same seniority rules, with the user's thresholds (`search_terms.md`
-  §Level gate). Being well-qualified on competencies does not make an over-level role attainable,
-  and `level_fit` will say `reach` regardless.
-- **Calls for the qualification the user is working towards → PASS** (for this profile: PhD
-  calls). Collected by this track too: such a call matching the existing stack is a real lead,
-  and it is also how a developing competency gets closed.
+- **Gate 2 (placement)** — terms must be in the role text, not the "about us".
+- **Gate 4 (level)** — the same seniority rules and thresholds (`search_terms.md` §Level gate).
+  Strong competencies do not make an over-level role attainable.
+- **Calls for the qualification the user is working towards → PASS** (PhD calls, for this
+  profile) — collected by this track too ([[search-common]] §Rules both tracks share).
 - **Roles requiring a qualification the user lacks, and faculty calls → group profile**, not a
-  position (for this profile: postdocs, which need a completed PhD no matter how well the
-  competencies line up).
+  position (postdocs, for this profile).
 
 ---
 
@@ -201,12 +166,10 @@ channels:  {which sources were actually queried}
 ```
 
 Record the lane in the run JSON as `"method_lane": {"opened": N, "sightings": N, "collected": N}`
-([[LOG_SCHEMA]]). It is how the lane gets judged: after a few runs, if the lane's collections
-mostly score `method_fit` ≥ 75 at `/inbox`, it works; if they mostly land below 50, the build
-signal is being read too loosely.
+([[LOG_SCHEMA]]). That is how the lane is judged: collections mostly scoring `method_fit` ≥ 75 at
+`/inbox` → it works; mostly below 50 → the build signal is read too loosely.
 
-The competency spread is worth reporting because it says which of the user's skills the market is
-actually asking for — information the career track structurally cannot produce.
+The competency spread says which of the user's skills the market actually asks for.
 
 ---
 
