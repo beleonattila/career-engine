@@ -4,7 +4,7 @@ org_match.py — which company / research-group profile a position record belong
 
 Shared by two consumers that must agree on the answer:
   * dashboard.py  — the date a CV was last sent to each employer;
-  * org_floor.py  — the career_fit floor (an org never scores below its best position).
+  * org_floor.py  — the domain_fit floor (an org never scores below its best position).
 
 Moved out of dashboard.py on 2026-09-10 when org_floor.py became its second user. dashboard.py
 cannot be imported (it writes the HTML as an import side effect), and a forked copy would drift:

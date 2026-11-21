@@ -17,7 +17,7 @@ astrazeneca = { tenant = "astrazeneca", site = "Careers", wd = 3 }
 # takeda: removed 2026-10-10. The Workday tenant answers HTTP 422 on every wd host and site name,
 # and the site root is a 500. Takeda moved to Radancy (jobs.takeda.com, org id 1113): its
 # /search-jobs/results JSON lists all 834 postings, but the cards carry no posting date and the
-# sweep has no Radancy puller. Not worth one for an org at career_fit 58 with no position ever.
+# sweep has no Radancy puller. Not worth one for an org at domain_fit 58 with no position ever.
 regeneron = { tenant = "regeneron", site = "Careers", wd = 1 }
 sanofi = { tenant = "sanofi", site = "SANOFICareers", wd = 3 }
 novartis = { tenant = "novartis", site = "NOVARTIS_Careers", wd = 3 }

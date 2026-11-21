@@ -98,7 +98,7 @@ live there and are identical for both tracks.
    **Modifier (records only, never decides):** `in_silico: yes | no | mixed`. Bench work in the
    seat is neutral per `user/profile/preferences.md`, so a bench role is not disqualified. Keep any
    ad line saying the designs are tested in house or by a named collaborator in the saved text:
-   `/inbox` scores experimental validation as a `career_fit` check.
+   `/inbox` scores experimental validation as a `domain_fit` check.
 
    **Gate 4 — level.** Answer *before* writing anything. The user's level and the thresholds that
    follow from it are in `user/profile/search_terms.md` §Level gate. Ask **in this order**:
@@ -127,8 +127,8 @@ live there and are identical for both tracks.
    `user/profile/search_terms.toml`), which demotes over-level rows out of the printed sweep;
    `level_sweep.py` applies it to the backlog.
 
-   > **A hard gate** (measurements: `search_terms.md` §Level gate). **Never use `career_fit` to
-   > argue a level-gated role back through it** — `career_fit` measures desirability only;
+   > **A hard gate** (measurements: `search_terms.md` §Level gate). **Never use `domain_fit` to
+   > argue a level-gated role back through it** — `domain_fit` measures desirability only;
    > `level_fit` speaks to attainability, and a `reach` is the gate agreeing with itself.
 
    Faculty calls never reach this gate: the Gate 0 exception made them `_group-profile_` files.
@@ -300,7 +300,7 @@ Before hitting job boards, sweep `user/workspace/organizations/companies/` **and
 `user/workspace/organizations/research_groups/` for new openings at orgs already in the vault.
 Academic PI labs live only in `research_groups/` — skip it and you cannot find their postings.
 
-- **[MODE] Which orgs to sweep.** **Career**: orgs at `career_fit` 60+. **Skill**: orgs at
+- **[MODE] Which orgs to sweep.** **Career**: orgs at `domain_fit` 60+. **Skill**: orgs at
   `skill_match` **or** `method_fit` 60+, plus any org with a logged method sighting, in the order
   `python engine/tools/method_sightings.py --rotation 30` prints. An org clearing both is swept by
   both; reconciliation drops the duplicate. **Geography is not a score threshold** — the country
@@ -338,7 +338,7 @@ LLM tokens**) and prints a ranked TSV — newest and most relevant first — to
 `user/workspace/logs/ats_sweep_latest.tsv`. Make the collect/skip calls from that table. **Never**
 check companies one at a time by hand (`engine/docs/decisions.md` §The ATS sweep enumerates).
 
-Columns: `tier` · `age_d` · `published` · `org` · `fit` · `status` · `title` · `location` · `url`
+Columns: `tier` · `age_d` · `published` · `org` · `domain` (the employer's `domain_fit`) · `status` · `title` · `location` · `url`
 
 - **`tier`** — `T1` / `T2` from the relevance gate, matched on the **title**;
   **`T1b` / `T2b`** = the term is in the ad **body**, not the title (Gate 2 still has to be
@@ -518,7 +518,7 @@ python engine/tools/link_check.py --apply    # stamp url_status/url_checked, ret
 ```
 
 It checks every open lead reaching `thresholds.min_score_shown` (`user/settings.toml`) on **any** of
-`career_fit`, `method_fit` or `skill_match`, re-checks LinkedIn leads against the canonical job
+`domain_fit`, `method_fit` or `skill_match`, re-checks LinkedIn leads against the canonical job
 view, and refuses to archive a bare 404 (reported as `DEAD_UNCONFIRMED` — confirm in a browser,
 then re-run with `--trust-404`). Rationale: `engine/docs/LINK_HEALTH.md`.
 

@@ -33,7 +33,7 @@ try:
 except ImportError:                                  # run outside the vault
     HAVE_IDENTITY = False
 
-STRONG_FIT = setting("thresholds.on_direction")     # career_fit counted as a strong lead
+STRONG_FIT = setting("thresholds.on_direction")     # domain_fit counted as a strong lead
 POSITION_GLOBS = ["positions/open/*.md", "positions/applied/*.md", "positions/closed/*.md"]
 PROFILE_GLOBS = ["organizations/companies/*.md", "organizations/research_groups/*.md"]
 
@@ -370,14 +370,14 @@ def frontmatter(path):
 def _record(p, folder, kind):
     fm = frontmatter(p)
     parts = p.stem.split("_")
-    # Telemetry tracks `career_fit` — "did this run surface work the user actually wants?".
+    # Telemetry tracks `domain_fit` — "did this run surface work the user actually wants?".
     # That is the question collection quality is judged on; whether he was qualified for a
     # given lead says nothing about whether the search channel was worth running.
     # Discontinuity to remember when reading old runs: records logged before 2026-08-17
     # carried a blended `fit_score` mixing desirability with skill and level, so pre- and
     # post-rescore numbers are not directly comparable. Records still on v1 read as None.
     try:
-        fit = int(float(fm.get("career_fit", "")))
+        fit = int(float(fm.get("domain_fit", "")))
     except (TypeError, ValueError):
         fit = None
     app = (fm.get("app_status") or "").strip().lower()
@@ -394,7 +394,7 @@ def _record(p, folder, kind):
 def vault_outcomes():
     """[(org, role_key, canon_url, info)] over every record a collection could have become.
 
-    `info` carries what became of the lead: its /inbox `career_fit`, and whether a CV was ever
+    `info` carries what became of the lead: its /inbox `domain_fit`, and whether a CV was ever
     generated and sent. This is the join that lets collection be judged on quality instead of
     count.
 

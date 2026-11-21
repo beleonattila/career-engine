@@ -14,7 +14,7 @@ description: >
 
 Builds `user/workspace/artifacts/dashboard.html` — a single self-contained file (no dependencies,
 no server) with a Statistics tab of charts and sortable/filterable tabs ranked
-by `career_fit`.
+by `domain_fit`.
 
 **Recommended model:** Haiku, low effort (mechanical). The dashboard is a *view*: it
 reads, never scores — the real work is in `dashboard.py`.
@@ -133,7 +133,7 @@ sync: ticking, flagging or recolouring an item in either changes it in both.
   every **live deadline** still to act on (shown, not yet applied, any horizon).
   Their dates are the record's — change them with `/track`. The plan may only recolour, flag, tick
   or hide them (`overrides` in `plan.json`; the trash button *hides*, the record is untouched).
-  Defaults: urgent within 14 days; a deadline is important when `career_fit >=
+  Defaults: urgent within 14 days; a deadline is important when `domain_fit >=
   thresholds.on_direction`, an interview always. A record at `app_status: interviewing` with no
   dated `interviews:` line is an integrity issue (`interview_undated`), so an interview cannot
   silently miss the Timeline.
@@ -148,7 +148,7 @@ The **Statistics** tab (`engine/tools/web/stats.js` · `stats.css`, inlined like
 hand-built SVG charts, no library, each with a hover/focus tooltip and a *Show data* table. The
 integrity check lives in the Home page's taskbar tray. Two sections:
 
-- **Vault** — the application funnel, records by kind, a career-fit × skill-match scatter of live
+- **Vault** — the application funnel, records by kind, a domain-fit × skill-match scatter of live
   position and PhD leads, and leads collected per week split by search track (`track: career`
   against everything else, since skill-track records say `employability` or `skill`).
 - **Search telemetry** — runs logged, deep passes, the LinkedIn shortlist rate; why leads were
@@ -166,7 +166,7 @@ The numbers the funnel and *Records by kind* charts show:
 | Number | Definition |
 |---|---|
 | Search results | count of `user/workspace/inbox/processed/*.txt` (cumulative collected leads) |
-| On-direction (≥N) | **shown** records only, with `career_fit ≥ thresholds.on_direction` (`user/settings.toml`; the label shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. The lifetime figure, every record in the vault, is `positive_all` in the footer note (`engine/docs/decisions.md` §Dashboard). |
+| On-direction (≥N) | **shown** records only, with `domain_fit ≥ thresholds.on_direction` (`user/settings.toml`; the label shows the number) — the "positive results" metric. Counts desirability only — a record here may still be a `reach`. The lifetime figure, every record in the vault, is `positive_all` in the footer note (`engine/docs/decisions.md` §Dashboard). |
 | Companies / Groups / Positions / PhD | profile counts per category (PhD split from positions by `type: phd` or "PhD" in the title) |
 | Overdue (unretired) | **Tripwire — should read 0;** shown only as a warning when it does not. Shown position/PhD leads with `deadline: null` past `thresholds.stale_days` that `expire_sweep.py` should already have retired. Non-zero means the sweep has not run. Leads exempt under `thresholds.verified_days` (confirmed live recently) are **not** counted — the sweep keeps them on purpose |
 | CVs generated | count of `user/workspace/applications/*/` folders (or items with `cv_date`) |
@@ -226,10 +226,10 @@ The numbers the funnel and *Records by kind* charts show:
   open lead and retires the dead ones. A plain HTTP 200 is **not** proof a posting is live
   (`engine/docs/LINK_HEALTH.md`).
 
-- **Score columns on every row, every kind.** `career_fit` (do I want it) and `skill_match` (can
+- **Score columns on every row, every kind.** `domain_fit` (do I want it) and `skill_match` (can
   I do it) side by side; for a company or group, `skill_match` scores its stated stack against
   user/profile/competencies.md (the cold-outreach question). Only `level_fit` is
-  position/PhD-specific; orgs show `—` there. Sorting defaults to `career_fit` descending; either
+  position/PhD-specific; orgs show `—` there. Sorting defaults to `domain_fit` descending; either
   score column is clickable. What each number means: *Scoring* in [[inbox-eval]].
 
 - **Wet lab column and toggle.** Positions, PhD and Applications show
@@ -242,8 +242,8 @@ The numbers the funnel and *Records by kind* charts show:
 
 - **Score threshold — `thresholds.min_score_shown` in `user/settings.toml`** (read into
   `MIN_SCORE_SHOWN` in `dashboard.py`). A position/PhD lead is hidden only when **all three**
-  scores fall below it; any one clearing it keeps the row visible (a `career_fit 88 ·
-  skill_match 40` stretch and a `career_fit 45 · skill_match 85` fallback are both worth seeing).
+  scores fall below it; any one clearing it keeps the row visible (a `domain_fit 88 ·
+  skill_match 40` stretch and a `domain_fit 45 · skill_match 85` fallback are both worth seeing).
   Hidden leads stay on disk. Companies and groups are never hidden by score. The **Applications
   tab is exempt**. Visibility is decided once, by `_shown()` in Python, and stamped on each record
   as `shown`; the page's JavaScript reads that flag, never recomputes it, so tiles and tab counts

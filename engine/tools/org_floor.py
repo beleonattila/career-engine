@@ -2,8 +2,8 @@
 """
 org_floor.py — an organisation never scores below its best position.
 
-Rule (skills/inbox-eval.md §career_fit, Step 4 — added 2026-09-10 on the user's instruction):
-a company or research group's `career_fit` is at least the highest `career_fit` of any position
+Rule (skills/inbox-eval.md §domain_fit, Step 4 — added 2026-09-10 on the user's instruction):
+a company or research group's `domain_fit` is at least the highest `domain_fit` of any position
 linked to it, open, applied or closed. A lab that posted a 92 role does that work, however much
 else it also does. Found when a research group scored 85 while its own PhD call scored
 92 ("the group is broader"); a scan the same day found ~15 orgs below their best role, the widest
@@ -14,16 +14,16 @@ Positions are linked to profiles by org_match.py — the same matcher the dashbo
 `org_profile:` frontmatter field as the manual override (`none` suppresses a match).
 
 When the floor binds, the profile keeps its own judgement visible:
-    career_fit: 92                 <- what every consumer reads (dashboard, ats_sweep, sweeps)
-    career_fit_own: 85             <- the org judged on its own stated work
-    career_fit_floor: 92           <- the floor as last applied
-    career_fit_floor_from: some-org_phd-some-role_2026-07
+    domain_fit: 92                 <- what every consumer reads (dashboard, ats_sweep, sweeps)
+    domain_fit_own: 85             <- the org judged on its own stated work
+    domain_fit_floor: 92           <- the floor as last applied
+    domain_fit_floor_from: some-org_phd-some-role_2026-07
 plus a dated line under ## History. When it stops binding (the position was re-scored down, or the
-org's own judgement caught up), the three fields are removed and career_fit returns to the judgement.
+org's own judgement caught up), the three fields are removed and domain_fit returns to the judgement.
 
-Re-judging an org: write the new number to `career_fit`, delete the three floor fields, then run
-this with --apply. If the fields are left behind, a career_fit that no longer equals
-career_fit_floor is still recognised as a fresh judgement and wins over the stale _own.
+Re-judging an org: write the new number to `domain_fit`, delete the three floor fields, then run
+this with --apply. If the fields are left behind, a domain_fit that no longer equals
+domain_fit_floor is still recognised as a fresh judgement and wins over the stale _own.
 
     python engine/tools/org_floor.py                # report only — nothing is written
     python engine/tools/org_floor.py --apply        # write the floors
@@ -48,7 +48,7 @@ FOLDER_RANK = {"applied": 2, "open": 1, "closed": 0}     # tie-break: prefer a l
 # KEEP IN SYNC with SKIP_TYPES in dashboard.py.
 SKIP_TYPES = {"person_bio"}
 
-FLOOR_KEYS = ("career_fit_own", "career_fit_floor", "career_fit_floor_from")
+FLOOR_KEYS = ("domain_fit_own", "domain_fit_floor", "domain_fit_floor_from")
 CANDIDATE_MIN = setting("thresholds.on_direction")
 
 FM_RE = re.compile(r"\A---\n(.*?)\n---[ \t]*\n", re.S)
@@ -85,10 +85,10 @@ def load():
             profiles.append({
                 "slug": p.stem, "path": p,
                 "name": field(fm, "name") or field(fm, "organization") or p.stem,
-                "cf": as_int(field(fm, "career_fit")),
-                "own": as_int(field(fm, "career_fit_own")),
-                "floor": as_int(field(fm, "career_fit_floor")),
-                "from": field(fm, "career_fit_floor_from"),
+                "cf": as_int(field(fm, "domain_fit")),
+                "own": as_int(field(fm, "domain_fit_own")),
+                "floor": as_int(field(fm, "domain_fit_floor")),
+                "from": field(fm, "domain_fit_floor_from"),
             })
     for d in POSITION_DIRS:
         for p in sorted((ROOT / d).glob("*.md")):
@@ -96,7 +96,7 @@ def load():
             if not m:
                 continue
             fm = m.group(1)
-            cf = as_int(field(fm, "career_fit"))
+            cf = as_int(field(fm, "domain_fit"))
             if cf is None:
                 continue
             positions.append({
@@ -108,8 +108,8 @@ def load():
 
 
 def own_judgement(prof):
-    """The org's score on its own work. `career_fit_own` is trusted only while career_fit still
-    equals the floor last applied — otherwise career_fit was re-judged since, and that wins."""
+    """The org's score on its own work. `domain_fit_own` is trusted only while domain_fit still
+    equals the floor last applied — otherwise domain_fit was re-judged since, and that wins."""
     if prof["own"] is not None and prof["floor"] is not None and prof["cf"] == prof["floor"]:
         return prof["own"]
     return prof["cf"]
@@ -129,11 +129,11 @@ def plan(profiles, positions):
         best = max(linked, key=lambda x: (x["cf"], FOLDER_RANK[x["folder"]], x["slug"]),
                    default=None)
         if best and best["cf"] > own:
-            want = {"career_fit": best["cf"], "career_fit_own": own,
-                    "career_fit_floor": best["cf"], "career_fit_floor_from": best["slug"]}
+            want = {"domain_fit": best["cf"], "domain_fit_own": own,
+                    "domain_fit_floor": best["cf"], "domain_fit_floor_from": best["slug"]}
         else:
-            want = {"career_fit": own}
-        have = {"career_fit": prof["cf"]}
+            want = {"domain_fit": own}
+        have = {"domain_fit": prof["cf"]}
         for key, src in zip(FLOOR_KEYS, ("own", "floor", "from")):
             if prof[src] is not None:
                 have[key] = prof[src]
@@ -154,12 +154,12 @@ def add_history(body, line):
 
 
 def history_line(row):
-    old, new, own = row["have"]["career_fit"], row["want"]["career_fit"], row["own"]
-    if "career_fit_floor_from" in row["want"]:
-        src = row["want"]["career_fit_floor_from"]
-        return (f"- {TODAY}: org_floor.py — career_fit {old} → {new}, floored by the linked "
-                f"position [[{src}]]; the org's own judgement ({own}) is kept as career_fit_own.")
-    return (f"- {TODAY}: org_floor.py — floor released, career_fit {old} → {new} (own judgement; "
+    old, new, own = row["have"]["domain_fit"], row["want"]["domain_fit"], row["own"]
+    if "domain_fit_floor_from" in row["want"]:
+        src = row["want"]["domain_fit_floor_from"]
+        return (f"- {TODAY}: org_floor.py — domain_fit {old} → {new}, floored by the linked "
+                f"position [[{src}]]; the org's own judgement ({own}) is kept as domain_fit_own.")
+    return (f"- {TODAY}: org_floor.py — floor released, domain_fit {old} → {new} (own judgement; "
             f"no linked position scores higher).")
 
 
@@ -171,14 +171,14 @@ def rewrite(row):
     for line in m.group(1).split("\n"):
         if any(re.match(rf"^{k}:", line) for k in FLOOR_KEYS):
             continue
-        if re.match(r"^career_fit:", line):
-            out.append(f"career_fit: {row['want']['career_fit']}")
+        if re.match(r"^domain_fit:", line):
+            out.append(f"domain_fit: {row['want']['domain_fit']}")
             out += [f"{k}: {row['want'][k]}" for k in FLOOR_KEYS if k in row["want"]]
             continue
         out.append(line)
     body = text[m.end():]
     note = ""
-    if row["want"]["career_fit"] != row["have"]["career_fit"]:
+    if row["want"]["domain_fit"] != row["have"]["domain_fit"]:
         new_body = add_history(body, history_line(row))
         if new_body is None:
             note = " (no ## History section — frontmatter updated, no history line)"
@@ -194,7 +194,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--apply", action="store_true", help="write the floors (default: report only)")
     ap.add_argument("--candidates", action="store_true",
-                    help=f"list positions at career_fit >= {CANDIDATE_MIN} linked to no org profile")
+                    help=f"list positions at domain_fit >= {CANDIDATE_MIN} linked to no org profile")
     args = ap.parse_args()
 
     profiles, positions = load()
@@ -207,13 +207,13 @@ def main():
           + ("" if args.apply else " · dry run, nothing written (--apply to write)"))
 
     for title, sel in (
-        ("LIFTED", lambda r: r["want"]["career_fit"] > r["have"]["career_fit"]),
-        ("RELEASED", lambda r: r["want"]["career_fit"] < r["have"]["career_fit"]),
+        ("LIFTED", lambda r: r["want"]["domain_fit"] > r["have"]["domain_fit"]),
+        ("RELEASED", lambda r: r["want"]["domain_fit"] < r["have"]["domain_fit"]),
         ("FLOOR FIELDS UPDATED (score unchanged)",
-         lambda r: r["want"]["career_fit"] == r["have"]["career_fit"]),
+         lambda r: r["want"]["domain_fit"] == r["have"]["domain_fit"]),
     ):
         group = sorted((r for r in changed if sel(r)),
-                       key=lambda r: r["have"]["career_fit"] - r["want"]["career_fit"])
+                       key=lambda r: r["have"]["domain_fit"] - r["want"]["domain_fit"])
         if not group:
             continue
         print(f"\n{title} — {len(group)} {verb}changed")
@@ -221,8 +221,8 @@ def main():
             best = r["best"]
             src = f"  from {best['slug']} ({best['folder']})" if best and best["cf"] > r["own"] else ""
             shared = [s for s in links[best["slug"]] if s != r["prof"]["slug"]] if src else []
-            print(f"  {r['prof']['slug']:<42} {r['have']['career_fit']:>3} -> "
-                  f"{r['want']['career_fit']:<3}{src}")
+            print(f"  {r['prof']['slug']:<42} {r['have']['domain_fit']:>3} -> "
+                  f"{r['want']['domain_fit']:<3}{src}")
             if shared:
                 print(f"  {'':<42} (that position also links to: {', '.join(shared)})")
             if args.apply:
@@ -230,7 +230,7 @@ def main():
                 if note:
                     print(f"  {'':<42} {note.strip()}")
 
-    floored = sum(1 for r in rows if "career_fit_floor_from" in r["want"])
+    floored = sum(1 for r in rows if "domain_fit_floor_from" in r["want"])
     no_link = sum(1 for r in rows if not r["linked"])
     print(f"\n{floored} orgs sit on a floor · {len(rows) - floored - no_link} are at or above "
           f"their best position · {no_link} have no linked position")

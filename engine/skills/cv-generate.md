@@ -76,11 +76,11 @@ Before doing any work, confirm the posting is still applyable.
 
 Read the target `.md` file. Extract:
 
-- YAML frontmatter: `role_title`, `organization`, `org_type`, `location`, `career_fit`,
+- YAML frontmatter: `role_title`, `organization`, `org_type`, `location`, `domain_fit`,
   `skill_match`, `level_fit`, `deadline`, `salary`
 - **Fit Assessment** section: matched strengths, gaps, recommended angle
 
-> **`skill_match` shapes the letter; `career_fit` does not** (it decides *whether* to apply, not
+> **`skill_match` shapes the letter; `domain_fit` does not** (it decides *whether* to apply, not
 > *how* to write). A low `skill_match` means lead harder on transferable evidence and matched
 > strengths; it never means inventing coverage (*Factual grounding*, CLAUDE.md).
 - **Gaps can be stale.** The Fit Assessment was written on the profile's `last_evaluated` date.
@@ -449,7 +449,7 @@ Print a summary:
 ── CV Generated ─────────────────────────────────────────────
 Role:     [role_title]
 Org:      [organization]
-Scores:   career [career_fit]/100 · skill [skill_match]/100 · level [level_fit]
+Scores:   career [domain_fit]/100 · skill [skill_match]/100 · level [level_fit]
 
 Modifications:
   Subtitle   → [new subtitle]
@@ -543,7 +543,7 @@ compile, report) is unchanged.
 **Step 1 — parse differently.** There is no `role_title`, `level_fit`, `deadline`, or
 **Key Requirements**, but the org's `skill_match` (scored from its stated stack) sizes the
 letter's framing exactly as for a position. Extract:
-- frontmatter: `name`, `type`, `location`, `prestige_tier`, `career_fit`, `skill_match`, `url`
+- frontmatter: `name`, `type`, `location`, `prestige_tier`, `domain_fit`, `skill_match`, `url`
 - **Summary** and **Why Relevant** — these define the angle
 - **Language Patterns** — same role as before (identity words + technical keywords)
 - **Key People** — use the PI / named contact as the cover-letter addressee
@@ -587,9 +587,9 @@ in the Scores line; only `level —` is blank, since an org profile advertises n
 | Situation | Action |
 |---|---|
 | `skill_match` < 50 (position) | Generate, but warn: "⚠ Skill match [N]/100 — the gaps are real; review the letter's claims before sending". Never close the gap with language the evidence base can't support. |
-| `career_fit` < 50 (position) | Generate, but warn: "⚠ Career fit [N]/100 — off-direction. Worth asking whether this is one to send at all." |
-| `level_fit: reach` (position) | Generate, but note it: "⚠ Level: reach — the ad asks for [PhD / N years / seniority]". Not a blocker; a strong `career_fit` reach is a legitimate application. |
-| Unsolicited input with low `career_fit` (<50) | Generate but warn: "⚠ Low company/group career fit — review before sending" |
+| `domain_fit` < 50 (position) | Generate, but warn: "⚠ Domain fit [N]/100 — off-direction. Worth asking whether this is one to send at all." |
+| `level_fit: reach` (position) | Generate, but note it: "⚠ Level: reach — the ad asks for [PhD / N years / seniority]". Not a blocker; a strong `domain_fit` reach is a legitimate application. |
+| Unsolicited input with low `domain_fit` (<50) | Generate but warn: "⚠ Low company/group domain fit — review before sending" |
 | Unsolicited input with low `skill_match` (<50) | Generate but warn: "⚠ Skill match [N]/100 — this org's stack is largely outside the evidence base; lead on what genuinely overlaps" |
 | No profile exists yet | Tell user to run `/search` then `/inbox` first, or provide a path to an existing profile |
 | Deadline has passed (position) | Flag in report: "⚠ Deadline was [date]" — generate anyway |

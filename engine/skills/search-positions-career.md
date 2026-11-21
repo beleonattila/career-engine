@@ -42,7 +42,7 @@ also on-direction already shows up here as `T1`–`T2?`.
 
 In addition to the shared rejects, the career track applies the user's one direction reject —
 `user/profile/search_terms.md` §Career track → *Gate 0 reject*. It is off-direction by definition
-(`career_fit` < 30).
+(`domain_fit` < 30).
 
 The skill track deliberately does *not* carry this reject. A role it catches can be a
 genuine skills match, and the employability track has no direction floor — so if such a role is
@@ -71,7 +71,7 @@ Record as: `Gate 3 (output): {row} — {one clause naming what the person ships}
 ## [MODE] Which orgs to sweep
 
 Rotate `user/workspace/organizations/companies/` and `user/workspace/organizations/research_groups/` oldest-`last_evaluated`-first,
-taking orgs at **`career_fit` 60+**. The skill track sweeps the same folders at `skill_match`
+taking orgs at **`domain_fit` 60+**. The skill track sweeps the same folders at `skill_match`
 60+; an org clearing both gets swept twice and the parent drops the duplicate.
 
 ---

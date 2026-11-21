@@ -15,7 +15,7 @@ Usage:
     python engine/tools/analyze_misses.py --since 2026-10-02         # only misses BY runs started then or later
     python engine/tools/analyze_misses.py --found-since 2026-07-01   # only leads FOUND on or after that date
     python engine/tools/analyze_misses.py --json          # machine-readable, for an LLM pass
-    python engine/tools/analyze_misses.py --min-fit 75    # only leads that became a record at career_fit >= 75
+    python engine/tools/analyze_misses.py --min-fit 75    # only leads that became a record at domain_fit >= 75
 
 `--since` is how a fix is judged: it keeps every lead but counts only the misses made by runs that
 started at or after the moment (a date, or a date and time — UTC, the zone `started` is logged in).
@@ -26,7 +26,7 @@ the leads, but still charges each one to every earlier run, fixed or not. Runs s
 newest find cannot have an attributable miss yet — a fix needs later runs before it can be judged.
 
 Every lead is joined to the vault record it became (log_run.match_outcome), so each carries its
-career_fit, and the report always prints a second histogram over strong leads alone. Added
+domain_fit, and the report always prints a second histogram over strong leads alone. Added
 2026-10-01: over all leads the top causes were AGE_EXCLUDED and QUERY_GAP; over leads scoring 75+
 they were SOURCE_INCOMPLETE and GEO_GAP. Counting a missed data-analyst role the same as a missed
 band-A design role had pointed the fixes the wrong way.
@@ -238,7 +238,7 @@ def attribute(find, run):
 
 
 def fit_index():
-    """find -> career_fit of the vault record it became, via log_run's matcher (None if none)."""
+    """find -> domain_fit of the vault record it became, via log_run's matcher (None if none)."""
     try:
         from log_run import vault_outcomes, match_outcome
     except Exception:                                         # analysed outside the vault
@@ -327,14 +327,14 @@ def main():
             per_lead.append({
                 "org": find["org"], "role": find["role"], "posted": str(posted),
                 "found": str(found), "lag_days": lag, "channel": find.get("channel"),
-                "country": find.get("country"), "career_fit": fit,
+                "country": find.get("country"), "domain_fit": fit,
                 "missed_by_n_runs": len(misses),
                 "misses": misses,
             })
 
     per_lead.sort(key=lambda x: -x["missed_by_n_runs"])
     total = sum(causes.values())
-    strong = [x for x in per_lead if x["career_fit"] is not None and x["career_fit"] >= STRONG_FIT]
+    strong = [x for x in per_lead if x["domain_fit"] is not None and x["domain_fit"] >= STRONG_FIT]
     s_causes, s_total = histogram(strong)
     in_window = [r for r in runs
                  if not since or (moment(r.get("started")) or dt.datetime.min) >= since]
@@ -367,7 +367,7 @@ def main():
         return
 
     print(f"=== miss attribution over {len(runs)} logged run(s)"
-          + (f", leads at career_fit >= {min_fit}" if min_fit is not None else "")
+          + (f", leads at domain_fit >= {min_fit}" if min_fit is not None else "")
           + (f", leads found since {found_since}" if found_since else "") + " ===")
     if since:
         print(f"misses counted only for runs started at or after {since:%Y-%m-%d %H:%M} UTC: "
@@ -400,12 +400,12 @@ def main():
         for c, n in causes.most_common():
             print(f"  {c:<20} {n:>4}  {100 * n / total:>5.1f}%")
         if s_total and min_fit is None:
-            print(f"\non strong leads only (career_fit >= {STRONG_FIT}: {len(strong)} leads, "
+            print(f"\non strong leads only (domain_fit >= {STRONG_FIT}: {len(strong)} leads, "
                   f"{s_total} miss-events) -- the histogram to act on:")
             for c, n in s_causes.most_common():
                 print(f"  {c:<20} {n:>4}  {100 * n / s_total:>5.1f}%")
         elif min_fit is None:
-            print(f"\non strong leads only (career_fit >= {STRONG_FIT}): no miss-events"
+            print(f"\non strong leads only (domain_fit >= {STRONG_FIT}): no miss-events"
                   + (" in this window" if since else ""))
         print("\nworst leads:")
         for x in per_lead[:8]:

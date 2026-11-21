@@ -37,7 +37,7 @@ What is separable: screening volume tracks **channel breadth** (8.3/run at ≤2 
 scores but doesn't compute them. (`org_floor.py` adjusts org scores mechanically, but judges
 nothing.)
 
-**Three scores, never blended.** `career_fit` (is this the science I want — direction only),
+**Three scores, never blended.** `domain_fit` (is this the science I want — direction only),
 **`method_fit`** (is this the work I want — does the seat build methods or only operate them;
 added 2026-09-29 for the rebrand) and `skill_match` (can I do it) all sit on every kind of record.
 For a position `skill_match` reads the ad's requirements; for a company or group it reads the org's

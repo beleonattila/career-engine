@@ -24,7 +24,7 @@ description: >
 
 **Why two tracks matter here specifically.** The company database is what unsolicited
 applications are sent from, so each profile has to answer two separate questions, and `/inbox`
-now scores both: `career_fit` (is this the work) and `skill_match` (could I be useful there).
+now scores both: `domain_fit` (is this the work) and `skill_match` (could I be useful there).
 The career track finds the first kind, the skill track the second — including employers the
 career track structurally cannot see, like a metagenomics-plus-imaging company that is a
 perfectly good place to send an application.

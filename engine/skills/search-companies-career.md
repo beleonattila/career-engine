@@ -15,7 +15,7 @@ description: >
 direction** (`user/profile/preferences.md`).
 
 The company database is what unsolicited applications are sent from, so a profile here is a
-cold-outreach target, not a job lead. `/inbox` scores it on both axes: `career_fit` (is this
+cold-outreach target, not a job lead. `/inbox` scores it on both axes: `domain_fit` (is this
 the work) and `skill_match` (could the user be useful there).
 
 **Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp, org dedup.

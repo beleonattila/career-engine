@@ -31,7 +31,7 @@ maximises skill match will surface roles, companies and labs built on those othe
 however off-direction — and the user's strongest credentials may sit there too
 (`user/profile/search_terms.md` §Skill track says what that means for this profile). That is the
 honest shape of the profile, not a malfunction. **Never add a direction filter to the skill
-track.** `/inbox` records `career_fit` on every record, so how off-direction a lead is stays
+track.** `/inbox` records `domain_fit` on every record, so how off-direction a lead is stays
 visible without suppressing it.
 
 **The skill track is also where method roles come from.** `/inbox` records **`method_fit`** —
@@ -44,7 +44,7 @@ second Gate 3 route (one method competency + a build signal), a sightings log of
 such seats, and an org rotation that puts those employers first.
 
 > ⚠️ **The career track stays direction-only.** Never collect on the career track because a role
-> "builds methods" — that is `method_fit`'s job, not `career_fit`'s.
+> "builds methods" — that is `method_fit`'s job, not `domain_fit`'s.
 
 Neither track scores. `/inbox` does all scoring, on Opus. A collector decides collect-or-skip
 and writes the raw text down. Nothing else.

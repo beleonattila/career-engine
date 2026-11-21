@@ -2,7 +2,7 @@
 
 ## Direction
 
-(What science or work you want to do, and why. The career_fit score measures distance from this.)
+(What science or work you want to do, and why. The domain_fit score measures distance from this.)
 
 ## Motivation
 
@@ -23,9 +23,9 @@
 
 ## Scoring
 
-*The content half of the `career_fit` rubric: what the bands and checks mean for you. The
-mechanism (band → checks → lookup) is in `engine/skills/inbox-eval.md` §career_fit; read both.
-Check names and units are in `settings.toml` [career_fit.checks].*
+*The content half of the `domain_fit` rubric: what the bands and checks mean for you. The
+mechanism (band → checks → lookup) is in `engine/skills/inbox-eval.md` §domain_fit; read both.
+Check names and units are in `settings.toml` [domain_fit.checks].*
 
 ### Bands
 

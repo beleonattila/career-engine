@@ -60,7 +60,7 @@ TIER1 = re.compile(_TERMS["sweep"]["tier1"], re.I)
 TIER2 = re.compile(_TERMS["sweep"]["tier2"], re.I)
 MAYBE = re.compile(_TERMS["sweep"]["maybe"], re.I)
 COMPUTATIONAL = re.compile(_TERMS["sweep"]["computational"], re.I)
-# T2? needs the employer's career_fit at or above this (the user's threshold, in the same file).
+# T2? needs the employer's domain_fit at or above this (the user's threshold, in the same file).
 T2Q_MIN_FIT = _TERMS["sweep"]["t2q_min_employer_fit"]
 # The skill track's method lane ([sweep.method]): M = the title names a method-building seat,
 # Mb = the role text says the seat builds tools for scientists. Only ever assigned to a row the
@@ -483,14 +483,14 @@ def sighted_orgs():
 
 
 def org_fit_scores():
-    """company slug -> career_fit, so a generic title at an on-direction employer still ranks.
+    """company slug -> domain_fit, so a generic title at an on-direction employer still ranks.
 
-    career_fit is the only score a company profile carries — with no advertised role there are
+    domain_fit is the only score a company profile carries — with no advertised role there are
     no requirements to match against, so there is no skill_match here to consider.
     """
     out = {}
     for p in (ROOT / "organizations" / "companies").glob("*.md"):
-        m = re.search(r"^career_fit:\s*(\d+)", p.read_text(encoding="utf-8", errors="replace"),
+        m = re.search(r"^domain_fit:\s*(\d+)", p.read_text(encoding="utf-8", errors="replace"),
                       re.M)
         if m:
             out[p.stem] = int(m.group(1))
@@ -503,17 +503,17 @@ def uncovered(boards):
     Every other channel samples; the sweep is the only one that enumerates, so a band-A employer
     without a board is the most expensive blind spot there is. Measured 2026-10-01: after the v3
     rescore 128 records sat in band A, while the sweep covered 36 of 96 boards. Highest
-    career_fit first; registering the employer's ATS host (search-positions-common.md, Group 0)
+    domain_fit first; registering the employer's ATS host (search-positions-common.md, Group 0)
     removes it from this list for good.
     """
     covered = {vs for vs, _, _ in boards}
     rows = []
     for p in (ROOT / "organizations" / "companies").glob("*.md"):
         t = p.read_text(encoding="utf-8", errors="replace")
-        band = re.search(r"^career_band:\s*(\S+)", t, re.M)
+        band = re.search(r"^domain_band:\s*(\S+)", t, re.M)
         if not band or band.group(1) != "A" or p.stem in covered:
             continue
-        fit = re.search(r"^career_fit:\s*(\d+)", t, re.M)
+        fit = re.search(r"^domain_fit:\s*(\d+)", t, re.M)
         mf = re.search(r"^method_fit:\s*(\d+)", t, re.M)
         url = re.search(r"^url:\s*\"?([^\"\n]*)", t, re.M)
         rows.append((int(fit.group(1)) if fit else 0, int(mf.group(1)) if mf else 0, p.stem,
@@ -521,7 +521,7 @@ def uncovered(boards):
     rows.sort(key=lambda r: (-r[0], -r[1], r[2]))
     print(f"{len(rows)} band-A compan{'y' if len(rows) == 1 else 'ies'} with no working ATS board "
           f"(the sweep enumerates {len(covered)} boards):")
-    print("career\tmethod\torg\tcareers url")
+    print("domain\tmethod\torg\tcareers url")
     for fit, mf, slug, url in rows:
         print(f"{fit}\t{mf}\t{slug}\t{url}")
 
@@ -691,10 +691,10 @@ def main():
     rows.sort(key=lambda r: (rank[r["tier"]], -r["fit"],
                              r["age"] if isinstance(r["age"], int) else 9999))
 
-    # "career" is the employer's career_fit, carried down onto each of its postings so a
+    # "domain" is the employer's domain_fit, carried down onto each of its postings so a
     # generic title at an on-direction employer still ranks. It says nothing about whether
     # this particular role suits the user's skills — /inbox decides that per posting.
-    hdr = ["tier", "age_d", "published", "org", "career", "status", "title", "location", "url"]
+    hdr = ["tier", "age_d", "published", "org", "domain", "status", "title", "location", "url"]
 
     def line(r):
         return "\t".join([r["tier"], str(r["age"]), r["date"], r["org"], str(r["fit"]),

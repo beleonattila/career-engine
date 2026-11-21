@@ -13,7 +13,7 @@ description: >
 
 **Track: skill (employability).** The question is *could the user realistically get this job and
 do it?* — evidenced competence, and nothing else. Whether the work is on-direction is the other
-track's problem, and `career_fit` records it at scoring time anyway.
+track's problem, and `domain_fit` records it at scoring time anyway.
 
 **Never add a direction filter here** ([[search-common]] §The two-track model).
 
@@ -112,7 +112,7 @@ outside your staging folder you write; the org profiles themselves are only chan
 `method_sightings.py --apply`, which `/inbox` runs.
 
 > ⚠️ **The lane does not touch direction.** A method seat in clinical data or a non-bio field is
-> collected if it clears the lane, and `/inbox` will score it `career_fit` low and `method_fit`
+> collected if it clears the lane, and `/inbox` will score it `domain_fit` low and `method_fit`
 > high — that pair is the reason the lane exists. Equally, never use the lane to rescue an ad
 > that fails Gate 2 or Gate 4.
 
@@ -131,7 +131,7 @@ orgs at **`skill_match` or `method_fit` 60+**, plus any org with a logged method
 the employers whose stack overlaps the competencies or that would make the user their methods
 person, whatever they work on. Order: **orgs with method sightings first**, then orgs with no
 tracked lead, then oldest `last_evaluated`. Work down it for the run's org budget. The career
-track sweeps the same folders at `career_fit` 60+; an org clearing both gets swept twice and the
+track sweeps the same folders at `domain_fit` 60+; an org clearing both gets swept twice and the
 parent drops the duplicate.
 
 ---

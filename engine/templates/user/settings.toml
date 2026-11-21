@@ -10,13 +10,13 @@ pack = "life_science"
 
 [thresholds]
 # A lead stays visible on the dashboard (and is re-checked by link_check.py) when ANY of
-# career_fit / method_fit / skill_match reaches this.
+# domain_fit / method_fit / skill_match reaches this.
 min_score_shown = 50
 # Days after which expire_sweep.py retires a lead with no deadline on age alone.
 stale_days = 45
 # A deadline-less lead confirmed live within this many days is kept despite its age.
 verified_days = 14
-# career_fit at or above which a record counts as on-direction (dashboard tile, stats).
+# domain_fit at or above which a record counts as on-direction (dashboard tile, stats).
 on_direction = 75
 
 # Where a role may be. ats_sweep.py keeps only postings it can place in a listed country; country
@@ -46,8 +46,12 @@ countries = ["United States", "Canada"]
 remote_only = true
 note = "Collect ONLY when the ad states EU-remote or worldwide-remote is acceptable"
 
-[career_fit.checks]
-# The yes/no checks that place a record inside its career_fit band. What each one means for you
+[domain_fit]
+# What the dashboard calls domain_fit: your word for your field, e.g. "Protein".
+label = "Domain"
+
+[domain_fit.checks]
+# The yes/no checks that place a record inside its domain_fit band. What each one means for you
 # goes in profile/preferences.md §Scoring → Checks. Value = units. A check that can be met halfway
 # gets a second entry "<name>-half" worth half. Rename these to your own checks.
 application = 1.0

@@ -59,7 +59,7 @@ rule rests on does not hold, so the rule has nothing to say. The trade the user 
 smaller, colder active set over an accurate but unmanageable one -- is untouched for every lead
 nobody has checked, which is nearly all of them.
 
-The case that produced it: `latent-labs_member-of-technical-staff_2026-10` (career_fit 98,
+The case that produced it: `latent-labs_member-of-technical-staff_2026-10` (domain_fit 98,
 method_fit 95) was retired at 46 days, then found fully live the same day -- the ad rendered
 with an Apply button and was still listed on the employer's board. Reviving it put it straight
 back over the threshold, so the next sweep would have retired it again, with no way to record
@@ -276,10 +276,10 @@ def main():
             # age rule has nothing to say about this lead. Reported, never silent.
             seen = verified_live(text, verified_days)
             if seen is not None:
-                verified.append((p.name, age, seen, field(text, "career_fit"),
+                verified.append((p.name, age, seen, field(text, "domain_fit"),
                                  field(text, "skill_match")))
                 continue
-            row = (p.name, age, field(text, "career_fit"),
+            row = (p.name, age, field(text, "domain_fit"),
                    field(text, "skill_match"), field(text, "url_status") or "unchecked")
             if keep_stale:
                 stale.append(row)          # --keep-stale: report, do not move

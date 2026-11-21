@@ -18,7 +18,7 @@ that earlier run missed it**, and the telemetry says why. Late discoveries are t
   reasoning pass and skill recommendations. The **cause histogram** is the deliverable —
   "62% GEO_GAP" is an instruction, "we missed 8 things" is not.
 - **Act on the strong-lead histogram, not the headline one.** Since 2026-10-01 the script joins each
-  lead to its record's `career_fit` and prints a second histogram over leads at 75+ (`--min-fit N`
+  lead to its record's `domain_fit` and prints a second histogram over leads at 75+ (`--min-fit N`
   restricts the whole report). The two disagree: the headline is dominated by low-value roles
   (`engine/docs/decisions.md` §Recall on strong leads).
 - **Judge a fix on the runs after it, not on the cumulative log.** `--since <date or timestamp>`
@@ -37,7 +37,7 @@ miss found in that run's archived sweep output is `UNTIERED` rather than `SOURCE
 before the inbox (checked for Bayer on 10-10: one file reached it), so these 8 are a logging
 artefact rather than dedup failures. The other 5 are genuine re-collections across runs.
 
-**On strong leads (career_fit ≥ 75: 34 leads, 155 miss-events) — the histogram to act on:**
+**On strong leads (domain_fit ≥ 75: 34 leads, 155 miss-events) — the histogram to act on:**
 `SOURCE_INCOMPLETE` 36.1% · `CHANNEL_SKIPPED` 33.5% · `QUERY_GAP` 10.3% · `CHANNEL_NOT_RUN` 7.1% ·
 `GEO_GAP` 7.1% · `AGE_EXCLUDED` 4.5% · `GATED_OUT` 1.3%. By channel: `SOURCE_INCOMPLETE` is
 `linkedin` 21 · `danish_boards` 15 · `euraxess` 12 · `ats_sweep` 7 (all from runs before the sweep
@@ -47,7 +47,7 @@ existed).
 
 **After the 2026-10-01 fixes (`--since 2026-10-02`): 4 runs, 12 miss-events, none on a strong lead.**
 Only the 10-05 deep pass (both tracks) is testable; the two 10-10 fast runs are not yet. The 12:
-`UNTIERED` 6 (three Adaptyv postings, career_fit 20–30, below), `SOURCE_INCOMPLETE` 2 (`linkedin`),
+`UNTIERED` 6 (three Adaptyv postings, domain_fit 20–30, below), `SOURCE_INCOMPLETE` 2 (`linkedin`),
 `QUERY_GAP` 2, `CHANNEL_SKIPPED` 2 (`research_groups`, the run was cut off). One deep pass is too
 little to call the fixes working, but nothing in it contradicts them.
 

@@ -131,7 +131,7 @@ model has to be switched deliberately.
 
 ## Notes
 
-- **Neither track scores.** `career_fit`, `skill_match` and `level_fit` are all `/inbox`'s job.
+- **Neither track scores.** `domain_fit`, `skill_match` and `level_fit` are all `/inbox`'s job.
   A collector decides collect-or-skip and writes the raw ad text down.
 - **Equal cadence.** Both tracks run every time, 2–3×/week fast plus a monthly deep pass. There
   is no volume cap: measured yield is ~2 collections per run, so a cap would almost never bind.

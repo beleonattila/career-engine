@@ -10,7 +10,7 @@ Out:  dashboard.html  (open in any browser)
 """
 import os, re, json, glob, datetime
 import html
-from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, user_name
+from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, settings, user_name
 from frontmatter import fm_parse
 import plan as planstore
 ROOT = str(WORKSPACE)  # record paths are relative to user/workspace/
@@ -18,15 +18,17 @@ TODAY = datetime.date.today()
 
 # Position/PhD leads are kept on disk but hidden from every tab, tile and deadline
 # reminder when BOTH scores fall below this. Either number clearing the bar keeps the
-# row visible, which is the whole point of the 2026-08-17 split: a career 88 / skill 40
-# stretch and a career 45 / skill 85 fallback are both worth seeing, and the old blended
+# row visible, which is the whole point of the 2026-08-17 split: a domain 88 / skill 40
+# stretch and a domain 45 / skill 85 fallback are both worth seeing, and the old blended
 # fit_score would have buried the first and flattered the second.
 # Companies and groups are never hidden by score at all -- the org databases are browsed
 # to pick a cold-outreach target, not worked top-down like a lead list.
 # The bar itself is personal: user/settings.toml [thresholds].
 MIN_SCORE_SHOWN = setting("thresholds.min_score_shown")
-# career_fit at or above this counts as on-direction (the funnel's second bar). Same file.
+# domain_fit at or above this counts as on-direction (the funnel's second bar). Same file.
 ON_DIRECTION = setting("thresholds.on_direction")
+# What the page calls domain_fit: the user's own word for their field, e.g. "Protein".
+LABEL = str(settings().get("domain_fit", {}).get("label") or "Domain").strip()
 
 # ---------------------------------------------------------------- frontmatter
 def parse_frontmatter(path):
@@ -96,11 +98,11 @@ def load(globpat, kind):
             # -1 means the field is absent -- not yet scored. 0 is a real score meaning
             # "no overlap", so the two must stay distinct; the page renders -1 as an em dash.
             # -1 when absent, like method and skill below. It defaulted to 0 until 2026-10-10, which
-            # made a real career_fit 0 (band E, off-direction work) indistinguishable from a missing
+            # made a real domain_fit 0 (band E, off-direction work) indistinguishable from a missing
             # one, and the unscored count below flagged two fully scored band-E leads.
-            "career": as_int(fm.get("career_fit"), -1),
+            "domain": as_int(fm.get("domain_fit"), -1),
             # method_fit (2026-09-29): does the seat BUILD methods or only operate them?
-            # Independent of career_fit by design -- it exists so method roles outside protein
+            # Independent of domain_fit by design -- it exists so method roles outside protein
             # design are visible at all.
             "method": as_int(fm.get("method_fit"), -1),
             "skill": as_int(fm.get("skill_match"), -1),
@@ -161,7 +163,7 @@ records += load("positions/closed/*.md", "position")
 # different information from `last_contact` (an unsolicited approach). Joining the two
 # needs employer-identity matching, which lives in org_match.py (built on dedup_check.py's
 # alias table and structural org-token rule). It is shared with org_floor.py rather than
-# forked, so the dashboard and the career_fit floor always agree on which positions belong
+# forked, so the dashboard and the domain_fit floor always agree on which positions belong
 # to which profile.
 from org_match import same_employer, org_tokens, ALIASES, slugify, file_slug, token_df
 from org_match import employer_hit as _employer_hit
@@ -235,11 +237,11 @@ ONGOING = {"sent", "interviewing"}
 def is_positive(r):
     """The 'on-direction' tile: how much of the vault is work the user actually wants.
 
-    career_fit only, deliberately. This counts desirability, not winnability — a record
+    domain_fit only, deliberately. This counts desirability, not winnability — a record
     here may still be a `reach`, and that is the honest picture. Reading skill_match in
     would recreate the blended fit_score this dashboard stopped using.
     """
-    return r["career"] >= ON_DIRECTION
+    return r["domain"] >= ON_DIRECTION
 
 search_results = len(glob.glob(os.path.join(ROOT, "inbox/processed/**/*.txt"), recursive=True))
 cvs_generated_folders = len([d for d in glob.glob(os.path.join(ROOT, "applications/*")) if os.path.isdir(d)])
@@ -258,9 +260,9 @@ def _best(r):
     number for a human to read is the mistake this system was rebuilt to avoid.
 
     method_fit joined on 2026-09-29 and it had to: the whole point of that score is that a
-    methods-building role outside protein design (low career, moderate skill) is worth seeing.
+    methods-building role outside protein design (low domain, moderate skill) is worth seeing.
     Leaving it out of the gate would have hidden exactly the records it was added to surface."""
-    return max(r["career"], r["method"], r["skill"])
+    return max(r["domain"], r["method"], r["skill"])
 
 
 # Read from the same settings as expire_sweep.py, so the tripwire and the sweep cannot drift.
@@ -330,8 +332,8 @@ by_cat = {c: sum(1 for r in records if r["category"] == c and r["shown"])
 hidden_low = sum(1 for r in records
                  if r["category"] in ("position", "phd") and _alive(r)
                  and _best(r) < MIN_SCORE_SHOWN)
-# a record with no career_fit or skill_match is a hole in the tables (a blank cell is not zero)
-unscored = sum(1 for r in records if r["career"] < 0 or r["skill"] < 0)
+# a record with no domain_fit or skill_match is a hole in the tables (a blank cell is not zero)
+unscored = sum(1 for r in records if r["domain"] < 0 or r["skill"] < 0)
 # Shown-filtered, like every other tile. It was not, until 2026-08-29: it counted every record
 # in the vault including expired and closed leads, so it read 125 while only 79 of those were
 # visible anywhere on the page -- 46 were closed/retired positions and PhD leads. Harmless-looking
@@ -480,16 +482,16 @@ def vault_stats():
     recent = sorted(weeks)[-16:]
     return {
         "funnel": [["Search results", stats["search_results"]],
-                   ["On-direction, live (career ≥ %d)" % ON_DIRECTION, stats["positive"]],
+                   ["On-direction, live (%s fit ≥ %d)" % (LABEL, ON_DIRECTION), stats["positive"]],
                    ["CVs generated", stats["cvs_generated"]], ["CVs sent", stats["cvs_sent"]],
                    ["Ongoing", stats["ongoing"]], ["Offers", stats["offers"]]],
         "outcomes": {"rejections": stats["rejections"], "offers": stats["offers"],
                      "ongoing": stats["ongoing"]},
         "kinds": [["Companies", stats["companies"]], ["Research groups", stats["groups"]],
                   ["Positions", stats["positions"]], ["PhD leads", stats["phd"]]],
-        "scatter": [{"career": r["career"], "skill": r["skill"], "cat": r["category"],
+        "scatter": [{"domain": r["domain"], "skill": r["skill"], "cat": r["category"],
                      "name": _label(r), "path": r["path"]}
-                    for r in leads if r["shown"] and r["career"] >= 0 and r["skill"] >= 0],
+                    for r in leads if r["shown"] and r["domain"] >= 0 and r["skill"] >= 0],
         "weeks": [{"week": w, **weeks[w]} for w in recent],
     }
 
@@ -563,7 +565,7 @@ def telemetry_stats():
 
 payload = {"records": records, "stats": stats, "integrity": integrity,
            "plan": {"doc": plan_doc, "derived": plan_derived, "error": plan_error},
-           "vault": vault_stats(), "telemetry": telemetry_stats()}
+           "vault": vault_stats(), "telemetry": telemetry_stats(), "label": LABEL}
 
 # ---------------------------------------------------------------- HTML
 HTML = """<!doctype html>
@@ -618,7 +620,7 @@ __HOME_CSS__
   <div class="controls"><input id="filter" placeholder="filter the current tab…" oninput="render()">
     <label id="benchctl" class="tier" style="margin-left:12px;cursor:pointer"><input type="checkbox" id="hidebench" onchange="setHideBench(this.checked)" style="width:auto;vertical-align:middle"> hide substantial wet lab</label></div>
   <div id="table"></div>
-  <p class="note"><b>Career</b> = is this the science I want (direction only) · <b>Method</b> = is this the work I want (does the seat build methods or operate them) · <b>Skill</b> = can I do it (evidenced overlap) · <b>Level</b> = attainable today · <b>Wet lab</b> = bench work in the seat (<code>bench_load</code>; reported, never scored). <span class="tier">—</span> = not yet scored. Three independent scores, never blended. Ranked by career fit; click any column header to sort. Status reflects <code>app_status</code> in each profile's frontmatter — update it with <code>/track</code>.</p>
+  <p class="note"><b>__DOMAIN_LABEL__</b> = is this the science I want (direction only) · <b>Method</b> = is this the work I want (does the seat build methods or operate them) · <b>Skill</b> = can I do it (evidenced overlap) · <b>Level</b> = attainable today · <b>Wet lab</b> = bench work in the seat (<code>bench_load</code>; reported, never scored). <span class="tier">—</span> = not yet scored. Three independent scores, never blended. Ranked by __DOMAIN_LABEL__ fit; click any column header to sort. Status reflects <code>app_status</code> in each profile's frontmatter — update it with <code>/track</code>.</p>
   <p class="note" id="threshold"></p>
 </div>
 <script>
@@ -704,7 +706,7 @@ function inTab(r,id){
   return r.category===id;
 }
 const NAME=__NAME_JS__, GEN_DATE='__DATE__';
-let active='home', sortKey='career', sortDir=-1;
+let active='home', sortKey='domain', sortDir=-1;
 function tabs(){
   // Home has its own button in the header; on Home itself the icons are the navigation.
   if(active==='home'){renderHome();return;}
@@ -717,7 +719,7 @@ function countFor(id){
   if(id==='applications')return DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started').length;
   return DATA.records.filter(r=>inTab(r,id)&&r.shown&&benchOk(r)).length;
 }
-function setTab(id){active=id;sortKey=(id==='applications')?'app_status':'career';sortDir=(id==='applications')?1:-1;render();tabs();}
+function setTab(id){active=id;sortKey=(id==='applications')?'app_status':'domain';sortDir=(id==='applications')?1:-1;render();tabs();}
 function rowsFor(){
   // Applications stays a complete history — the score filter deliberately does not apply
   // there, so a role that was actually worked on never vanishes from the record.
@@ -732,7 +734,7 @@ function rowsFor(){
   return rows;
 }
 function th(label,key){return '<th onclick="setSort(\\''+key+'\\')">'+label+(sortKey===key?(sortDir>0?' ▲':' ▼'):'')+'</th>';}
-function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='career'||k==='skill'||k==='method')?-1:1;}render();}
+function setSort(k){if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(k==='domain'||k==='skill'||k==='method')?-1:1;}render();}
 function render(){
   // Home is the OS-style entry page (home.js); it carries the integrity check in its tray.
   document.body.classList.toggle('at-home',active==='home');
@@ -745,9 +747,9 @@ function render(){
   if(active==='todo'){renderTodo();return;}
   const rows=rowsFor();
   const isPos=(active==='position'||active==='phd'||active==='applications');
-  // Career and Method on every row; Skill and Level only where a job description exists to
+  // Domain and Method on every row; Skill and Level only where a job description exists to
   // match against. Three columns, never a blend — see the MIN_SCORE_SHOWN note in dashboard.py.
-  let head='<tr>'+th('Career','career')+th('Method','method')+(isPos?th('Skill','skill')+th('Level','level')+th('Wet lab','bench_rank'):'')+
+  let head='<tr>'+th(DATA.label,'domain')+th('Method','method')+(isPos?th('Skill','skill')+th('Level','level')+th('Wet lab','bench_rank'):'')+
            th(active==='applications'?'Org / Role':'Name','name');
   if(active==='applications')head+=th('Status','app_status')+th('CV','cv_date')+th('Sent','sent_date')+th('Next action','next_action')+th('Deadline','deadline_in');
   else{head+=th('Location','location')+th('Tier','tier');
@@ -758,7 +760,7 @@ function render(){
   const body=rows.map(r=>{
     const nm='<a href="'+r.path+'">'+(r.name||r.org)+'</a>'+(r.role&&active!=='applications'&&!isPos?'':'')+
              (isPos&&r.org?'<div class="tier">'+r.org+'</div>':'');
-    let tr='<tr><td>'+scoreCell(r.career)+'</td><td>'+scoreCell(r.method)+'</td>'+
+    let tr='<tr><td>'+scoreCell(r.domain)+'</td><td>'+scoreCell(r.method)+'</td>'+
            (isPos?'<td>'+scoreCell(r.skill)+'</td><td>'+levelCell(r)+'</td><td>'+benchCell(r)+'</td>':'');
     if(active==='applications'){
       tr+='<td><a href="'+r.path+'">'+(r.org||r.name)+'</a><div class="tier">'+(r.role||r.category)+'</div></td>'+
@@ -830,7 +832,7 @@ out = (HTML.replace("__PLAN_CSS__", _asset("plan.css")).replace("__PLAN_JS__", _
        .replace("__STATS_CSS__", _asset("stats.css")).replace("__STATS_JS__", _asset("stats.js"))
        .replace("__HOME_CSS__", _asset("home.css")).replace("__HOME_JS__", _asset("home.js"))
        .replace("__NAME_JS__", json.dumps(_name).replace("</", "<\\/"))
-       .replace("__PAYLOAD__", payload_json).replace("__DATE__", TODAY.isoformat())
+       .replace("__PAYLOAD__", payload_json).replace("__DOMAIN_LABEL__", html.escape(LABEL)).replace("__DATE__", TODAY.isoformat())
        .replace("__TITLE_NAME__", f" — {_name}" if _name else "")
        .replace("__META_NAME__", f"{_name} · " if _name else ""))
 outpath = os.path.join(str(ARTIFACTS), "dashboard.html")

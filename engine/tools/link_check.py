@@ -312,16 +312,16 @@ def collect(scope, min_fit, only):
                 continue
             text = p.read_text(encoding="utf-8", errors="replace")
             fm = fm_fields(text)
-            # Three scores since 2026-09-29 (method_fit joined career_fit and skill_match),
+            # Three scores since 2026-09-29 (method_fit joined domain_fit and skill_match),
             # checked with OR: a lead is worth re-validating if it is EITHER something the user
-            # wants (career_fit), OR the kind of work they want (method_fit), OR something they
+            # wants (domain_fit), OR the kind of work they want (method_fit), OR something they
             # could clearly do (skill_match). Requiring all would quietly stop link-checking
             # exactly the stretch roles the split exists to keep visible. `fit` below is the
             # higher of the two, used only for the report's sort order — never written back.
-            career = as_int(fm.get("career_fit"))
+            domain = as_int(fm.get("domain_fit"))
             skill = as_int(fm.get("skill_match"))
             method = as_int(fm.get("method_fit"))
-            fit = max(career, skill, method)
+            fit = max(domain, skill, method)
             status = (fm.get("status") or "").lower()
             if fit < min_fit:
                 skipped_low += 1
@@ -422,7 +422,7 @@ def main():
                          "Default is report-only.")
     shown = setting("thresholds.min_score_shown")
     ap.add_argument("--min-fit", type=int, default=shown,
-                    help="only check leads reaching this on ANY of career_fit, "
+                    help="only check leads reaching this on ANY of domain_fit, "
                          f"method_fit or skill_match (default {shown}: thresholds.min_score_shown "
                          "in user/settings.toml, the dashboard's visibility bar)")
     ap.add_argument("--scope", choices=["open", "open+applied", "all"], default="open")
@@ -473,7 +473,7 @@ def main():
     Path(args.report).parent.mkdir(parents=True, exist_ok=True)
     with open(args.report, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f, delimiter="\t")
-        # "best_score" = max(career_fit, method_fit, skill_match) — the number the --min-fit gate
+        # "best_score" = max(domain_fit, method_fit, skill_match) — the number the --min-fit gate
         # uses. It orders the report; it is never written back to a profile.
         w.writerow(["verdict", "code", "best_score", "file", "why", "url", "final"])
         for r in results:

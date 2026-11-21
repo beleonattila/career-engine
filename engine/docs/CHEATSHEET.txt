@@ -147,7 +147,7 @@ python engine/tools/log_run.py run.json  Validate + append a search-run record t
                             the run's sweep TSV to logs/ats_sweep/<run_id>.tsv.
 python engine/tools/analyze_misses.py    Which run missed what, and why (--json for an Opus pass)
                             Prints a second histogram over strong leads; --min-fit N
-                            restricts the whole report to leads at career_fit >= N.
+                            restricts the whole report to leads at domain_fit >= N.
                             --since DATE[THH:MM] counts only misses by runs started then
                             or later (judge a fix); --found-since DATE narrows the leads.
 python engine/tools/reconcile_staging.py Merge the two search tracks into user/workspace/inbox/ (career wins a
@@ -179,7 +179,7 @@ user/profile/ (background, preferences, competencies, soft_skills)   profile gro
  SCORING (two numbers, never blended -- see engine/skills/inbox-eval.md)
 ----------------------------------------------------------------
 
-career_fit  0-100  IS THIS THE SCIENCE I WANT. Direction only: is it AI/ML in silico
+domain_fit  0-100  IS THIS THE SCIENCE I WANT. Direction only: is it AI/ML in silico
                    protein design or optimization? Method is the identity,
                    not the application. De novo == optimization. Tool user
                    == method developer. Location/salary/prestige/seniority
@@ -194,7 +194,7 @@ career_fit  0-100  IS THIS THE SCIENCE I WANT. Direction only: is it AI/ML in si
 method_fit  0-100  IS THIS THE WORK I WANT (added 2026-09-29, rebrand).
                    Does the seat BUILD methods/tools/pipelines/platforms/
                    benchmarks others use, or only OPERATE what exists?
-                   Independent of domain (that is career_fit) and of
+                   Independent of domain (that is domain_fit) and of
                    ability (that is skill_match). On every kind of record;
                    for an org: "would I be the methods person here?"
                      90+  building IS the job -- ships tools for others
@@ -205,7 +205,7 @@ method_fit  0-100  IS THIS THE WORK I WANT (added 2026-09-29, rebrand).
                      30+  mostly operating established pipelines
                      <30  no building (service analysis, routine
                           reporting, pure wet lab, pure management)
-                   career_fit 35 + method_fit 92 is a real lead, not noise.
+                   domain_fit 35 + method_fit 92 is a real lead, not noise.
 
 skill_match 0-100  CAN I DO IT. Evidenced overlap with user/profile/competencies.md /
                    user/profile/soft_skills.md, nothing else. On EVERY kind:
@@ -225,8 +225,8 @@ fit_score and verdict were deleted 2026-08-17. Do not bring them back.
 ----------------------------------------------------------------
 
 Search results  = files in user/workspace/inbox/processed/
-On-direction    = career_fit >= on_direction  (desirability only; may still be a reach)
-Shown/link-check= ANY of career_fit / method_fit / skill_match >= min_score_shown
+On-direction    = domain_fit >= on_direction  (desirability only; may still be a reach)
+Shown/link-check= ANY of domain_fit / method_fit / skill_match >= min_score_shown
                   (both numbers: [thresholds] in user/settings.toml)
 CVs generated   = folders in user/workspace/applications/
 CVs sent        = app_status sent/interviewing/closed (or a sent_date)

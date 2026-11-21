@@ -12,13 +12,13 @@ user/profile/search_terms.toml [level] (via ats_sweep.over_level()). It was adde
 
 A high score does not contradict that — and since 2026-08-17 the scoring system says so itself.
 The old blended `fit_score` gave "Senior / Lead Scientist — Computational Protein Design" an 83
-while it was never a realistic application; the record now reads `career_fit 92 · skill_match 55
+while it was never a realistic application; the record now reads `domain_fit 92 · skill_match 55
 · level_fit reach`, which is the same fact stated honestly instead of averaged away.
 
-`career_fit` measures desirability and nothing else, so an on-direction senior role SHOULD score
+`domain_fit` measures desirability and nothing else, so an on-direction senior role SHOULD score
 high there — that is not an argument against this sweep. `level_fit` is the field that speaks to
 attainability, and this script and that badge are two implementations of the same judgement.
-Never gate this sweep on `career_fit`.
+Never gate this sweep on `domain_fit`.
 
 Gate 4 applies to new collections; this script applies it once to the backlog. Same guards and
 conventions as expire_sweep.py:

@@ -131,9 +131,9 @@ def check_settings():
         v = th.get(key)
         if not isinstance(v, int) or isinstance(v, bool) or not lo <= v <= hi:
             bad.append(f"thresholds.{key} = {v!r} — want an integer {lo}–{hi}")
-    checks = s.get("career_fit", {}).get("checks")
+    checks = s.get("domain_fit", {}).get("checks")
     if not checks or not all(isinstance(v, (int, float)) and v > 0 for v in checks.values()):
-        bad.append("career_fit.checks — want a table of check name = positive units")
+        bad.append("domain_fit.checks — want a table of check name = positive units")
     blocks = s.get("geography", {}).get("block")
     if not blocks:
         bad.append("geography.block — want at least one [[geography.block]] with name and countries")
@@ -315,7 +315,7 @@ def check_records():
             t = re.search(r"^type:\s*(\S+)", fm, re.M)
             if t and t.group(1) in SKIP_TYPES:
                 continue
-            for field in ("career_fit", "skill_match"):
+            for field in ("domain_fit", "skill_match"):
                 if not re.search(rf"^{field}:\s*\d+", fm, re.M):
                     bad.append(f"{rel(p)}: no numeric {field}")
     report("FAIL" if bad else "PASS", "records", f"{n - len(bad)}/{n} records parse with scores", bad)

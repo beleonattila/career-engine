@@ -11,9 +11,9 @@ tier1 = 'protein design|protein engineer|machine learning scientist'
 tier2 = 'structural bioinform|computational biolog|deep learning|data scien'
 # Broad title prefilter: anything a human might want to eyeball.
 maybe = 'scientist|research|engineer|analyst|bioinformat|computational|machine learning|\bml\b|\bai\b'
-# A generic computational title; only counts at an employer whose career_fit is high enough.
+# A generic computational title; only counts at an employer whose domain_fit is high enough.
 computational = 'machine learning|deep learning|\bml\b|\bai\b|computational|data scien|algorithm|modell?ing|simulation'
-# career_fit an employer needs for that generic-title tier.
+# domain_fit an employer needs for that generic-title tier.
 t2q_min_employer_fit = 60
 
 [sweep.method]

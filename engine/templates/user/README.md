@@ -9,8 +9,8 @@ Fill in, in this order (or ask Claude Code to interview you and fill them):
 1. `profile/snapshot.md` — the short profile loaded every session. Put your name on the **Name:** line.
 2. `profile/background.md` — education, experience, publications, your level, handling notes.
 3. `profile/competencies.md` and `profile/soft_skills.md` — what you can do, with evidence.
-4. `profile/preferences.md` — direction, target roles, and §Scoring (what the career_fit bands mean for you).
-5. `settings.toml` — geography, thresholds, the domain pack, the career_fit checks.
+4. `profile/preferences.md` — direction, target roles, and §Scoring (what the domain_fit bands mean for you).
+5. `settings.toml` — geography, thresholds, the domain pack, the domain_fit checks.
 6. `profile/search_terms.md` + `profile/search_terms.toml` — what the searches look for (keep the two in step).
 7. `profile/cv_template/` — your master CV and cover letter in LaTeX; `profile/writing/` — your voice.
 8. `profile/private_terms.txt` — words that must never reach the engine repo.

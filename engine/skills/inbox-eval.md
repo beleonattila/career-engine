@@ -131,7 +131,7 @@ For each file:
    this org/role already exist? If yes, you will update it, not duplicate it.
 3. Route to the matching handler (companies / groups / positions / phd).
 	3.5 If it is a company or a research group then search the web and gather information for profiling.
-4. Score `career_fit`, `method_fit` **and** `skill_match` for every kind; add `level_fit` and `bench_load` (reported, never scored) for positions/phd.
+4. Score `domain_fit`, `method_fit` **and** `skill_match` for every kind; add `level_fit` and `bench_load` (reported, never scored) for positions/phd.
 5. Extract keywords (see *Keyword extraction*).
 6. Write the new profile, or merge into the existing one.
    **A position or PhD scored `method_fit` ≥ 75 is a method sighting** — log it, whatever its
@@ -145,7 +145,7 @@ For each file:
 
 ### Step 4 — Ranked summary
 
-After all files, print one summary grouped by kind, **sorted by `career_fit` descending**
+After all files, print one summary grouped by kind, **sorted by `domain_fit` descending**
 (format at the end of this file) — "what is most worth wanting", with `method_fit`, `skill_match`
 and `level_fit` shown alongside.
 
@@ -174,21 +174,21 @@ information, not a contradiction.
 
 | Field | Question | Applies to |
 |---|---|---|
-| `career_fit` (0–100) | **Is this the science I want?** How close is the work to the user's direction (`user/profile/preferences.md` §Scoring)? | positions · phd · companies · groups |
+| `domain_fit` (0–100) | **Is this the science I want?** How close is the work to the user's direction (`user/profile/preferences.md` §Scoring)? | positions · phd · companies · groups |
 | `method_fit` (0–100) | **Is this the work I want?** Does the seat *build* methods, tools and systems — or only operate them? | positions · phd · companies · groups |
 | `skill_match` (0–100) | **Can I do this?** How much of the work can be evidenced from user/profile/competencies.md? | positions · phd · companies · groups |
 | `level_fit` (badge) | Is the seniority attainable today? | positions · phd only |
 
 `skill_match` and `method_fit` are **holistic judgements against their anchor bands** — not
-weighted sums of sub-criteria. `career_fit` is **one judgement (the band) plus the user's yes/no checks
+weighted sums of sub-criteria. `domain_fit` is **one judgement (the band) plus the user's yes/no checks
 read off a lookup table** — still direction only, and bounded inside its band so the checks can never
 outvote the method. Write each number, then one sentence of justification naming the band
-(and, for `career_fit`, the checks).
+(and, for `domain_fit`, the checks).
 
 `fit_score` and `verdict` were deleted; never reintroduce a blended score (why:
 `engine/docs/decisions.md` §Why two scores).
 
-### `career_fit` — direction: a band, then three checks (0–100)
+### `domain_fit` — direction: a band, then three checks (0–100)
 
 Rubric: **scoring v3** — a band, the user's checks, and the org floor (`engine/docs/decisions.md`
 §Scoring v3). The number is built in four steps. Only step 1 is a judgement; steps 2–3 are yes/no checks and a
@@ -227,7 +227,7 @@ mention (one sentence on a careers page, no team, no output) is not a line.
 
 The user's checks — `user/profile/preferences.md` §Scoring → *Checks* — place a record inside its
 band. That section says what each check means, what it is worth and where it is read; the names
-and units the tools accept are in `user/settings.toml` `[career_fit.checks]`. A check is ✓ only on a
+and units the tools accept are in `user/settings.toml` `[domain_fit.checks]`. A check is ✓ only on a
 stated fact.
 
 **Where checks are read**, in general: for an org, on the line that set its band; for a position, a
@@ -241,19 +241,19 @@ The checks place the record **inside** its band and can never lift it out: an ad
 every check still sits below a plain dead-centre role. Score = band floor + round(units ÷ maximum
 units × band width), where the maximum is the sum of the full checks in `user/settings.toml`.
 
-**Do the lookup with the script, never by hand:** `python engine/tools/career_fit.py A "<checks>"`
-prints the number; `python engine/tools/career_fit.py` prints the whole table for your checks.
+**Do the lookup with the script, never by hand:** `python engine/tools/domain_fit.py A "<checks>"`
+prints the number; `python engine/tools/domain_fit.py` prints the whole table for your checks.
 
 Ties are expected and accepted — `skill_match` sits beside every row.
 
 Record both inputs in frontmatter, so any score can be re-derived by script:
 
-    career_fit: 97
-    career_band: A
-    career_checks: <check names from user/settings.toml, comma-separated>   # or: none
+    domain_fit: 97
+    domain_band: A
+    domain_checks: <check names from user/settings.toml, comma-separated>   # or: none
 
 Justification format (a worked example is in preferences.md §Scoring):
-**Career fit:** N/100 — band X (what sets it); <check> ✓/✗ (the stated fact) · … → U units.
+**Domain fit:** N/100 — band X (what sets it); <check> ✓/✗ (the stated fact) · … → U units.
 
 #### Step 4 — the org floor (mechanical)
 
@@ -262,10 +262,10 @@ expired posting still proves the org does the work). Nobody judges this:
 `python engine/tools/org_floor.py --apply` enforces it in Step 5. Positions are linked to profiles by
 `org_match.py` (the dashboard's matcher); a position's `org_profile:` overrides it.
 
-When the floor binds, the script sets `career_fit` to the position's score and keeps the org's own
-judgement beside it (`career_fit_own`, `career_fit_floor`, `career_fit_floor_from`) plus a History
-line; `career_band` / `career_checks` remain the org's own. **When you re-judge an org, write your
-number to `career_fit` and delete the three floor fields** — the script restores the floor. Never
+When the floor binds, the script sets `domain_fit` to the position's score and keeps the org's own
+judgement beside it (`domain_fit_own`, `domain_fit_floor`, `domain_fit_floor_from`) plus a History
+line; `domain_band` / `domain_checks` remain the org's own. **When you re-judge an org, write your
+number to `domain_fit` and delete the three floor fields** — the script restores the floor. Never
 hand-edit a floor value. `python engine/tools/org_floor.py --candidates` also lists well-scored positions whose
 employer has no profile yet.
 
@@ -313,7 +313,7 @@ tools) and no further. Never infer a stack from the sector or a big name.
 
 ### `method_fit` — does the seat build methods? (0–100)
 
-Makes methods-building roles outside the direction visible **without touching `career_fit`**
+Makes methods-building roles outside the direction visible **without touching `domain_fit`**
 (why: `engine/docs/decisions.md` §method_fit; `user/workspace/notes/rebrand_plan.md` §SPEC C).
 
 The one question: **is the deliverable a method, tool, pipeline, platform or benchmark that other
@@ -335,14 +335,14 @@ tooling, first/only technical hire.
 "deliver reports/dashboards", fixed SOPs, a large team where the method is already owned by someone
 else.
 
-**Score the seat, not the employer** — as for `career_fit`. A methods-heavy company whose seat runs
+**Score the seat, not the employer** — as for `domain_fit`. A methods-heavy company whose seat runs
 its existing product scores low; a small group where nobody owns the tooling scores high even if it
 publishes no software. *"But the company builds tools"* in a justification means the number is too high.
 
 **Independence.** `method_fit` is the **nature of the work**, never the domain (that is
-`career_fit`) and never a familiar stack (that is `skill_match`). A genomics pipeline-engineering
-role can be `career_fit` 35 · `method_fit` 92; a dead-centre design seat that only runs campaigns
-can be `career_fit` 97 · `method_fit` 45. **Both are worth seeing; neither is a contradiction.**
+`domain_fit`) and never a familiar stack (that is `skill_match`). A genomics pipeline-engineering
+role can be `domain_fit` 35 · `method_fit` 92; a dead-centre design seat that only runs campaigns
+can be `domain_fit` 97 · `method_fit` 45. **Both are worth seeing; neither is a contradiction.**
 
 **Nothing else enters this number.** Not location, salary, prestige, seniority or company size.
 Record salary under *Logistics & Salary*, never in a score.
@@ -366,10 +366,10 @@ staffed scores lower even when the science is excellent.
 | `below` | Beneath the qualification — internships, student assistantships, technician roles. |
 
 **While the user holds no PhD, postdocs are `reach`, without exception** — the badge reports
-today, not after a future doctorate. `reach` is not a rejection (`career_fit 95 · level_fit reach`
+today, not after a future doctorate. `reach` is not a rejection (`domain_fit 95 · level_fit reach`
 is a good record to see). Never soften the badge to make a lead look better.
 
-Produce for every item: **`career_fit`**, **`method_fit`** and **`skill_match`**, plus **`level_fit`** for
+Produce for every item: **`domain_fit`**, **`method_fit`** and **`skill_match`**, plus **`level_fit`** for
 positions/phd; **matched** (2–3 bullets), **gaps** (1–2 bullets, no softening), **angle**
 (one sentence — the single strongest framing for an application).
 
@@ -406,7 +406,7 @@ user's field is the domain pack's `prestige.md` (`engine/packs/<pack>/`, `<pack>
 in `user/settings.toml`).
 
 > ⚠️ **Prestige scores nothing.** `prestige_tier` is its own field and dashboard column; never let
-> it move `career_fit` (`engine/docs/decisions.md` §Logistics and prestige).
+> it move `domain_fit` (`engine/docs/decisions.md` §Logistics and prestige).
 
 Record the tier, 2–3 concrete signals (funding, revenue, h-index, journal tier, grants),
 and a one-line rationale. Look up signals with WebSearch/WebFetch when the raw text is thin.
@@ -447,16 +447,16 @@ refresh. Inbox is the **authority** on merging.
    `user/workspace/positions/applied/`, and `user/workspace/inbox/processed/` for an existing entry.
 2. **If none:** create the profile.
 3. **If one exists:** **merge, do not overwrite.**
-   - Update factual frontmatter (location, funding, prestige, `career_fit`, `method_fit`,
+   - Update factual frontmatter (location, funding, prestige, `domain_fit`, `method_fit`,
      `skill_match`, and for positions/phd `level_fit` and `bench_load`) and refresh `last_evaluated` to today.
    - If the file has no `method_fit`, score and add it (whatever its `scoring:` stamp).
    - Leave `method_roles_seen` / `last_method_role` alone on an org: `method_sightings.py --apply`
      owns them (Step 5).
-   - If the existing file carries anything but `scoring: v3`, re-judge `career_fit` under the v3
-     rubric (band + checks, writing `career_band` / `career_checks`) and stamp `scoring: v3`. A
+   - If the existing file carries anything but `scoring: v3`, re-judge `domain_fit` under the v3
+     rubric (band + checks, writing `domain_band` / `domain_checks`) and stamp `scoring: v3`. A
      `scoring: v1` or unstamped file: also rescore `skill_match` and delete its `fit_score` and
      `verdict`. Never carry an older number forward as a v3 one. On an org, delete any
-     `career_fit_own` / `career_fit_floor` / `career_fit_floor_from` before writing — Step 5's
+     `domain_fit_own` / `domain_fit_floor` / `domain_fit_floor_from` before writing — Step 5's
      `org_floor.py` restores the floor.
    - Append newly found roles to `open_positions`; never drop existing ones.
    - `schema_version` is the record *format* (`engine/tools/schema.py` `SCHEMA_VERSION`; the
@@ -490,9 +490,9 @@ location: "[city, country]"
 country: [ISO]
 remote_policy: [on_site | hybrid | remote_eu | remote_worldwide | unknown]
 prestige_tier: [elite | strong | established | early_stage]
-career_fit: [0–100]           # band + checks (lookup table), then org_floor.py — is this the science I want?
-career_band: [A | B | C | D | E]
-career_checks: [none | check names from user/settings.toml, comma-separated]
+domain_fit: [0–100]           # band + checks (lookup table), then org_floor.py — is this the science I want?
+domain_band: [A | B | C | D | E]
+domain_checks: [none | check names from user/settings.toml, comma-separated]
 method_fit: [0–100]           # would I be the methods person here? (builds tools vs operates them)
 skill_match: [0–100]          # can I do what they actually work on? (org stack vs user/profile/competencies.md)
 track: [career | employability]   # provenance: which search found it. Never a verdict
@@ -502,7 +502,7 @@ contact_status: not_contacted
 open_positions: []
 salary_range: [stated or null]
 url: "[careers or homepage url]"
-schema_version: 2
+schema_version: 3
 ---
 
 ## Summary
@@ -542,7 +542,7 @@ schema_version: 2
 
 ### groups → `user/workspace/organizations/research_groups/[GroupSlug].md`
 
-Score `career_fit`, `method_fit` **and** `skill_match`, as for a company.
+Score `domain_fit`, `method_fit` **and** `skill_match`, as for a company.
 **Faculty filter:** if the source is an Assistant Professor / Professor / Group-Leader
 *recruitment call* (a faculty opening, not a PhD/postdoc), do not create a group profile — flag and
 skip; that is years away.
@@ -556,9 +556,9 @@ location: [City, Country (Institution)]
 country: [ISO]
 remote_policy: [on_site | hybrid | remote_eu | unknown]
 prestige_tier: [elite | strong | established | early_stage]
-career_fit: [0–100]           # band + checks (lookup table), then org_floor.py — is this the science I want?
-career_band: [A | B | C | D | E]
-career_checks: [none | check names from user/settings.toml, comma-separated]
+domain_fit: [0–100]           # band + checks (lookup table), then org_floor.py — is this the science I want?
+domain_band: [A | B | C | D | E]
+domain_checks: [none | check names from user/settings.toml, comma-separated]
 method_fit: [0–100]           # would I be the methods person here? (builds tools vs operates them)
 skill_match: [0–100]          # can I do what they actually work on? (org stack vs user/profile/competencies.md)
 track: [career | employability]   # provenance: which search found it. Never a verdict
@@ -567,7 +567,7 @@ last_evaluated: [YYYY-MM-DD]
 contact_status: not_contacted
 open_positions: []
 salary_range: null
-schema_version: 2
+schema_version: 3
 ---
 
 ## Summary
@@ -624,9 +624,9 @@ salary: [as stated or null]
 salary_context: [at_market | above_market | below_market | not_stated]
 prestige_tier: [tier]
 deadline: [YYYY-MM-DD or null]
-career_fit: [0–100]          # is this the science I want — band + checks, read off the lookup table
-career_band: [A | B | C | D | E]
-career_checks: [none | check names from user/settings.toml, comma-separated]
+domain_fit: [0–100]          # is this the science I want — band + checks, read off the lookup table
+domain_band: [A | B | C | D | E]
+domain_checks: [none | check names from user/settings.toml, comma-separated]
 method_fit: [0–100]          # is this the work I want — does the seat build methods or operate them?
 skill_match: [0–100]         # can I do it — evidenced tools/methods only
 level_fit: [realistic | reach | below]   # badge; scores nothing. Postdoc ⇒ always reach
@@ -639,14 +639,14 @@ source_file: user/workspace/inbox/processed/[filename]
 created: [YYYY-MM-DD]
 last_evaluated: [YYYY-MM-DD]
 status: evaluating           # expired ONLY if deadline strictly before today, or posting confirmed removed
-schema_version: 2
+schema_version: 3
 ---
 
 ## Role
 [2–3 sentences]
 
 ## Fit Assessment
-**Career fit:** [N]/100 — band [A–E] ([why]); [check] ✓/✗ ([the stated fact]) · … → [units] units
+**Domain fit:** [N]/100 — band [A–E] ([why]); [check] ✓/✗ ([the stated fact]) · … → [units] units
 **Skill match:** [N]/100 — [one sentence naming the band and the decisive requirement]
 **Level:** [realistic | reach | below] — [what the ad asks for vs the user's level, `user/profile/background.md` §Level]
 **Matched strengths:** [bullets — each traceable to user/profile/competencies.md / user/profile/soft_skills.md]
@@ -676,7 +676,7 @@ schema_version: 2
 
 **`org_profile:` — leave it blank almost always.** The position→profile link is automatic
 (`dedup_check.py`'s alias table and org-token rules). `/dashboard` uses it to date the last CV sent
-to each employer, and `org_floor.py` uses it to floor each org's `career_fit`, so a wrong match
+to each employer, and `org_floor.py` uses it to floor each org's `domain_fit`, so a wrong match
 inflates a score as well as mis-dating a CV. Set this field only to correct a wrong match:
 
 - **A sibling group in the same department.** A posting naming its lab but not its PI is

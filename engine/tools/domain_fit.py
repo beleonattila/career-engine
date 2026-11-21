@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-career_fit.py — the scoring v3 lookup: band + checks -> career_fit.
+domain_fit.py — the scoring v3 lookup: band + checks -> domain_fit.
 
-The mechanism is in engine/skills/inbox-eval.md §career_fit (Step 3 — the lookup); what the checks
+The mechanism is in engine/skills/inbox-eval.md §domain_fit (Step 3 — the lookup); what the checks
 mean is the user's (user/profile/preferences.md §Scoring), and their names and units come from
-user/settings.toml [career_fit.checks]. This is the lookup as code, so /inbox does the arithmetic
+user/settings.toml [domain_fit.checks]. This is the lookup as code, so /inbox does the arithmetic
 the same way every time and a record's number can always be re-derived from its band and checks.
 
-    python engine/tools/career_fit.py                     # print the whole table for your checks
-    python engine/tools/career_fit.py A "<check>, <check>"
-    python engine/tools/career_fit.py E none              # band E is judged inside 0-29, no lookup
+    python engine/tools/domain_fit.py                     # print the whole table for your checks
+    python engine/tools/domain_fit.py A "<check>, <check>"
+    python engine/tools/domain_fit.py E none              # band E is judged inside 0-29, no lookup
 
 Score = band floor + round(units / max units * band width), max units = the sum of the full checks.
 The checks place a record inside its band and can never lift it out: the method sets the band.
@@ -20,7 +20,7 @@ import sys
 from paths import settings
 
 BANDS = {"A": (90, 100), "B": (75, 89), "C": (50, 74), "D": (30, 49), "E": (0, 29)}
-CHECK_UNITS = {str(k): float(v) for k, v in settings()["career_fit"]["checks"].items()}
+CHECK_UNITS = {str(k): float(v) for k, v in settings()["domain_fit"]["checks"].items()}
 # "<name>-half" is the half-met form of <name>; the two exclude each other.
 HALVES = {k: k[:-5] for k in CHECK_UNITS if k.endswith("-half") and k[:-5] in CHECK_UNITS}
 MAX_UNITS = sum(u for k, u in CHECK_UNITS.items() if k not in HALVES)
@@ -53,7 +53,7 @@ def units(checks):
 
 
 def score(band, checks):
-    """career_fit for bands A-D. None for band E, which is judged inside 0-29 without checks."""
+    """domain_fit for bands A-D. None for band E, which is judged inside 0-29 without checks."""
     b = (band or "").strip().upper()
     if b not in BANDS:
         raise ValueError(f"unknown band {band!r} (want A, B, C, D or E)")

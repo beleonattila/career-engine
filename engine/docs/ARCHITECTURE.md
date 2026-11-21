@@ -51,7 +51,7 @@ career-engine/
     │   └── linkedin/           ← LINKEDIN.md (TODOs, consumed by /linkedin) + strategy docs
     ├── memory/                 ← session-level notes (how to work, live projects); MEMORY.md is
     │                             the index, loaded every session. Durable facts live elsewhere
-    ├── settings.toml           ← thresholds, geography allowlist, career_fit check units; tools
+    ├── settings.toml           ← thresholds, geography allowlist, domain_fit check units + label; tools
     │                             read it via paths.setting(), skills read the file itself
     ├── secrets/                ← not versioned
     └── workspace/              ← every record path inside the data is relative to this folder
@@ -96,10 +96,10 @@ All stdlib-only Python. Run from the repo root: `python engine/tools/<tool>.py`.
 | `dedup_check.py` | Duplicate guard, mandatory before writing to the inbox |
 | `link_check.py` | Verifies open leads still point at a live posting; report-only by default, `--apply` stamps `url_status` and retires dead leads; `--browser dead|live` records a verdict seen in the browser pane (see LINK_HEALTH.md §Browser pass) |
 | `log_run.py` | Validate + append a run record to `logs/search_runs.jsonl`; archives that run's sweep TSV to `logs/ats_sweep/` |
-| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `career_fit`, prints a strong-lead histogram, `--min-fit N`, `--since` (misses by runs after a fix) |
+| `analyze_misses.py` | Attribute recall failures from the telemetry (always writes a JSON to `logs/analysis/`); joins each lead to its record's `domain_fit`, prints a strong-lead histogram, `--min-fit N`, `--since` (misses by runs after a fix) |
 | `reconcile_staging.py` | Merge the two search tracks' staging folders into `inbox/`; career wins a collision, stamps `TRACK:`, `--apply` to write |
 | `org_match.py` | Which company/group profile a position belongs to (shared by `dashboard.py` and `org_floor.py`) |
 | `org_floor.py` | An org never scores below its best linked position; report-only by default, `--apply` writes the floor (run by /inbox) |
-| `career_fit.py` | Scoring v3 lookup: band + checks → `career_fit` |
+| `domain_fit.py` | Scoring v3 lookup: band + checks → `domain_fit` |
 | `method_sightings.py` | Log of employers seen posting method-building seats (`logs/method_sightings.tsv`): `add` logs one, `--apply` writes `method_roles_seen` / `last_method_role` onto org profiles (run by /inbox), `--rotation N` prints the skill track's org-sweep order |
 | `level_sweep.py` | One-off (2026-08-17) level gate sweep; `--dry-run` to preview |

@@ -96,17 +96,19 @@ run xelatex twice on the same file.
 
 **Profile scoring — three independent numbers, never blended.** When evaluating any position
 or organisation (full rubric and anchor bands: `engine/skills/inbox-eval.md` §Scoring):
-- `career_fit` **0–100 — is this the science I want?** Direction only, **scoring v3**: a **band**
+- `domain_fit` **0–100 — is this the science I want?** Direction only, **scoring v3**: a **band**
   for how close the work is to the direction, then yes/no **checks** read off a lookup table that
   place the record *inside* its band, never out of it. What the bands and checks mean is personal:
   `user/profile/preferences.md` §Scoring (check names and units: `user/settings.toml`). Orgs are
   banded by their most on-direction line, and an org **never scores below its best linked
   position** (`python engine/tools/org_floor.py --apply`). Nothing else enters: not location,
-  salary, prestige, seniority or company size. Every kind of record carries this.
+  salary, prestige, seniority or company size. Every kind of record carries this. Called
+  `career_fit` before 2026-11-21. The user's own name for it is `[domain_fit] label` in
+  `user/settings.toml` (e.g. "Protein" → "protein fit"): use that name in chat replies.
 - `method_fit` **0–100 — is this the work I want?** Does the seat **build** methods, tools,
   pipelines, platforms or benchmarks that others then use, or only **operate** what already exists?
-  Judged against anchor bands, no lookup table. **Independent of domain** (that is `career_fit`)
-  **and of ability** (that is `skill_match`), so `career_fit` 35 · `method_fit` 92 is a lead worth
+  Judged against anchor bands, no lookup table. **Independent of domain** (that is `domain_fit`)
+  **and of ability** (that is `skill_match`), so `domain_fit` 35 · `method_fit` 92 is a lead worth
   seeing, not noise. Every kind of record; for an org: *"would I be the methods person here?"*
   (why: `engine/docs/decisions.md` §`method_fit`).
 - `skill_match` **0–100 — can I do this?** Evidenced overlap with `user/profile/competencies.md` /
@@ -116,8 +118,8 @@ or organisation (full rubric and anchor bands: `engine/skills/inbox-eval.md` §S
 - `level_fit` **badge, scores nothing** — `realistic | reach | below`, against what the user holds
   today (`user/profile/background.md` §Level). **Positions and PhD calls only** (an org advertises
   no seniority).
-- **Never average them or reintroduce a single score.** High `career_fit` + low `skill_match` is a
-  stretch worth seeing; low `career_fit` + high `method_fit` is the right work in the wrong field,
+- **Never average them or reintroduce a single score.** High `domain_fit` + low `skill_match` is a
+  stretch worth seeing; low `domain_fit` + high `method_fit` is the right work in the wrong field,
   also worth seeing. A blended score hides both (`engine/docs/decisions.md` §Why two scores).
 
 **Before applying to any position** — Check `user/workspace/positions/` to see if
@@ -132,7 +134,7 @@ This is mandatory, not optional; eyeball dedup has demonstrably failed.
 
 **Link & status hygiene** — verify a position's `url` before relying on it. `/cv` checks the link
 before generating; `python engine/tools/link_check.py --apply` re-validates every open lead reaching
-`thresholds.min_score_shown` (`user/settings.toml`) on **any** of `career_fit`, `method_fit` or
+`thresholds.min_score_shown` (`user/settings.toml`) on **any** of `domain_fit`, `method_fit` or
 `skill_match`, and retires the dead ones. Details and measurements: `engine/docs/LINK_HEALTH.md`.
 - A link an automated fetch refuses (404/ECONNREFUSED) is *unverified, not dead* — confirm in a
   real browser (the built-in browser pane: `engine/docs/LINK_HEALTH.md` §Browser pass).

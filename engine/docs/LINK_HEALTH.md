@@ -3,7 +3,7 @@
 *Moved from `engine/docs/LINK_HEALTH.md` on migration; wording unchanged.*
 
 Run `python engine/tools/link_check.py` (report-only) from the repo root; add `--apply` to write.
-It checks every open lead scoring 50 or above on **either** `career_fit` or `skill_match` —
+It checks every open lead scoring 50 or above on **either** `domain_fit` or `skill_match` —
 the same rule the dashboard uses to decide what to show.
 
 **The measurement that forced this tool, 2026-08-16.** A plain "does the URL return 200?" sweep
@@ -150,7 +150,7 @@ Safeguards, so it stays reversible:
   `thresholds.stale_days` in `user/settings.toml` sets it for good.
 
 **First run: 39 leads retired, `user/workspace/positions/open/` 85 → 46.** The cost is concentrated in the best
-records — `hzdr_postdoc-generative-ai-denovo-protein-design` (career_fit **95**),
+records — `hzdr_postdoc-generative-ai-denovo-protein-design` (domain_fit **95**),
 `latent-labs_computational-protein-designer` (**93**), `flagship-fl106` (**90**),
 `meso-scale-diagnostics` (**90**), `servier-symphogen` (**90**), `dsm-firmenich` (**88**, **85**).
 If any of those matter, revive them from `closed/` and verify the link rather than letting the
@@ -174,7 +174,7 @@ positive verdict is that evidence, so the rule has nothing to say about such a l
 `--verified-days N` retunes it for one run; `--verified-days -1` disables it.
 
 **The case that produced it.** The 2026-11-18 sweep retired
-`latent-labs_member-of-technical-staff_2026-10` (career_fit **98**, method_fit **95**) at 46 days.
+`latent-labs_member-of-technical-staff_2026-10` (domain_fit **98**, method_fit **95**) at 46 days.
 A browser pass the same day found the ad rendering in full with an Apply button, still listed on
 the employer's Ashby board. It was revived, which put it straight back over the threshold.
 

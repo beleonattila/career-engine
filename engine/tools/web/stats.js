@@ -9,6 +9,8 @@
 // hover/focus tooltip on every mark, and a data table under every chart.
 const VZ_NS = 'http://www.w3.org/2000/svg';
 const VZ_SERIES = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'];
+// The user's name for domain_fit (user/settings.toml [domain_fit] label), e.g. 'Protein'.
+const VZ_LABEL = DATA.label || 'Domain', VZ_FIT = VZ_LABEL + ' fit';
 const VZ_CAUSE = {
   SOURCE_INCOMPLETE: 'Searched, not returned', CHANNEL_SKIPPED: 'Channel skipped',
   QUERY_GAP: 'No query matched', AGE_EXCLUDED: 'Older than the window',
@@ -188,7 +190,7 @@ function vzCols(card, items, series, opts) {
   card.appendChild(svg);
 }
 
-// Career fit (x) against skill match (y), one dot per live lead.
+// Domain fit (x) against skill match (y), one dot per live lead.
 function vzScatter(card, pts, series, opts) {
   vzLegend(card, series);
   const W = vzWidth(card), H = Math.min(330, Math.round(W * 0.6)), left = 34, bottom = 30, top = 20, right = 10;
@@ -204,15 +206,15 @@ function vzScatter(card, pts, series, opts) {
   vzEl('line', {x1: sx(opts.onDirection), x2: sx(opts.onDirection), y1: top, y2: H - bottom,
                 style: 'stroke:var(--vz-base);stroke-width:1'}, svg);
   vzText(svg, sx(opts.onDirection), 10, 'on-direction ≥ ' + opts.onDirection, {'text-anchor': 'middle'});
-  vzText(svg, (left + W - right) / 2, H - 2, 'career fit →', {'text-anchor': 'middle'});
+  vzText(svg, (left + W - right) / 2, H - 2, VZ_FIT + ' →', {'text-anchor': 'middle'});
   vzText(svg, left, 10, 'skill match ↑', {'text-anchor': 'middle'});
   pts.forEach(p => {
     const j = series.findIndex(s => s.key === p.cat);
-    const c = vzEl('circle', {cx: sx(p.career), cy: sy(p.skill), r: 4.5,
+    const c = vzEl('circle', {cx: sx(p.domain), cy: sy(p.skill), r: 4.5,
       style: 'fill:' + series[j].color + ';stroke:var(--vz-surface);stroke-width:2'}, svg);
     // A larger invisible ring makes the small dot easy to hit.
-    const hit = vzEl('circle', {cx: sx(p.career), cy: sy(p.skill), r: 9, style: 'fill:transparent'}, svg);
-    vzHover(hit, p.name, [{value: p.career, label: 'career fit', color: series[j].color},
+    const hit = vzEl('circle', {cx: sx(p.domain), cy: sy(p.skill), r: 9, style: 'fill:transparent'}, svg);
+    vzHover(hit, p.name, [{value: p.domain, label: VZ_FIT, color: series[j].color},
                           {value: p.skill, label: 'skill match'}]);
     c.setAttribute('aria-hidden', 'true');
   });
@@ -253,14 +255,14 @@ function renderStats() {
   vzHBars(c, V.kinds.map(([l, n]) => ({label: l, values: [n]})), one);
   vzTable(c, ['Kind', 'Count'], V.kinds.map(([l, n]) => [l, vzFmt(n)]));
 
-  c = vzCard(g, 'Live leads: career fit against skill match',
+  c = vzCard(g, 'Live leads: ' + VZ_FIT + ' against skill match',
     'Right of the line is the science you want; up is what you can already do. ' +
     'Top right is the shortlist, bottom right the stretches, top left the fallbacks.');
   const scS = [{key: 'position', name: 'Position', color: VZ_SERIES[0]}, {key: 'phd', name: 'PhD', color: VZ_SERIES[1]}];
   if (V.scatter.length) vzScatter(c, V.scatter, scS, {onDirection: S.on_direction});
   else vzEmpty(c, 'No live scored leads.');
-  vzTable(c, ['Lead', 'Kind', 'Career', 'Skill'],
-    V.scatter.slice().sort((a, b) => b.career - a.career).map(p => [p.name, p.cat, p.career, p.skill]));
+  vzTable(c, ['Lead', 'Kind', VZ_LABEL, 'Skill'],
+    V.scatter.slice().sort((a, b) => b.domain - a.domain).map(p => [p.name, p.cat, p.domain, p.skill]));
 
   c = vzCard(g, 'Leads collected per week', 'Position and PhD records by the week they were created ' +
     '(last 16 weeks), split by the search track that found them.');
@@ -287,7 +289,7 @@ function renderStats() {
 
   if (M) {
     c = vzCard(g, 'Why leads were missed', 'Share of miss-events by cause, over all leads and over strong leads ' +
-      '(career fit ≥ ' + M.threshold + ', ' + M.strong_leads + ' leads). Act on the strong-lead bars.');
+      '(' + VZ_FIT + ' ≥ ' + M.threshold + ', ' + M.strong_leads + ' leads). Act on the strong-lead bars.');
     const causes = Object.keys(Object.assign({}, M.all, M.strong));
     const tA = Object.values(M.all).reduce((a, b) => a + b, 0) || 1;
     const tS = Object.values(M.strong).reduce((a, b) => a + b, 0) || 1;
@@ -314,7 +316,7 @@ function renderStats() {
     return {label: r.id, tick: tick, segs: deep ? [0, r.new] : [r.new, 0],
       tip: r.id + ' · ' + r.mode + ' · ' + r.cfg,
       rows: [{value: r.new, label: 'net-new leads', color: deep ? VZ_SERIES[1] : VZ_SERIES[0]},
-             {value: r.strong, label: 'strong (career ≥ ' + T.strong_fit + ')'},
+             {value: r.strong, label: 'strong (' + VZ_FIT + ' ≥ ' + T.strong_fit + ')'},
              {value: r.screened, label: 'screened and rejected'},
              {value: r.mins == null ? '—' : r.mins + ' min', label: 'runtime'}]};
   }), rS, {height: 200});
@@ -322,7 +324,7 @@ function renderStats() {
     T.runs.map(r => [r.id, r.mode, r.cfg, r.new, r.strong, r.screened, r.mins == null ? '—' : r.mins]));
 
   c = vzCard(g, 'What each channel found', 'Net-new leads per channel and how many became strong ' +
-    '(career fit ≥ ' + T.strong_fit + '). Each vault record is credited once.');
+    '(' + VZ_FIT + ' ≥ ' + T.strong_fit + '). Each vault record is credited once.');
   const ch = Object.entries(T.channels).sort((a, b) => b[1].new - a[1].new);
   vzHBars(c, ch.map(([k, v]) => ({label: k, values: [v.new, v.strong]})),
     [{name: 'Net-new', color: VZ_SERIES[0]}, {name: 'Strong', color: VZ_SERIES[1]}], {labelW: 130});

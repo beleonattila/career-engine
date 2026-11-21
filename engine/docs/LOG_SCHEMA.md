@@ -177,7 +177,7 @@ Three additions, all computed from data already in the vault — nothing new nee
   duplicates, the one that *measures* recall and the one that *reports* yield cannot drift apart.
   The `redup` column shows what was withheld.
 - **`strong/run` — collection quality, not count.** Every net-new lead is joined to the record it
-  became in `user/workspace/positions/` or `user/workspace/organizations/`, and counted strong when `/inbox` gave it a `career_fit` ≥ `thresholds.on_direction` (`user/settings.toml`). Without
+  became in `user/workspace/positions/` or `user/workspace/organizations/`, and counted strong when `/inbox` gave it a `domain_fit` ≥ `thresholds.on_direction` (`user/settings.toml`). Without
   this a config collecting three weak leads outranks one collecting a single strong one. Each vault
   record is credited **once**, on first collection, so a centre that arrives twice under two names
   is not counted twice.

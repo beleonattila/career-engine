@@ -15,7 +15,7 @@ description: >
 preferred direction** (`user/profile/preferences.md`).
 
 A group profile is a cold-outreach target: a PI to email, not a job to apply for. `/inbox`
-scores it on both axes — `career_fit` (is this the science) and `skill_match` (could the user be
+scores it on both axes — `domain_fit` (is this the science) and `skill_match` (could the user be
 useful in that lab).
 
 **Read [[search-common]] first** — geography allowlist, staging protocol, `TRACK:` stamp, org dedup.

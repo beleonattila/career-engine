@@ -349,7 +349,7 @@ the direction search — the only one that existed.
 Overlap between the tracks is the common case: a protein-design role that also names Snakemake and
 HPC passes the career output gate *and* the skill competency gate, so both agents collect it, and
 staging reconciliation (career wins) exists for exactly that. Since `method_fit` landed
-(2026-09-29) the skill track is the only route by which a `career_fit` 30 · `method_fit` 90 role
+(2026-09-29) the skill track is the only route by which a `domain_fit` 30 · `method_fit` 90 role
 gets collected at all; since 2026-10-01 it looks for such roles on purpose (§Method lane).
 
 ### Skill track: a competency counts only when central (2026-08-18)
@@ -385,14 +385,14 @@ each collision cost a fetch, an inbox write and a full Opus scoring pass.
 "how likely I am to get it", so *Senior / Lead Scientist — Computational Protein Design*
 scored **83** and was still never a realistic application (see [[level_sweep]]). That was
 never a scoring error: it is a genuinely on-direction role the user is underqualified for.
-The two-score model says so out loud — `career_fit 92 · skill_match 55 · level_fit reach`
+The two-score model says so out loud — `domain_fit 92 · skill_match 55 · level_fit reach`
 — instead of averaging the tension away. `fit_score` and `verdict` were deleted in the
 same change; never reintroduce a blended score. A `scoring: v1` or unstamped record predates
 this change, which is why a merge also rescores its `skill_match` and deletes those two fields.
 
 ### Scoring v3: band + checks, and the org floor (2026-09-10)
 
-*Rule: inbox-eval.md §career_fit*
+*Rule: inbox-eval.md §domain_fit*
 
 **Scoring v3 (2026-09-10), on the user's explicit instruction.** Four v2 rules were reversed
 together, and every doc stating them was updated in the same change: *wet lab is neutral*,
@@ -405,12 +405,12 @@ below their best role, the widest Sanofi at **55** against a **95**. Records sta
 still carry the old number until `/rescore` re-judges them. Every record was re-judged under v3
 by 2026-10-01 (§`/rescore` below). Ties between records in the lookup table were agreed as
 acceptable the same day v3 was adopted (2026-09-10), since `skill_match` sits beside every row.
-Since v3, experimental validation is a `career_fit` check, which is why the position collectors keep
+Since v3, experimental validation is a `domain_fit` check, which is why the position collectors keep
 any ad line saying designs are tested in house or by a named collaborator.
 
 ### Score the role, not the employer (2026-08-18)
 
-*Rule: `engine/skills/inbox-eval.md` §career_fit, Step 1. This rubric caused four misscores*
+*Rule: `engine/skills/inbox-eval.md` §domain_fit, Step 1. This rubric caused four misscores*
 *before the rule was added.*
 
 The 75–89 band used to end with "…or a protein-design group where *this particular
@@ -419,7 +419,7 @@ direction leak into a **role's** score. A Forward Deployed AI Engineer at Latent
 **78** on reasoning that said, in as many words, "Latent Labs is dead-centre direction … but
 this specific seat is the infrastructure/deployment support role around the design models".
 The employer's direction is already carried by its own profile (Latent Labs the company is
-`career_fit` 95); scoring it again on the position double-counts it and buries genuinely
+`domain_fit` 95); scoring it again on the position double-counts it and buries genuinely
 on-direction roles beneath support seats at famous companies.
 
 ### `method_fit` (2026-09-29)
@@ -427,16 +427,31 @@ on-direction roles beneath support seats at famous companies.
 *Rule: inbox-eval.md §method_fit*
 
 **Added 2026-09-29, on the user's instruction** (rebrand; see `user/workspace/notes/rebrand_plan.md` §SPEC C).
-`career_fit` measures one axis only — closeness to the user's direction. The user has
+`domain_fit` measures one axis only — closeness to the user's direction. The user has
 since said yes to method roles in genomics, pharma/clinical data and **non-bio fields**, all of
-which score near zero on `career_fit` and were therefore invisible to `/search-*` and the
-dashboard. `method_fit` makes them visible **without touching `career_fit`**, which keeps its
+which score near zero on `domain_fit` and were therefore invisible to `/search-*` and the
+dashboard. `method_fit` makes them visible **without touching `domain_fit`**, which keeps its
 exact v3 meaning. The identity behind it: *the user builds the methods a research team runs on* — the
 analyst who improves how the team trains, not the specialist competing head-on.
 
-`method_fit` is not part of the v2 → v3 `career_fit` migration, so a merge scores it on any record
+`method_fit` is not part of the v2 → v3 `domain_fit` migration, so a merge scores it on any record
 that lacks it, whatever its `scoring:` stamp. Salary was a stated goal of the rebrand, but it is
 rarely stated in Danish ads, so it stays under *Logistics & Salary* and out of every score.
+
+### `domain_fit`, formerly `career_fit` (2026-11-21)
+
+*Rule: CLAUDE.md §Profile scoring; format change: `engine/docs/RECORD_SCHEMA.md` v3*
+
+Renamed on the user's instruction. "Career fit" read as *fit for my career*, but `method_fit`
+is a career goal too, so the name hid half the picture. The score measures one thing, closeness
+to the user's field, and `method_fit` is already defined as independent of domain, so
+`domain_fit` names it. Each user gives it a display name in `[domain_fit] label`
+(`user/settings.toml`, default "Domain"); the dashboard shows that word.
+
+- Records migrate with `schema.py --apply` (v2 → v3): keys and body text. Cases in this file
+  written before the rename use the new name.
+- Not renamed: the `career` search **track** (a track, not the score), and telemetry history
+  (`logs/search_runs.jsonl`, `logs/analysis/*.json`), which keeps the old word.
 
 ### Logistics and prestige score nothing (2026-08-17)
 
@@ -445,12 +460,12 @@ rarely stated in Danish ads, so it stays under *Logistics & Salary* and out of e
 ⚠️ **Logistics scores nothing.** It was a 10–15% weight in the pre-2026-08-17 rubric and was
 removed entirely: geography is a decision the user makes when reading the record, not a
 number the record should carry. Report location and pay plainly under
-**Logistics & Salary** and let the user weigh them. Never let either move `career_fit` or
+**Logistics & Salary** and let the user weigh them. Never let either move `domain_fit` or
 `skill_match`.
 
 ⚠️ **Prestige scores nothing.** It was a 10–15% weight before 2026-08-17 and was removed:
 `prestige_tier` is already its own frontmatter field and its own dashboard column, so
-folding it into a score double-counted it. Record the tier; do not let it move `career_fit`.
+folding it into a score double-counted it. Record the tier; do not let it move `domain_fit`.
 
 ### Archiving is not retirement from dedup (2026-07-29)
 
@@ -489,7 +504,7 @@ link a human clicks and `/cv` pre-flights. Since the 2026-08-16 fix `link_check.
 
 *Rule: `engine/skills/inbox-eval.md` §Handlers → positions. Each case below is one the matcher*
 *(`org_match.py`) got wrong in this vault; since 2026-09-10 a wrong match also inflates an org's*
-*`career_fit` through the org floor.*
+*`domain_fit` through the org floor.*
 
 - **A sibling group in the same department.** "DTU Bioengineering — Digital Biotechnology Lab"
   shares every institution-level token with another lab in the same department; the posting
@@ -555,8 +570,8 @@ The Novonesis "enzymes rather than chemistry" false opposition also sat in the S
 - **The position→profile join needs direction and rarity.** Token overlap alone put a Digital
   Biotechnology Lab role under **Büll Lab** on the shared tokens `{dtu, bioengineering}`.
 - **`min_score_shown` keeps a row if any score clears it**, because the old blended `fit_score`
-  would have buried a `career_fit 88 · skill_match 40` stretch role and flattered a
-  `career_fit 45 · skill_match 85` fallback.
+  would have buried a `domain_fit 88 · skill_match 40` stretch role and flattered a
+  `domain_fit 45 · skill_match 85` fallback.
 - **Dates of the current layout.** Timeline and To-do tabs, and removal of the deadline bar and of
   Best Match: 2026-10-02. Statistics tab replaced the Overview stat tiles: 2026-10-10. Wet-lab
   column and toggle: 2026-10-26. Interviews on the Timeline: 2026-11-07. OS-style Home page
@@ -570,8 +585,8 @@ The Novonesis "enzymes rather than chemistry" false opposition also sat in the S
 
 *Rule: CLAUDE.md §Profile scoring.*
 
-- **Never average them or reintroduce a single score.** A high-`career_fit`, low-`skill_match`
-record is a stretch worth seeing, not a contradiction to smooth over; a low-`career_fit`,
+- **Never average them or reintroduce a single score.** A high-`domain_fit`, low-`skill_match`
+record is a stretch worth seeing, not a contradiction to smooth over; a low-`domain_fit`,
 high-`method_fit` one is the right kind of work in the wrong field, which is also worth seeing.
 The old blended `fit_score` and its `verdict` were deleted on 2026-08-17 precisely because they
 hid that.
@@ -584,9 +599,9 @@ hid that.
 `user/workspace/notes/rebrand_plan.md`.)* Does the seat **build** methods, tools, pipelines, platforms or
 benchmarks that others then use, or only **operate** what already exists? Judged against anchor
 bands, no lookup table. **Independent of domain and of ability** — protein content belongs to
-`career_fit`, a familiar stack to `skill_match`. It exists because `career_fit` measures one axis
+`domain_fit`, a familiar stack to `skill_match`. It exists because `domain_fit` measures one axis
 only, so methods roles outside protein design (genomics, pharma/clinical data, non-bio) scored
-near zero and were invisible to `/search-*` and the dashboard. `career_fit` 35 · `method_fit` 92
+near zero and were invisible to `/search-*` and the dashboard. `domain_fit` 35 · `method_fit` 92
 is now a lead worth seeing, not noise. Carried by every kind of record; for an org the question is
 *"would I be the methods person here?"*.
 
@@ -599,7 +614,7 @@ scoring. A score would have had to choose a sign for it, and the preference ("wo
 do it if the role needs it") is a judgement made when reading the record, the same as geography.
 So positions carry `bench_load: none | light | substantial | unknown`, read off the seat's own
 duties, with the deciding phrase quoted under Logistics & Salary. It is kept apart from the
-`validation` check: an org testing its designs is a plus in `career_fit`, and says nothing about
+`validation` check: an org testing its designs is a plus in `domain_fit`, and says nothing about
 whether the person in the seat pipettes. Records older than v2 were migrated to `unknown`, never
 guessed, because silence in an ad is not evidence of a computational seat.
 
@@ -626,7 +641,7 @@ they accumulated indefinitely. `expire_sweep.py` now retires deadline-less leads
 posting was *not* confirmed removed. This knowingly trades accuracy for a manageable active set:
 some retired leads are still live. It is a decision, not a bug — do not revert it. First run moved
 **39** leads (open/ 85 → 46), including `hzdr_postdoc-generative-ai-denovo-protein-design`
-(`career_fit` 95), `latent-labs_computational-protein-designer` (93) and three at 90. Undo the whole set with
+(`domain_fit` 95), `latent-labs_computational-protein-designer` (93) and three at 90. Undo the whole set with
 `grep -l "expired_reason: stale_no_deadline" user/workspace/positions/closed/*.md`; skip it for one run with
 `--keep-stale`. See `engine/docs/LINK_HEALTH.md`.
 
@@ -640,7 +655,7 @@ verdict **is** that evidence, so while it is fresh the rule's premise does not h
 nobody has checked ages out exactly as before, which is nearly all of them.
 
 **The case.** On 2026-11-18 the sweep retired `latent-labs_member-of-technical-staff_2026-10`
-(`career_fit` 98 · `method_fit` 95) at 46 days. A browser pass the same day found it fully live:
+(`domain_fit` 98 · `method_fit` 95) at 46 days. A browser pass the same day found it fully live:
 the ad rendered with an Apply button and was still listed on the employer's Ashby board. Reviving
 it put it straight back over the threshold, so the next sweep would have retired it again, and the
 vault had no way to record "this was checked". The exemption is that missing handle.
@@ -668,14 +683,14 @@ honestly; 13 of 16 runs are unlabelled and answer nothing. See *Model and effort
 
 *Rule: CLAUDE.md §Commands (removed 2026-10-01); the skill was `rescore.md` in engine/skills.*
 
-⏳ `/rescore` is **temporary** — it re-judges `career_fit` on the 364 records scored before
+⏳ `/rescore` is **temporary** — it re-judges `domain_fit` on the 364 records scored before
 **scoring v3** (2026-09-10: band + checks, org floor) **and writes the new `method_fit` on all
 382**, a batch per run (Opus, same tier as `/inbox`); `skill_match` and `level_fit` are untouched.
 The two passes were merged on 2026-09-29 because v3 was only 6% done when `method_fit` landed, and
 sweeping every record twice would have been waste — so the ~22 records already stamped `v3` come
 back round once for the new field. Check progress with
 the `rescore_status` tool. Once it reports 100%, `/rescore` and
-`rescore_status.py` can both be deleted — `career_fit.py`, `org_floor.py` and `org_match.py`
+`rescore_status.py` can both be deleted — `domain_fit.py`, `org_floor.py` and `org_match.py`
 are permanent. Until then the dashboard's career column mixes two scales and warns that it is
 doing so. (The same skill earlier ran the v1 → v2 two-score migration, complete 2026-08.)
 
@@ -689,7 +704,7 @@ user/profile/search_terms.toml.*
 
 The headline miss histogram (48 runs, 573 miss-events) was dominated by low-value leads: its top
 causes, AGE_EXCLUDED and QUERY_GAP, were mostly skill-track data-engineering roles. Joined to the
-records' `career_fit` (now built into `analyze_misses.py`), the 24 leads scoring 75+ carry 93
+records' `domain_fit` (now built into `analyze_misses.py`), the 24 leads scoring 75+ carry 93
 miss-events with a different shape: SOURCE_INCOMPLETE 30% (LinkedIn 17 of them) · CHANNEL_SKIPPED
 18% · QUERY_GAP 18% · CHANNEL_NOT_RUN 12% · GEO_GAP 12% (vs 4% overall, 10 of 11 from July runs) ·
 AGE_EXCLUDED 8%. PhD portals skipped or never run account for 15 of the 93.
