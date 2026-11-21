@@ -9,6 +9,7 @@ const HOME_APPS = {
   group:        {c:'#14b8a6,#22c55e', i:'<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/><path d="M7 15h10"/>'},
   position:     {c:'#6366f1,#a855f7', i:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>'},
   phd:          {c:'#f43f5e,#f59e0b', i:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5M22 9v6"/>'},
+  paymap:       {c:'#0ea5e9,#22c55e', i:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'},
 };
 const HOME_LOGO = '<svg class="hm-logo" viewBox="0 0 400 400" aria-hidden="true"><defs>'
  +'<linearGradient id="hmg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#93c5fd"/>'

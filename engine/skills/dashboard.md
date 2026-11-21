@@ -27,6 +27,9 @@ reads, never scores — the real work is in `dashboard.py`.
 - `user/workspace/positions/open/*.md`, `user/workspace/positions/applied/*.md`, `user/workspace/positions/closed/*.md`
 - `user/workspace/inbox/processed/*.txt` (for the "search results" count)
 - `user/workspace/applications/*/` (for the "CVs generated" count)
+- `engine/data/phd_pay_europe.toml` (the **PhD pay map** tab: a Europe heatmap switchable between
+  gross pay, net pay, tax, PPP, housing, living cost and money left at month end; estimates —
+  correct a row there when a real offer states the figure)
 
 It parses each file's YAML frontmatter — including the application-tracking fields
 (`app_status`, `app_outcome`, `cv_date`, `sent_date`, `next_action`) maintained by

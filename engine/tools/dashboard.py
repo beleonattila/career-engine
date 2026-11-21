@@ -10,7 +10,7 @@ Out:  dashboard.html  (open in any browser)
 """
 import os, re, json, glob, datetime
 import html
-from paths import ARTIFACTS, TOOLS, WORKSPACE, setting, settings, user_name
+from paths import ARTIFACTS, ENGINE, TOOLS, WORKSPACE, setting, settings, user_name
 from frontmatter import fm_parse
 import plan as planstore
 ROOT = str(WORKSPACE)  # record paths are relative to user/workspace/
@@ -563,7 +563,20 @@ def telemetry_stats():
             out["misses_error"] = f"{os.path.basename(latest)} is unreadable: {e}"
     return out
 
-payload = {"records": records, "stats": stats, "integrity": integrity,
+# ---------------------------------------------------------------- PhD pay map tab
+# Reference data, not records: engine/data/phd_pay_europe.toml (estimates per country, see its
+# header). paymap.js derives tax share, PPP and money left over from it, so the file stays the
+# single place to correct a number.
+def paymap_data():
+    import tomllib
+    path = ENGINE / "data" / "phd_pay_europe.toml"
+    try:
+        with open(path, "rb") as f:
+            return tomllib.load(f)
+    except (OSError, ValueError) as e:
+        return {"error": f"{path.name} is unreadable: {e}"}
+
+payload = {"records": records, "stats": stats, "integrity": integrity, "paymap": paymap_data(),
            "plan": {"doc": plan_doc, "derived": plan_derived, "error": plan_error},
            "vault": vault_stats(), "telemetry": telemetry_stats(), "label": LABEL}
 
@@ -609,6 +622,7 @@ a,a:visited{color:var(--link);text-decoration:none} a:hover{text-decoration:unde
 __PLAN_CSS__
 __STATS_CSS__
 __HOME_CSS__
+__PAYMAP_CSS__
 </style></head><body>
 <header>
   <button class="home-btn" onclick="setTab('home')" title="Home (Esc)">⌂ Home</button>
@@ -697,6 +711,7 @@ const TABS=[
  {id:'group',label:'Research Groups'},
  {id:'position',label:'Positions'},
  {id:'phd',label:'PhD'},
+ {id:'paymap',label:'PhD pay map'},
 ];
 // Which tab a record belongs to. Positions/PhD are the CAREER track; everything the skill
 // search found sits in its own tab, so the headline counts keep meaning "on-direction
@@ -712,10 +727,11 @@ function tabs(){
   if(active==='home'){renderHome();return;}
   document.getElementById('tabs').innerHTML=TABS.filter(t=>t.id!=='home').map(t=>
    '<div class="tab'+(t.id===active?' active':'')+'" onclick="setTab(\\''+t.id+'\\')">'+t.label+
-   (t.id!=='home'&&t.id!=='stats'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
+   (t.id!=='home'&&t.id!=='stats'&&t.id!=='paymap'?' <span class="tier">'+countFor(t.id)+'</span>':'')+'</div>').join('');
 }
 function countFor(id){
   if(id==='timeline'||id==='todo')return planCount(id);
+  if(id==='paymap')return 0;
   if(id==='applications')return DATA.records.filter(r=>r.app_status&&r.app_status!=='not_started').length;
   return DATA.records.filter(r=>inTab(r,id)&&r.shown&&benchOk(r)).length;
 }
@@ -739,12 +755,13 @@ function render(){
   // Home is the OS-style entry page (home.js); it carries the integrity check in its tray.
   document.body.classList.toggle('at-home',active==='home');
   if(active==='home'){renderHome();return;}
-  document.getElementById('filter').parentNode.classList.toggle('hidden',active==='stats');
+  document.getElementById('filter').parentNode.classList.toggle('hidden',active==='stats'||active==='paymap');
   document.getElementById('benchctl').classList.toggle('hidden',active!=='position'&&active!=='phd');
   document.getElementById('hidebench').checked=hideBench;
   if(active==='stats'){renderStats();return;}
   if(active==='timeline'){renderTimeline();return;}
   if(active==='todo'){renderTodo();return;}
+  if(active==='paymap'){renderPayMap();return;}
   const rows=rowsFor();
   const isPos=(active==='position'||active==='phd'||active==='applications');
   // Domain and Method on every row; Skill and Level only where a job description exists to
@@ -818,6 +835,8 @@ function thresholdNote(){
 __PLAN_JS__
 __STATS_JS__
 __HOME_JS__
+__GEO_JS__
+__PAYMAP_JS__
 tabs();thresholdNote();render();planInit();
 </script></body></html>"""
 
@@ -831,6 +850,8 @@ _name = html.escape(user_name())  # from user/profile/snapshot.md; the header ju
 out = (HTML.replace("__PLAN_CSS__", _asset("plan.css")).replace("__PLAN_JS__", _asset("plan.js"))
        .replace("__STATS_CSS__", _asset("stats.css")).replace("__STATS_JS__", _asset("stats.js"))
        .replace("__HOME_CSS__", _asset("home.css")).replace("__HOME_JS__", _asset("home.js"))
+       .replace("__PAYMAP_CSS__", _asset("paymap.css")).replace("__PAYMAP_JS__", _asset("paymap.js"))
+       .replace("__GEO_JS__", _asset("europe_geo.js"))
        .replace("__NAME_JS__", json.dumps(_name).replace("</", "<\\/"))
        .replace("__PAYLOAD__", payload_json).replace("__DOMAIN_LABEL__", html.escape(LABEL)).replace("__DATE__", TODAY.isoformat())
        .replace("__TITLE_NAME__", f" — {_name}" if _name else "")

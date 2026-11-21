@@ -26,7 +26,11 @@ career-engine/
 │   │                             templates, empty workspace); copied by init_user.py
 │   └── tools/                  ← stdlib-only Python, run from the repo root (index below)
 │       └── web/                ← plan.js · plan.css (Timeline + To-do) and stats.js · stats.css
-│                                 (Statistics tab), inlined into dashboard.html by dashboard.py
+│                                 (Statistics tab), paymap.js · paymap.css · europe_geo.js (PhD pay
+│                                 map tab; the outline is generated from Natural Earth), all inlined
+│                                 into dashboard.html by dashboard.py
+│   └── data/                   ← reference data that is not a record: phd_pay_europe.toml (PhD
+│                                 pay, tax, rent and living cost per country, for the pay map tab)
 └── user/                       ← gitignored by the engine; its own local git repo
     ├── personal_data/          ← raw uploads, read-only, not versioned
     │   ├── old_cvs/ · old_cover_letters/ · formal_education/{bsc,msc}/ · publications/

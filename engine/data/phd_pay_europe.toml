@@ -1,0 +1,381 @@
+# PhD pay across Europe: the data behind the dashboard's "PhD pay map" tab (engine/tools/web/paymap.js).
+#
+# What every number means (monthly, EUR, averaged over the year, so 13th/14th months, holiday pay
+# and year-end bonuses are spread across the 12 months):
+#   gross   what the contract or scholarship pays before anything is taken off
+#   net     what reaches the bank after income tax and employee social contributions
+#   rent    a studio for one person in `city` (the "housing market" view)
+#   living  everything one person spends in `city` in a month, rent included: food, power,
+#           internet, phone, transport, insurance (mandatory health insurance where it exists), other
+#   pli     price level index for household consumption, EU27 = 100 (Eurostat-style); the map's
+#           PPP view divides net pay by pli/100
+# The map derives the rest: tax = 1 - net/gross; PPP = net / (pli/100); left over = net - living.
+#
+# These are ESTIMATES, hand-assembled in November 2026 from public pay scales and typical city
+# costs, not pulled from one official dataset. `confidence` says how firm each row is. Update a
+# row whenever you check a real offer (a PhD ad that states the salary beats any row here), and
+# move `as_of` forward.
+
+[meta]
+as_of = "2026-11-21"
+basis = "One person, own studio, one typical PhD city per country, year-average monthly EUR."
+
+[[country]]
+iso = "AT"
+name = "Austria"
+city = "Vienna"
+gross = 3790
+net = 2690
+rent = 750
+living = 1350
+pli = 112
+confidence = "medium"
+note = "FWF doctoral rate, 30 h/week, 14 payments a year"
+
+[[country]]
+iso = "BE"
+name = "Belgium"
+city = "Leuven"
+gross = 2550
+net = 2500
+rent = 700
+living = 1250
+pli = 111
+confidence = "medium"
+note = "Doctoral scholarship (FWO / university), almost tax-free"
+
+[[country]]
+iso = "BG"
+name = "Bulgaria"
+city = "Sofia"
+gross = 650
+net = 650
+rent = 450
+living = 850
+pli = 57
+confidence = "low"
+note = "State doctoral stipend; most students also work"
+
+[[country]]
+iso = "HR"
+name = "Croatia"
+city = "Zagreb"
+gross = 1700
+net = 1250
+rent = 500
+living = 950
+pli = 81
+confidence = "low"
+note = "Employed as an assistant on a project or university post"
+
+[[country]]
+iso = "CY"
+name = "Cyprus"
+city = "Nicosia"
+gross = 1500
+net = 1300
+rent = 650
+living = 1150
+pli = 89
+confidence = "low"
+note = "Project-funded posts; pay varies widely"
+
+[[country]]
+iso = "CZ"
+name = "Czechia"
+city = "Prague"
+gross = 1400
+net = 1200
+rent = 700
+living = 1150
+pli = 87
+confidence = "low"
+note = "Stipend plus a part-time project salary"
+
+[[country]]
+iso = "DK"
+name = "Denmark"
+city = "Copenhagen"
+gross = 3950
+net = 2640
+rent = 1070
+living = 1700
+pli = 142
+confidence = "high"
+note = "Salaried PhD; employer pension (~17%) paid on top, not counted here"
+
+[[country]]
+iso = "EE"
+name = "Estonia"
+city = "Tartu"
+gross = 1800
+net = 1450
+rent = 450
+living = 950
+pli = 98
+confidence = "low"
+note = "Employed as a junior research fellow"
+
+[[country]]
+iso = "FI"
+name = "Finland"
+city = "Helsinki"
+gross = 2900
+net = 2200
+rent = 850
+living = 1450
+pli = 121
+confidence = "medium"
+note = "Doctoral researcher salary, rises with progress; holiday bonus included"
+
+[[country]]
+iso = "FR"
+name = "France"
+city = "Lyon"
+gross = 2300
+net = 1730
+rent = 750
+living = 1430
+pli = 108
+confidence = "high"
+note = "CNRS / university doctoral contract minimum, 36 months"
+
+[[country]]
+iso = "DE"
+name = "Germany"
+city = "Heidelberg"
+gross = 3150
+net = 2150
+rent = 750
+living = 1350
+pli = 109
+confidence = "medium"
+note = "65% TV-L E13 contract; a 50% contract nets about EUR 1,700"
+
+[[country]]
+iso = "GR"
+name = "Greece"
+city = "Athens"
+gross = 1000
+net = 1000
+rent = 500
+living = 950
+pli = 85
+confidence = "low"
+note = "Scholarship (e.g. ELIDEK); many places are unfunded"
+
+[[country]]
+iso = "HU"
+name = "Hungary"
+city = "Budapest"
+gross = 700
+net = 700
+rent = 500
+living = 900
+pli = 73
+confidence = "low"
+note = "State doctoral stipend; grants can add more"
+
+[[country]]
+iso = "IE"
+name = "Ireland"
+city = "Dublin"
+gross = 2080
+net = 2080
+rent = 1500
+living = 2200
+pli = 140
+confidence = "medium"
+note = "EUR 25,000 tax-free stipend; most students share a flat"
+
+[[country]]
+iso = "IT"
+name = "Italy"
+city = "Bologna"
+gross = 1350
+net = 1200
+rent = 750
+living = 1250
+pli = 101
+confidence = "high"
+note = "National PhD scholarship (borsa di dottorato)"
+
+[[country]]
+iso = "LV"
+name = "Latvia"
+city = "Riga"
+gross = 1300
+net = 1050
+rent = 450
+living = 900
+pli = 88
+confidence = "low"
+note = "Stipend plus project employment"
+
+[[country]]
+iso = "LT"
+name = "Lithuania"
+city = "Vilnius"
+gross = 1100
+net = 1100
+rent = 550
+living = 1000
+pli = 84
+confidence = "low"
+note = "Doctoral stipend, tax-free"
+
+[[country]]
+iso = "LU"
+name = "Luxembourg"
+city = "Luxembourg"
+gross = 4000
+net = 3150
+rent = 1400
+living = 2200
+pli = 132
+confidence = "medium"
+note = "University of Luxembourg / FNR doctoral contract"
+
+[[country]]
+iso = "MT"
+name = "Malta"
+city = "Msida"
+gross = 1400
+net = 1250
+rent = 800
+living = 1300
+pli = 89
+confidence = "low"
+note = "Scholarship or project post"
+
+[[country]]
+iso = "NL"
+name = "Netherlands"
+city = "Utrecht"
+gross = 3840
+net = 2850
+rent = 1150
+living = 1900
+pli = 117
+confidence = "high"
+note = "CAO scale averaged over 4 years, incl. 8% holiday pay and 8.3% year-end bonus"
+
+[[country]]
+iso = "PL"
+name = "Poland"
+city = "Warsaw"
+gross = 1050
+net = 900
+rent = 700
+living = 1100
+pli = 72
+confidence = "low"
+note = "Doctoral-school stipend; research grants (e.g. NCN) can add a lot"
+
+[[country]]
+iso = "PT"
+name = "Portugal"
+city = "Lisbon"
+gross = 1310
+net = 1310
+rent = 900
+living = 1450
+pli = 86
+confidence = "medium"
+note = "FCT doctoral scholarship, tax-free"
+
+[[country]]
+iso = "RO"
+name = "Romania"
+city = "Bucharest"
+gross = 600
+net = 600
+rent = 450
+living = 850
+pli = 56
+confidence = "low"
+note = "State doctoral stipend; most students also work"
+
+[[country]]
+iso = "SK"
+name = "Slovakia"
+city = "Bratislava"
+gross = 1150
+net = 1150
+rent = 650
+living = 1050
+pli = 89
+confidence = "low"
+note = "Doctoral stipend, rises after the exam"
+
+[[country]]
+iso = "SI"
+name = "Slovenia"
+city = "Ljubljana"
+gross = 2000
+net = 1400
+rent = 650
+living = 1100
+pli = 89
+confidence = "low"
+note = "Young researcher employment contract"
+
+[[country]]
+iso = "ES"
+name = "Spain"
+city = "Madrid"
+gross = 1570
+net = 1330
+rent = 900
+living = 1400
+pli = 91
+confidence = "medium"
+note = "FPU / FPI predoctoral contract, 14 payments a year"
+
+[[country]]
+iso = "SE"
+name = "Sweden"
+city = "Stockholm"
+gross = 2950
+net = 2200
+rent = 900
+living = 1400
+pli = 116
+confidence = "medium"
+note = "Salaried doctoral student, pay steps up with progress"
+
+[[country]]
+iso = "GB"
+name = "United Kingdom"
+city = "Manchester"
+gross = 2050
+net = 2050
+rent = 950
+living = 1550
+pli = 118
+confidence = "high"
+note = "UKRI stipend, tax-free; London pays about EUR 170 more but costs far more"
+
+[[country]]
+iso = "CH"
+name = "Switzerland"
+city = "Lausanne"
+gross = 4880
+net = 3820
+rent = 1380
+living = 2650
+pli = 172
+confidence = "medium"
+note = "EPFL doctoral salary; living cost includes mandatory health insurance"
+
+[[country]]
+iso = "NO"
+name = "Norway"
+city = "Oslo"
+gross = 3770
+net = 2760
+rent = 1020
+living = 1650
+pli = 135
+confidence = "medium"
+note = "State PhD salary scale"
