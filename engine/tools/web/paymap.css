@@ -18,7 +18,7 @@
 .pm-map .pm-x{stroke:#2c313b}
 .pm-map .pm-c{cursor:pointer;outline:none}
 .pm-map .pm-dot{stroke:#0f1115;stroke-width:2}
-.pm-map .hl{stroke:#e6e9ef;stroke-width:2}
+.pm-map .hl{stroke:#4f8cff;stroke-width:2.5}
 .pm-tip{position:absolute;z-index:5;pointer-events:none;background:#1b1f27;border:1px solid var(--line);border-radius:8px;
   padding:8px 10px;font-size:12px;min-width:210px;max-width:280px;box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .pm-tip table{width:100%;border:0;background:none;margin:6px 0 4px;border-collapse:collapse}

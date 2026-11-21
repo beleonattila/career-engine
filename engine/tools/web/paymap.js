@@ -1,19 +1,20 @@
 // PhD pay map tab: a choropleth of Europe with one switchable measure, a hover card per country and
 // a sortable table under the map. Data: DATA.paymap, read by dashboard.py from
 // engine/data/phd_pay_europe.toml; outline: EU_GEO (europe_geo.js, generated from Natural Earth).
-// Colour follows the data-viz reference: one hue light-on-dark for a magnitude (low values recede
-// into the surface), blue <-> red around a grey midpoint for the one signed measure (left over).
+// Colour (the user's choice, 2026-11-21): red = bad, white = middle, green = good, on every
+// measure. `good` says which end is good. White sits at the median country, except on Left over,
+// where it sits at EUR 0: below that a month costs more than it pays. Red/green is hard for
+// colour-blind readers, so the values stay in the hover card and the table.
 const PM_METRICS = [
-  {id: 'gross',  label: 'Gross pay',     sub: 'before tax and contributions, EUR/month'},
-  {id: 'net',    label: 'Net pay',       sub: 'after income tax and social contributions, EUR/month'},
-  {id: 'tax',    label: 'Tax',           sub: 'share of gross taken as tax and contributions'},
-  {id: 'ppp',    label: 'PPP',           sub: 'net pay in EU-average prices (net ÷ price level), EUR/month'},
-  {id: 'rent',   label: 'Housing',       sub: 'rent of a studio for one in the city, EUR/month'},
-  {id: 'living', label: 'Living cost',   sub: 'everything one person spends in a month, rent included, EUR'},
-  {id: 'left',   label: 'Left over',     sub: 'net pay minus living cost: money left at the end of the month, EUR', signed: true},
+  {id: 'gross',  label: 'Gross pay',     good: 'high', sub: 'before tax and contributions, EUR/month'},
+  {id: 'net',    label: 'Net pay',       good: 'high', sub: 'after income tax and social contributions, EUR/month'},
+  {id: 'tax',    label: 'Tax',           good: 'low',  sub: 'share of gross taken as tax and contributions'},
+  {id: 'ppp',    label: 'PPP',           good: 'high', sub: 'net pay in EU-average prices (net ÷ price level), EUR/month'},
+  {id: 'rent',   label: 'Housing',       good: 'low',  sub: 'rent of a studio for one in the city, EUR/month'},
+  {id: 'living', label: 'Living cost',   good: 'low',  sub: 'everything one person spends in a month, rent included, EUR'},
+  {id: 'left',   label: 'Left over',     good: 'high', sub: 'net pay minus living cost: money left at the end of the month, EUR', zero: true},
 ];
-const PM_SEQ = ['#104281', '#184f95', '#256abf', '#2a78d6', '#3987e5', '#5598e7', '#6da7ec', '#86b6ef', '#9ec5f4', '#b7d3f6', '#cde2fb'];
-const PM_MID = '#383835', PM_NEG = '#e66767', PM_POS = '#6da7ec', PM_NODATA = '#1f232b';
+const PM_BAD = '#e0453f', PM_MID = '#f4f4f2', PM_GOOD = '#1fa35b', PM_NODATA = '#1f232b';
 let pmMetric = 'left', pmSortDir = -1, pmHover = null;
 try { const m = localStorage.getItem('pmMetric'); if (PM_METRICS.some(x => x.id === m)) pmMetric = m; } catch (e) {}
 
@@ -35,17 +36,16 @@ function pmMix(a, b, t) {
   const x = pmHex(a), y = pmHex(b);
   return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join('');
 }
+// Two arms around the midpoint, each stretched to its own extreme, so the best and the worst
+// country are both full colour however lopsided the spread is.
 function pmScale(rows, m) {
-  const vals = rows.map(r => r[m.id]).filter(v => v != null);
-  if (m.signed) {
-    const a = Math.max(1, ...vals.map(Math.abs));
-    return {min: -a, max: a, color: v => v < 0 ? pmMix(PM_MID, PM_NEG, Math.min(1, -v / a)) : pmMix(PM_MID, PM_POS, Math.min(1, v / a))};
-  }
-  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
-  return {min: lo, max: hi, color: v => {
-    const t = (v - lo) / span * (PM_SEQ.length - 1), i = Math.min(PM_SEQ.length - 2, Math.floor(t));
-    return pmMix(PM_SEQ[i], PM_SEQ[i + 1], t - i);
-  }};
+  const vals = rows.map(r => r[m.id]).filter(v => v != null).sort((a, b) => a - b);
+  const lo = vals[0], hi = vals[vals.length - 1], n = vals.length;
+  const mid = m.zero ? 0 : (n % 2 ? vals[(n - 1) / 2] : (vals[n / 2 - 1] + vals[n / 2]) / 2);
+  const loC = m.good === 'high' ? PM_BAD : PM_GOOD, hiC = m.good === 'high' ? PM_GOOD : PM_BAD;
+  return {min: lo, mid: mid, max: hi, lo: loC, hi: hiC, color: v => v < mid
+    ? pmMix(PM_MID, loC, Math.min(1, (mid - v) / ((mid - lo) || 1)))
+    : pmMix(PM_MID, hiC, Math.min(1, (v - mid) / ((hi - mid) || 1)))};
 }
 
 function renderPayMap() {
@@ -61,10 +61,12 @@ function renderPayMap() {
     shapes += '<path d="' + s.d + '" data-iso="' + s.id + '" class="' + (r ? 'pm-c' : 'pm-x') + '" fill="'
       + (r ? sc.color(r[m.id]) : PM_NODATA) + '"' + (r ? ' tabindex="0" aria-label="' + r.name + ': ' + pmFmt(m.id, r[m.id]) + '"' : '') + '/>';
   });
-  const grad = m.signed ? [PM_NEG, PM_MID, PM_POS] : PM_SEQ;
+  // The white stop sits where the midpoint falls in the value range, so the ramp reads like the map.
+  const at = Math.round(Math.max(0, Math.min(1, (sc.mid - sc.min) / ((sc.max - sc.min) || 1))) * 100);
   const legend = '<div class="pm-legend"><span>' + pmFmt(m.id, sc.min) + '</span><span class="pm-ramp" style="background:linear-gradient(90deg,'
-    + grad.join(',') + ')"></span><span>' + pmFmt(m.id, sc.max) + '</span>'
-    + (m.signed ? '<span class="pm-zero">grey = €0</span>' : '') + '<span class="pm-nd"><i></i>no data</span></div>';
+    + sc.lo + ' 0%,' + PM_MID + ' ' + at + '%,' + sc.hi + ' 100%)"></span><span>' + pmFmt(m.id, sc.max) + '</span>'
+    + '<span class="pm-zero">white = ' + (m.zero ? '€0' : 'median ' + pmFmt(m.id, sc.mid)) + ' · '
+    + (m.good === 'high' ? 'higher' : 'lower') + ' is better</span><span class="pm-nd"><i></i>no data</span></div>';
   const sorted = rows.slice().sort((a, b) => ((a[m.id] ?? -1e9) - (b[m.id] ?? -1e9)) * pmSortDir);
   const head = '<tr><th>#</th><th>Country</th>' + PM_METRICS.map(x => '<th class="num' + (x.id === pmMetric ? ' on' : '')
     + '" onclick="pmSet(\'' + x.id + '\',true)">' + x.label + (x.id === pmMetric ? (pmSortDir < 0 ? ' ▼' : ' ▲') : '') + '</th>').join('') + '<th>Conf.</th></tr>';
