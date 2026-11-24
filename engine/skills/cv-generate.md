@@ -82,7 +82,7 @@ Read the target `.md` file. Extract:
 
 > **`skill_match` shapes the letter; `domain_fit` does not** (it decides *whether* to apply, not
 > *how* to write). A low `skill_match` means lead harder on transferable evidence and matched
-> strengths; it never means inventing coverage (*Factual grounding*, CLAUDE.md).
+> strengths; it never means inventing coverage (*Factual grounding*, AGENTS.md).
 - **Gaps can be stale.** The Fit Assessment was written on the profile's `last_evaluated` date.
   Before framing a gap in the letter, check `user/profile/competencies.md` and
   `user/profile/background.md` for evidence added since. A gap that has closed is a strength to

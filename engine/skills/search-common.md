@@ -163,7 +163,7 @@ The four company and group collectors share one dedup procedure:
 1. **Step 1's name list** — list `user/workspace/organizations/companies/` or
    `user/workspace/organizations/research_groups/` and hold the names. This is eyeball dedup, which
    has demonstrably failed (`engine/docs/decisions.md` §Dedup), so it is never the whole test.
-2. **The guard, mandatory before any write** (CLAUDE.md):
+2. **The guard, mandatory before any write** (AGENTS.md):
    ```bash
    python engine/tools/dedup_check.py
    python engine/tools/dedup_check.py --query <slug> "company-profile"   # or "group-profile"
@@ -202,6 +202,21 @@ when you meet a new pair.
 - **Answer the gates explicitly and record the answers in the saved `.txt`.** Same ad, same
   answers, same verdict — holistic judgement is not reproducible (`engine/docs/decisions.md` §The
   collect decision).
+
+---
+
+## Without sub-agents
+
+For an agent that cannot start sub-agents (Step 2 of each `/search-*` orchestrator). Run both
+tracks yourself, one after the other, in the same run mode:
+
+1. **Career track** — follow the `*-career.md` skill; write only to `_staging/career/`; finish it.
+2. **Skill track** — follow the `*-skill.md` skill; write only to `_staging/skill/`. Collect a lead
+   even if the career track already has it: reconcile settles that (career wins).
+3. **Reconcile and log as usual** — one run record per track.
+
+Slower, and the second track has seen the first one's work, so use real sub-agents when you have
+them.
 
 ---
 

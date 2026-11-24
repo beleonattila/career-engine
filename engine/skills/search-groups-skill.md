@@ -39,7 +39,7 @@ Write every collection to **`user/workspace/inbox/_staging/skill/`**. Never to `
    §Skill track → *Competency table — groups*).
 5.5 **Log any method-building vacancy** on the lab's or institute's jobs page — [[search-common]]
    §Method sightings.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+6. **Run the dedup guard before writing — mandatory (AGENTS.md)** — [[search-common]] §Org
    collectors: dedup (`--query <groupslug> "group-profile"`).
 7. **Report** collections, competency spread, screened count, channels.
 

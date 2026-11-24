@@ -86,10 +86,12 @@ One object per run, appended to `search_runs.jsonl`:
   a channel that came up empty after 5 minutes and one that came up empty after 40 are not the
   same evidence. `log_run.py` derives `duration_min` from the pair and stamps it on the record —
   do not write `duration_min` by hand.
-- `model` — `haiku` · `sonnet` · `opus` · `fable`, lowercase, **required**.
+- `model` — the real model name, lowercase, **required**: `haiku` · `sonnet` · `opus` · `fable`
+  for Claude, another agent's own id otherwise (e.g. `gpt-5-codex`; since 2026-11-24).
 - `effort` — `low` · `medium` · `high` · `xhigh` · `max` · `ultracode`, **required**, in ascending
   order (`ultracode` is a distinct tier above `max`, not a synonym for it — multi-agent
-  orchestration via the Workflow tool, not just a higher single-agent reasoning setting). Model and
+  orchestration via the Workflow tool, not just a higher single-agent reasoning setting). Other
+  agents' levels: `none` · `minimal` sit below `low`; `default` for an agent with no setting. Model and
   effort are separate axes: capability buys judgment, effort buys care, and a run's yield is only
   comparable against runs made at the same setting. `python engine/tools/log_run.py --stats` reports
   collected/run, screened/run and min/run grouped by `model/effort/mode` — that table is the

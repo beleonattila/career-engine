@@ -56,7 +56,7 @@ links / suspected hallucinations) are absent from every count and tab by constru
 
    What the sweep deliberately leaves alone:
    - `deadline: null` — never expires on the deadline test. No deadline is not evidence that one has passed.
-   - **deadline == today** — still live. Never expire on the deadline day itself (CLAUDE.md).
+   - **deadline == today** — still live. Never expire on the deadline day itself (AGENTS.md).
    - Anything `applied` / `sent` / `interviewing` / `offer` — the application is still pending.
      `user/workspace/positions/applied/` is never touched at all.
 
@@ -64,7 +64,7 @@ links / suspected hallucinations) are absent from every count and tab by constru
    (`user/settings.toml`)** — moving them `open/` → `closed/` stamped
    **`expired_reason: stale_no_deadline`**.
 
-   > ⚠️ **This overrides the CLAUDE.md expiry rule knowingly** (the user's decision): none of these
+   > ⚠️ **This overrides the AGENTS.md expiry rule knowingly** (the user's decision): none of these
    > postings was confirmed removed and some are still live. It buys a manageable active set at the
    > cost of accuracy. **Do not "fix" it back** (`engine/docs/decisions.md` §Age retirement).
    >

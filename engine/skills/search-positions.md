@@ -59,6 +59,7 @@ telemetry.
 
 Issue **both Agent calls in a single message** so they run concurrently. Do not await one before
 starting the other — serialising them throws away the only reason this is a fan-out.
+No sub-agents (another agent): run the two tracks one after the other — [[search-common]] §Without sub-agents.
 
 Give each the same run mode, and tell it which track it is:
 

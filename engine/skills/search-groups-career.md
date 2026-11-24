@@ -32,7 +32,7 @@ Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to 
 4. **Read the lab's research / about / publications pages** and match the user's direction terms
    (`user/profile/search_terms.md` §Career track → *Direction terms*).
 5. **Collect iff ≥3 direction terms** appear in the lab's own description of its research.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+6. **Run the dedup guard before writing — mandatory (AGENTS.md)** — [[search-common]] §Org
    collectors: dedup (`--query <groupslug> "group-profile"`; mind the PI / lab / parent aliases).
 7. **Report** collections, screened count, channels.
 

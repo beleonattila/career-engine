@@ -156,6 +156,10 @@ Skills audit.
 - Contenteditable fields: the same `execCommand` JS as above, via `eval -b <base64>`.
 - If agent-browser errors: **stop and ask the user. Never retry.** Never `close --all`.
 
+**3. Another agent (not Claude).** agent-browser above, or any tool you have that drives a real,
+visible browser the user signed in to LinkedIn by hand. Same rules: never automate the login form,
+and stop and ask on any error.
+
 ---
 
 ## Weekly stats snapshot (visibility-strategy tracking)

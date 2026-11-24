@@ -38,7 +38,7 @@ Write every collection to **`user/workspace/inbox/_staging/skill/`**. Never to `
    [[search-common]] §Skill track: the competency gate (table: `user/profile/search_terms.md`
    §Skill track → *Competency table — companies*).
 5.5 **Log any method-building seat on the careers page** — [[search-common]] §Method sightings.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+6. **Run the dedup guard before writing — mandatory (AGENTS.md)** — [[search-common]] §Org
    collectors: dedup (`--query <org> "company-profile"`).
 7. **Report** collections, competency spread, screened count, channels.
 

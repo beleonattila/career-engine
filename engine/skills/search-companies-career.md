@@ -33,7 +33,7 @@ Write every collection to **`user/workspace/inbox/_staging/career/`**. Never to 
 4. **Read its science / research / platform / pipeline / publications pages** and match against
    the user's direction terms (below).
 5. **Collect iff ≥3 direction terms appear** in the company's own description of its work.
-6. **Run the dedup guard before writing — mandatory (CLAUDE.md)** — [[search-common]] §Org
+6. **Run the dedup guard before writing — mandatory (AGENTS.md)** — [[search-common]] §Org
    collectors: dedup (`--query <org> "company-profile"`).
 7. **Report** collections, screened count, and channels queried.
 

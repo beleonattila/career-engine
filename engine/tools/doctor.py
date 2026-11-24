@@ -7,7 +7,9 @@ doctor.py — is this repo set up correctly, and is the engine ready to share? R
     python engine/tools/doctor.py -v         # list every finding, not just the first few
 
 Checks, in order:
-  layout     the user/ folders and profile files the skills rely on exist; CLAUDE.md @imports resolve
+  layout     the user/ folders and profile files the skills rely on exist; CLAUDE.md imports
+             AGENTS.md and every @import resolves; each .claude/commands/ file has a matching
+             .agents/skills/<name>/SKILL.md naming the same engine skill
   settings   user/settings.toml parses and has every key the tools read, in range; each allowlist
              country is one ats_sweep.py can place in a location string
   paths      no stale pre-restructure references (career_vault, CONTEXT.md, profiles/ …) in the
@@ -36,7 +38,11 @@ from paths import ENGINE, PACKS, PROFILE, REPO, SETTINGS, TOOLS, USER, WORKSPACE
 
 
 # What the engine reads, prose-wise: the files an agent follows.
-PROSE = [REPO / "CLAUDE.md", REPO / "README.md", *sorted((REPO / ".claude" / "commands").glob("*.md")),
+COMMANDS = REPO / ".claude" / "commands"                 # Claude Code's slash commands
+AGENT_SKILLS = REPO / ".agents" / "skills"               # the same commands for other agents
+PROSE = [REPO / "AGENTS.md", REPO / "CLAUDE.md", REPO / "README.md", *sorted(COMMANDS.glob("*.md")),
+         *sorted(AGENT_SKILLS / c.stem / "SKILL.md" for c in COMMANDS.glob("*.md")
+                 if (AGENT_SKILLS / c.stem / "SKILL.md").exists()),
          *sorted((ENGINE / "skills").glob("*.md")), *sorted((ENGINE / "docs").glob("*.*")),
          *sorted(PACKS.rglob("*.md")), *sorted(PACKS.rglob("*.toml"))]
 
@@ -100,12 +106,35 @@ def check_layout():
     report("FAIL" if missing else "PASS", "layout",
            f"{len(REQUIRED) - len(missing)}/{len(REQUIRED)} required user/ paths present",
            [f"missing: user/{m}" for m in missing])
-    claude = REPO / "CLAUDE.md"
-    imports = re.findall(r"^@(\S+)", read(claude), re.M) if claude.exists() else []
-    broken = [i for i in imports if not (REPO / i).exists()]
-    report("FAIL" if broken or not claude.exists() else "PASS", "layout",
-           f"CLAUDE.md: {len(imports) - len(broken)}/{len(imports)} @imports resolve",
-           [f"broken @import: {b}" for b in broken])
+    # AGENTS.md holds the instructions for every agent; Claude Code reaches them only through the
+    # `@AGENTS.md` line in CLAUDE.md, so losing that line silently drops every rule for Claude.
+    agents, claude = REPO / "AGENTS.md", REPO / "CLAUDE.md"
+    problems, imports = [], []
+    for f in (agents, claude):
+        if not f.exists():
+            problems.append(f"missing {f.name}")
+            continue
+        found = re.findall(r"^@(\S+)", read(f), re.M)
+        imports += found
+        problems += [f"{f.name}: broken @import {i}" for i in found if not (REPO / i).exists()]
+    if claude.exists() and "AGENTS.md" not in re.findall(r"^@(\S+)", read(claude), re.M):
+        problems.append("CLAUDE.md does not import AGENTS.md (add the line: @AGENTS.md)")
+    report("FAIL" if problems else "PASS", "layout",
+           f"AGENTS.md + CLAUDE.md: {len(imports)} @import(s)"
+           + ("" if problems else ", CLAUDE.md loads AGENTS.md"), problems)
+    # Every command exists twice: a slash command for Claude Code, an Agent Skill for the rest.
+    pointer = re.compile(r"`(engine/skills/[\w-]+\.md)`")
+    drift = []
+    for c in sorted(COMMANDS.glob("*.md")):
+        s = AGENT_SKILLS / c.stem / "SKILL.md"
+        want = pointer.search(read(c))
+        if not s.exists():
+            drift.append(f"no .agents/skills/{c.stem}/SKILL.md for /{c.stem}")
+        elif not want or want.group(1) not in read(s):
+            drift.append(f".agents/skills/{c.stem}/SKILL.md does not point at the same skill as /{c.stem}")
+    n = len(list(COMMANDS.glob("*.md")))
+    report("FAIL" if drift else "PASS", "layout",
+           f"{n - len(drift)}/{n} commands also available as agent skills", drift)
 
 
 # What every domain pack must provide (engine/packs/<pack>/).

@@ -14,7 +14,7 @@ positions/closed/. The record is NEVER deleted:
 removed from disk.
 
 Guards:
-  * strictly-before-today only -- a lead is NOT expired on its deadline day (CLAUDE.md rule)
+  * strictly-before-today only -- a lead is NOT expired on its deadline day (AGENTS.md rule)
   * `deadline: null` never expires; absence of a deadline is not evidence of one having passed
   * anything applied/sent/interviewing is left where it is -- you applied before the deadline
     and the application is still live
@@ -27,7 +27,7 @@ to positions/closed/ **on age alone**, stamped `expired_reason: stale_no_deadlin
 `thresholds.stale_days` in user/settings.toml (45 when the rule was introduced).
 
 >>> THIS DELIBERATELY OVERRIDES THE STANDING RULE. <<<
-CLAUDE.md says a position is expired ONLY on a deadline strictly before today or a posting
+AGENTS.md says a position is expired ONLY on a deadline strictly before today or a posting
 confirmed removed, because neither a 200 nor a 404 proves anything (engine/docs/LINK_HEALTH.md:
 20 of 50 "healthy" leads were dead behind HTTP 200s; a live board also renders empty to a
 bot). Age is likewise not evidence a posting closed -- some of these will still be open.
@@ -267,7 +267,7 @@ def main():
 
         if dl is None:
             # No deadline: the deadline test can never fire, so age is the only handle there is.
-            # Retiring on it overrides the CLAUDE.md rule by explicit instruction -- see the
+            # Retiring on it overrides the AGENTS.md rule by explicit instruction -- see the
             # AGE RETIREMENT note at the top of this file.
             age = age_days(text)
             if age is None or age <= stale_days or active:

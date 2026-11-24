@@ -40,7 +40,7 @@ that dominate this vault:
     desktop app's built-in browser pane, signed in to LinkedIn (engine/docs/LINK_HEALTH.md
     §Browser pass) — not "probably fine". Record what it showed with --browser.
 
-  * **A 404 is not proof.** CLAUDE.md's link-hygiene rule: a link an automated fetch
+  * **A 404 is not proof.** AGENTS.md's link-hygiene rule: a link an automated fetch
     refuses is *unverified, not dead*. So a bare 404 is reported as DEAD_UNCONFIRMED
     and is **never auto-archived**; it is listed for you to confirm in a real browser,
     then record with --browser dead (one lead) or --trust-404 (all of them).
@@ -499,7 +499,7 @@ def main():
               f"and archive {n_dead} DEAD lead(s).")
         if tally.get("DEAD_UNCONFIRMED"):
             print(f"              {tally['DEAD_UNCONFIRMED']} DEAD_UNCONFIRMED (bare 404) will NOT be "
-                  f"archived — confirm in a browser first (CLAUDE.md link hygiene).")
+                  f"archived — confirm in a browser first (AGENTS.md link hygiene).")
         return
 
     archived, stamped, blocked = apply_results(results, args.trust_404)

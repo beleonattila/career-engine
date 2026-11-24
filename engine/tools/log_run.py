@@ -38,8 +38,11 @@ POSITION_GLOBS = ["positions/open/*.md", "positions/applied/*.md", "positions/cl
 PROFILE_GLOBS = ["organizations/companies/*.md", "organizations/research_groups/*.md"]
 
 STATUSES = {"reached", "partial", "skipped", "failed"}
-MODELS = {"haiku", "sonnet", "opus", "fable"}
-EFFORTS = {"low", "medium", "high", "xhigh", "max", "ultracode"}
+# Any agent may log a run, so `model` is the real model name in lower case: Claude's family name
+# (haiku, sonnet, opus, fable) or another agent's id (e.g. gpt-5-codex). Effort stays a closed list,
+# widened for other agents' levels; "default" for an agent with no effort setting.
+MODEL = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+EFFORTS = {"none", "minimal", "low", "medium", "high", "xhigh", "max", "ultracode", "default"}
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 STAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})$")
 
@@ -127,9 +130,10 @@ def problems(rec):
         p.append("fast runs must record age_window_days (needed to attribute AGE_EXCLUDED)")
 
     # Model + effort: a run's yield is only comparable against runs of the same capability and
-    # care level, so both are required and both use a closed vocabulary.
-    if "model" in rec and rec.get("model") not in MODELS:
-        p.append(f"model must be one of {sorted(MODELS)}, got {rec.get('model')!r}")
+    # care level, so both are required.
+    if "model" in rec and not MODEL.match(str(rec.get("model") or "")):
+        p.append(f"model must be the model's name in lower case (e.g. sonnet, gpt-5-codex), "
+                 f"got {rec.get('model')!r}")
     if "effort" in rec and rec.get("effort") not in EFFORTS:
         p.append(f"effort must be one of {sorted(EFFORTS)}, got {rec.get('effort')!r}")
 

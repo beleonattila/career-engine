@@ -1,7 +1,7 @@
 # Decisions — the cases behind the rules
 
 Why particular engine rules exist, told through the records and measurements that exposed them. The
-skills and CLAUDE.md state each rule and point here; this file keeps the dated story so a skill can stay short.
+skills and AGENTS.md state each rule and point here; this file keeps the dated story so a skill can stay short.
 Nothing here is personal: the user is "the user", and people are left unnamed. Numbers are as
 measured on the date given — re-run the tool for today's figures.
 
@@ -64,7 +64,7 @@ old one let through, with zero false merges.
 
 ### Dedup: the guard is mandatory (2026-07-29)
 
-*Rule: search-positions-common.md step 7.5; CLAUDE.md "Before writing anything to the inbox"*
+*Rule: search-positions-common.md step 7.5; AGENTS.md "Before writing anything to the inbox"*
 
 Eyeball dedup failed in practice: on 2026-07-29 a run collected
 `cradle-bio_scientific-advisor-antibodies` when an **exact** org+role slug match was already
@@ -440,7 +440,7 @@ rarely stated in Danish ads, so it stays under *Logistics & Salary* and out of e
 
 ### `domain_fit`, formerly `career_fit` (2026-11-21)
 
-*Rule: CLAUDE.md §Profile scoring; format change: `engine/docs/RECORD_SCHEMA.md` v3*
+*Rule: AGENTS.md §Profile scoring; format change: `engine/docs/RECORD_SCHEMA.md` v3*
 
 Renamed on the user's instruction. "Career fit" read as *fit for my career*, but `method_fit`
 is a career goal too, so the name hid half the picture. The score measures one thing, closeness
@@ -491,7 +491,7 @@ the age filter (see *Why age is not a filter* above).
 
 *Rule: inbox-eval.md §Handlers → positions, `url:`*
 
-Both CLAUDE.md and `engine/docs/LINK_HEALTH.md` require the canonical form, but the rule lived only
+Both AGENTS.md and `engine/docs/LINK_HEALTH.md` require the canonical form, but the rule lived only
 there and not in `/inbox` — which is why **26 of 37 open LinkedIn leads were still stored in
 ad-library form on 2026-08-29**. It matters because `ad-library/job/detail/<id>` **returns HTTP
 200 for expired postings** — on 2026-08-16 that concealed 16 dead leads out of 24. Seven
@@ -579,11 +579,22 @@ The Novonesis "enzymes rather than chemistry" false opposition also sat in the S
 
 ---
 
-## Engine-wide (`CLAUDE.md`)
+## Engine-wide (`AGENTS.md`)
+
+### One instruction file for every agent (2026-11-24)
+
+*Rule: AGENTS.md, top note; checked by `doctor.py` (layout)*
+
+On the user's instruction the repo works with any coding agent. `AGENTS.md` is the shared
+standard (Codex, Cursor, Copilot read it); Claude Code reads it on its own only when there is no
+`CLAUDE.md`, so `CLAUDE.md` stays as the single line `@AGENTS.md` and Claude loads the same text
+as before. The rule for edits: **add notes for other agents, never reword the Claude path** —
+rewording can shift Claude's behaviour. Each slash command also exists as an Agent Skill in
+`.agents/skills/`; doctor fails if the two drift. `log_run.py` takes any model name.
 
 ### Never one score (2026-08-17)
 
-*Rule: CLAUDE.md §Profile scoring.*
+*Rule: AGENTS.md §Profile scoring.*
 
 - **Never average them or reintroduce a single score.** A high-`domain_fit`, low-`skill_match`
 record is a stretch worth seeing, not a contradiction to smooth over; a low-`domain_fit`,
@@ -593,7 +604,7 @@ hid that.
 
 ### Why `method_fit` exists, as CLAUDE.md put it (2026-09-29)
 
-*Rule: CLAUDE.md §Profile scoring. The rubric and its own rationale: §`method_fit` above.*
+*Rule: AGENTS.md §Profile scoring. The rubric and its own rationale: §`method_fit` above.*
 
 - `method_fit` **0–100 — is this the work I want?** *(added 2026-09-29, rebrand — see
 `user/workspace/notes/rebrand_plan.md`.)* Does the seat **build** methods, tools, pipelines, platforms or
@@ -624,14 +635,14 @@ sorting: it changes no score and nothing the search or `/inbox` does.
 
 ### Link health: HTTP 200 is not proof a posting is live (2026-08-16)
 
-*Rule: CLAUDE.md §Link & status hygiene. Full measurement: `engine/docs/LINK_HEALTH.md`.*
+*Rule: AGENTS.md §Link & status hygiene. Full measurement: `engine/docs/LINK_HEALTH.md`.*
 
 LinkedIn's `ad-library/job/detail/<id>` returns 200 for expired jobs — on 2026-08-16 that hid 16
 dead leads out of 24, and 20 of 50 open leads overall turned out dead.
 
 ### Age retirement of deadline-less leads (2026-08-29)
 
-*Rule: CLAUDE.md §Link & status hygiene; implemented by `expire_sweep.py`.*
+*Rule: AGENTS.md §Link & status hygiene; implemented by `expire_sweep.py`.*
 
 **Exception, added 2026-08-29 on the user's explicit instruction — age retirement.** The trigger:
 `biohub_computational-biologist-cellxstate_2026-06` was found in `open/` at 83 days. A lead with
@@ -669,7 +680,7 @@ produce that verdict for LinkedIn since 2026-08-16); and the window is far short
 
 ### The model for `/search-*` is provisional (2026-08-09)
 
-*Rule: CLAUDE.md §Commands. The full data: §Model and effort above.*
+*Rule: AGENTS.md §Commands. The full data: §Model and effort above.*
 
 ⚠️ **Sonnet for `/search-*` is provisional.** The yield telemetry (16 runs, 2026-08-09) cannot
 settle it, and not only for want of runs: per-run collections vary `0–8` *within a single config*,

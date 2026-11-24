@@ -28,7 +28,7 @@ Two failure modes, both invisible to a naive check:
    automated fetch of a careers board** — that conclusion always needs a browser, exactly as a
    404 does. Modern ATS hosts (Emply, Teamtailor, Greenhouse embeds) are all prone to this.
 
-**A 404 is not proof either** (CLAUDE.md link hygiene). The tool reports a bare 404 as
+**A 404 is not proof either** (AGENTS.md link hygiene). The tool reports a bare 404 as
 `DEAD_UNCONFIRMED` and refuses to archive it; confirm in a real browser first (§Browser pass),
 then record it with `--browser dead`, or pass `--trust-404` to accept every bare 404 at once.
 

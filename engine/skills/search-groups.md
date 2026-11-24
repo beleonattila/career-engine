@@ -44,6 +44,7 @@ Reconcile any leftovers (`--apply`) before spawning.
 ### Step 2 — Spawn both sub-agents, in parallel
 
 **Both Agent calls in a single message.**
+No sub-agents (another agent): run the two tracks one after the other — [[search-common]] §Without sub-agents.
 
 > **career agent** — "Read `engine/skills/search-groups-career.md` and follow it exactly.
 > You are the CAREER track. Write collections only to `user/workspace/inbox/_staging/career/`.

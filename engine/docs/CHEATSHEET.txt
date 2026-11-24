@@ -120,7 +120,7 @@ Monthly-ish:
 ----------------------------------------------------------------
  STARTING A SESSION
 ----------------------------------------------------------------
-No need to "Read the profile" — CLAUDE.md auto-loads the snapshot and every skill reads
+No need to "Read the profile" — AGENTS.md (via CLAUDE.md) auto-loads the snapshot and every skill reads
 background/preferences/competencies/soft_skills itself. Just set the model and state the goal
 (or run the command). Only prime with "read the profile files" for freeform
 writing/strategy chats that don't go through a /command.

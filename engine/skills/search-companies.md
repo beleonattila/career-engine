@@ -48,6 +48,7 @@ this run.
 ### Step 2 — Spawn both sub-agents, in parallel
 
 **Both Agent calls in a single message.** Do not await one before starting the other.
+No sub-agents (another agent): run the two tracks one after the other — [[search-common]] §Without sub-agents.
 
 > **career agent** — "Read `engine/skills/search-companies-career.md` and follow it
 > exactly. You are the CAREER track. Write collections only to

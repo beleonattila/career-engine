@@ -4,10 +4,13 @@
 
 ```
 career-engine/
-├── CLAUDE.md                   ← session instructions; @imports the profile snapshot + memory index
-├── .claude/commands/           ← one file per slash command, each points at its skill
+├── AGENTS.md                   ← session instructions for every agent; @imports the profile
+│                                 snapshot + memory index
+├── CLAUDE.md                   ← one line, `@AGENTS.md`: how Claude Code loads them
+├── .claude/commands/           ← one file per slash command (Claude Code), each points at its skill
 ├── .claude/settings.local.json ← local permissions (not versioned)
-├── .agents/  skills-lock.json  ← agent-browser skill (fallback browser for /linkedin)
+├── .agents/skills/             ← the same commands as Agent Skills (Codex, Cursor, …), plus the
+│                                 agent-browser skill (fallback browser for /linkedin; skills-lock.json)
 ├── engine/
 │   ├── skills/                 ← cv-generate · inbox-eval · dashboard · track ·
 │   │                             linkedin-profile-edit
@@ -37,7 +40,7 @@ career-engine/
     │   ├── projects/ · references/ · other/
     │   └── _ignore/            ← never a source for claims (compliance output)
     ├── profile/
-    │   ├── snapshot.md         ← loaded every session via CLAUDE.md
+    │   ├── snapshot.md         ← loaded every session via AGENTS.md
     │   ├── background.md       ← identity, education, research experience, level, handling notes
     │   ├── preferences.md      ← direction, target roles, job-ad keywords, scoring content,
     │   │                         logistics & salary reference
